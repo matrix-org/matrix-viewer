@@ -97,6 +97,39 @@ async function asdf() {
     return makeEventEntryFromEventJson(eventJson);
   });
   console.log('eventEntries', eventEntries)
+
+  
+  // mimic _addLocalRelationsToNewRemoteEntries from Timeline.js
+  for (const eventEntry of eventEntries) {
+    // this will work because we set relatedEventId when removing remote echos
+    if (eventEntry.relatedEventId) {
+      console.log('related', eventEntry.relatedEventId, eventEntry)
+        const relationTarget = eventEntries.find(e => e.id === eventEntry.relatedEventId);
+        console.log('relationTarget', relationTarget)
+        // no need to emit here as this entry is about to be added
+        relationTarget?.addLocalRelation(eventEntry);
+    }
+    if (eventEntry.redactingEntry) {
+        const eventId = eventEntry.redactingEntry.relatedEventId;
+        const relationTarget = eventEntries.find(e => e.id === eventId);
+        relationTarget?.addLocalRelation(eventEntry);
+    }
+  }
+
+  // mimic _loadContextEntriesWhereNeeded from Timeline.js
+  for (const entry of eventEntries) {
+      if (!entry.contextEventId) {
+          continue;
+      }
+      const id = entry.contextEventId;
+      let contextEvent = eventEntries.find(e => e.id === id);
+      if (contextEvent) {
+          entry.setContextEntry(contextEvent);
+          // we don't emit an update here, as the add or update
+          // that the callee will emit hasn't been emitted yet.
+      }
+  }
+
   const rawTiles = eventEntries
     .map((entry) => {
       return tilesCreator(entry);
