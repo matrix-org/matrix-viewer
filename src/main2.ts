@@ -4,61 +4,38 @@ import {
   createRouter,
   MediaRepository,
 
-  BaseObservableList,
+  TilesCollection,
   FragmentIdComparer,
   tilesCreator as makeTilesCreator,
   EventEntry,
   encodeKey,
   encodeEventIdKey,
+  Timeline,
   TimelineView
 } from "hydrogen-view-sdk";
 
+const roomId = '!OWqptMTjnQfUWubCid:matrix.org';
 import eventsJson from './events2.json'
 
-class TilesCollection extends BaseObservableList {
-  constructor(tiles) {
-    super();
-    this._tiles = tiles;
-}
-
-  [Symbol.iterator]() {
-    return this._tiles.values();
-  }
-
-  get length() {
-    return this._tiles.length;
-  }
-
-  getFirst() {
-    return this._tiles[0];
-  }
-
-  getTileIndex(searchTile) {
-    const foundTileIndex = this._tiles.findIndex((tile) => {
-      return searchTile.compare(tile);
-    });
-
-    return foundTileIndex;
-  }
-
-  sliceIterator(start, end) {
-    return this._tiles.slice(start, end)[Symbol.iterator]();
-  }
-}
-
-
+let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
-function makeEventEntryFromEventJson(eventJson) {
+function makeEventEntryFromEventJson(roomId, eventJson) {
+  console.assert(roomId);
+  console.assert(eventJson);
+
+  const eventIndex = eventIndexCounter;
   const eventEntry = new EventEntry({
     "fragmentId": 0,
-    "eventIndex": 2147483648, // TODO: What should this be?
-    "roomId": eventJson.room_id,
+    "eventIndex": eventIndex, // TODO: What should this be?
+    "roomId": roomId,
     "event": eventJson,
     "displayName": "todo",
     "avatarUrl": "mxc://matrix.org/todo",
-    "key": encodeKey(eventJson.room_id, 0, 0),
-    "eventIdKey": encodeEventIdKey(eventJson.room_id, eventJson.event_id)
+    "key": encodeKey(roomId, 0, eventIndex),
+    "eventIdKey": encodeEventIdKey(roomId, eventJson.event_id)
   }, fragmentIdComparer);
+
+  eventIndexCounter++;
 
   return eventEntry;
 }
@@ -71,6 +48,16 @@ async function asdf() {
   const assetPaths = {};
   const platform = new Platform(app, assetPaths, config, { development: import.meta.env.DEV });
 
+  
+  const timeline = new Timeline({
+      roomId: roomId,
+      //storage: this._storage,
+      fragmentIdComparer: fragmentIdComparer,
+      clock: platform.clock,
+      logger: platform.logger,
+      //hsApi: this._hsApi
+  });
+
   const tilesCreator = makeTilesCreator({
     platform,
     roomVM: {
@@ -80,9 +67,7 @@ async function asdf() {
         })
       }
     },
-    timeline: {
-      me: false,
-    },
+    timeline,
     urlCreator: {
       urlUntilSegment: () => {
         return 'todo';
@@ -100,55 +85,30 @@ async function asdf() {
 
   console.log('eventsJson', eventsJson)
   const eventEntries = eventsJson.map((eventJson) => {
-    return makeEventEntryFromEventJson(eventJson);
+    return makeEventEntryFromEventJson(roomId, eventJson);
   });
   console.log('eventEntries', eventEntries)
 
   
-  // mimic _addLocalRelationsToNewRemoteEntries from Timeline.js
-  for (const eventEntry of eventEntries) {
-    // this will work because we set relatedEventId when removing remote echos
-    if (eventEntry.relatedEventId) {
-      console.log('related', eventEntry.relatedEventId, eventEntry)
-        const relationTarget = eventEntries.find(e => e.id === eventEntry.relatedEventId);
-        console.log('relationTarget', relationTarget)
-        // no need to emit here as this entry is about to be added
-        relationTarget?.addLocalRelation(eventEntry);
-    }
-    if (eventEntry.redactingEntry) {
-        const eventId = eventEntry.redactingEntry.relatedEventId;
-        const relationTarget = eventEntries.find(e => e.id === eventId);
-        relationTarget?.addLocalRelation(eventEntry);
-    }
-  }
 
-  // mimic _loadContextEntriesWhereNeeded from Timeline.js
-  for (const entry of eventEntries) {
-      if (!entry.contextEventId) {
-          continue;
-      }
-      const id = entry.contextEventId;
-      let contextEvent = eventEntries.find(e => e.id === id);
-      if (contextEvent) {
-          entry.setContextEntry(contextEvent);
-          // we don't emit an update here, as the add or update
-          // that the callee will emit hasn't been emitted yet.
-      }
-  }
+  // We have to use `timeline._setupEntries([])` because it sets
+  // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
+  // to request remote things.
+  timeline._setupEntries([]);
+  // Make it safe to iterate a derived observable collection
+  timeline.entries.subscribe({ onAdd: () => null, onUpdate: () => null });
+  timeline.addEntries(eventEntries);
 
-  const rawTiles = eventEntries
-    .map((entry) => {
-      return tilesCreator(entry);
-    })
-    .filter((tile) => !!tile);
-  
+  console.log('timeline.entries', timeline.entries.length, timeline.entries);
+
+  const tiles = new TilesCollection(timeline.entries, tilesCreator);
+  // Trigger onSubscribeFirst -> tiles._populateTiles();
+  tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
+
   // Make the lazy-load images appear
-  rawTiles.forEach((tile) => {
+  for(const tile of tiles) {
     tile.notifyVisible();
-  })
-
-  console.log('rawTiles', rawTiles);
-  const tiles = new TilesCollection(rawTiles);
+  }
 
   // const navigation = createNavigation();
   // const urlRouter = createRouter({
