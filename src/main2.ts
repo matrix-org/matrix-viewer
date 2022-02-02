@@ -2,6 +2,7 @@ import {
   Platform,
   createNavigation,
   createRouter,
+  MediaRepository,
 
   BaseObservableList,
   FragmentIdComparer,
@@ -12,7 +13,7 @@ import {
   TimelineView
 } from "hydrogen-view-sdk";
 
-import events1 from './events1.json'
+import eventsJson from './events2.json'
 
 class TilesCollection extends BaseObservableList {
   constructor(tiles) {
@@ -74,12 +75,9 @@ async function asdf() {
     platform,
     roomVM: {
       room: {
-        // todo
-        mediaRepository: {
-          mxcUrlThumbnail: () => {
-            return 'todo';
-          }
-        }
+        mediaRepository: new MediaRepository({
+          homeserver: 'https://matrix-client.matrix.org'
+        })
       }
     },
     timeline: {
@@ -88,12 +86,20 @@ async function asdf() {
     urlCreator: {
       urlUntilSegment: () => {
         return 'todo';
+      },
+      urlForSegments: () => {
+        return 'todo';
+      },
+    },
+    navigation: {
+      segment: () => {
+        return 'todo';
       }
     }
   });
 
-  console.log('events1', events1)
-  const eventEntries = events1.map((eventJson) => {
+  console.log('eventsJson', eventsJson)
+  const eventEntries = eventsJson.map((eventJson) => {
     return makeEventEntryFromEventJson(eventJson);
   });
   console.log('eventEntries', eventEntries)
@@ -135,8 +141,13 @@ async function asdf() {
       return tilesCreator(entry);
     })
     .filter((tile) => !!tile);
+  
+  // Make the lazy-load images appear
+  rawTiles.forEach((tile) => {
+    tile.notifyVisible();
+  })
 
-  console.log('rawTiles', rawTiles)
+  console.log('rawTiles', rawTiles);
   const tiles = new TilesCollection(rawTiles);
 
   // const navigation = createNavigation();

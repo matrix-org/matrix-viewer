@@ -1,0 +1,186 @@
+[
+    {
+        "content": {
+            "body": "y",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "y"
+        },
+        "origin_server_ts": 1643751261463,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 28534993
+        },
+        "event_id": "$p2K-H4KLf9rFsijWtovL_8iBSA0RL6fsmXq1F-nvZZ0"
+    },
+    {
+        "content": {
+            "avatar_url": "mxc://matrix.org/djdngehyFuFlApXWpYotALoK",
+            "displayname": "erictroupetester",
+            "membership": "join"
+        },
+        "origin_server_ts": 1643751279424,
+        "sender": "@erictroupetester:matrix.org",
+        "state_key": "@erictroupetester:matrix.org",
+        "type": "m.room.member",
+        "unsigned": {
+            "age": 28517032
+        },
+        "event_id": "$Me_sKWilYAR3G4KifH1ytusbkCcZN955l63rrj-hj1E"
+    },
+    {
+        "content": {
+            "body": "o",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "o"
+        },
+        "origin_server_ts": 1643751285181,
+        "sender": "@erictroupetester:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 28511275
+        },
+        "event_id": "$dggun2-VMSDr9qT_oT_tl0w_5Xi68A7upvu996CSDjg"
+    },
+    {
+        "content": {
+            "body": "u",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "u"
+        },
+        "origin_server_ts": 1643751287241,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 28509215
+        },
+        "event_id": "$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q"
+    },
+    {
+        "content": {
+            "body": "> <@madlittlemods:matrix.org> u\n\nupdog",
+            "format": "org.matrix.custom.html",
+            "formatted_body": "<mx-reply><blockquote><a href=\"https://matrix.to/#/!OWqptMTjnQfUWubCid:matrix.org/$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q?via=matrix.org\">In reply to</a> <a href=\"https://matrix.to/#/@madlittlemods:matrix.org\">@madlittlemods:matrix.org</a><br>u</blockquote></mx-reply>updog",
+            "m.relates_to": {
+                "m.in_reply_to": {
+                    "event_id": "$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q"
+                }
+            },
+            "msgtype": "m.text",
+            "org.matrix.msc1767.message": [
+                {
+                    "body": "> <@madlittlemods:matrix.org> u\n\nupdog",
+                    "mimetype": "text/plain"
+                },
+                {
+                    "body": "<mx-reply><blockquote><a href=\"https://matrix.to/#/!OWqptMTjnQfUWubCid:matrix.org/$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q?via=matrix.org\">In reply to</a> <a href=\"https://matrix.to/#/@madlittlemods:matrix.org\">@madlittlemods:matrix.org</a><br>u</blockquote></mx-reply>updog",
+                    "mimetype": "text/html"
+                }
+            ]
+        },
+        "origin_server_ts": 1643751346493,
+        "sender": "@erictroupetester:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 28449963
+        },
+        "event_id": "$FcdFuZLl_G7W8HaQW9INkSrZoP_ZcBKTaYqB0sG4Kns"
+    },
+    {
+        "content": {
+            "body": "😀 Skin friction is a component of drag, the force resisting the motion of a fluid across the surface of a body.",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "😀 Skin friction is a component of drag, the force resisting the motion of a fluid across the surface of a body."
+        },
+        "origin_server_ts": 1643779720223,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 76233
+        },
+        "event_id": "$50Yhop7d2WHs4IiBiA4YQsGbKqXuvwHeJFf5uZ8c0jY"
+    },
+    {
+        "content": {
+            "body": "Friction_between_surfaces.jpg",
+            "info": {
+                "h": 925,
+                "mimetype": "image/jpeg",
+                "size": 396644,
+                "thumbnail_info": {
+                    "h": 390,
+                    "mimetype": "image/jpeg",
+                    "size": 126490,
+                    "w": 800
+                },
+                "thumbnail_url": "mxc://matrix.org/zsAjnuqrbMuPlwhcHgjpSobL",
+                "w": 1894,
+                "xyz.amorgan.blurhash": "LkR3G|IU?w%NbwbIemae_NxuD$M{"
+            },
+            "msgtype": "m.image",
+            "url": "mxc://matrix.org/VmOplYoLzBxmHxrwgtugnHnS"
+        },
+        "origin_server_ts": 1643779746726,
+        "sender": "@erictroupetester:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 49730
+        },
+        "event_id": "$129QzqeZk0EbB4mTOFTIfnZpcihByAtCrFInuvyBNl8"
+    },
+    {
+        "content": {
+            "body": "^ Simulated blocks with fractal rough surfaces, exhibiting static frictional interactions",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "^ Simulated blocks with fractal rough surfaces, exhibiting static frictional interactions"
+        },
+        "origin_server_ts": 1643779756545,
+        "sender": "@erictroupetester:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 39911,
+            "m.relations": {
+                "m.annotation": {
+                    "chunk": [
+                        {
+                            "type": "m.reaction",
+                            "key": "😮",
+                            "count": 1
+                        }
+                    ]
+                }
+            }
+        },
+        "event_id": "$QvdtjOIIbX8R1NlN10swcQJ5LoZFgbX_E7UmvYSah4k"
+    },
+    {
+        "content": {
+            "m.relates_to": {
+                "event_id": "$QvdtjOIIbX8R1NlN10swcQJ5LoZFgbX_E7UmvYSah4k",
+                "key": "😮",
+                "rel_type": "m.annotation"
+            }
+        },
+        "origin_server_ts": 1643779769772,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.reaction",
+        "unsigned": {
+            "age": 26684
+        },
+        "event_id": "$k52WkLrC5T541zfVbofUdSDhmp8Zq2wnF8fh10x4dKI"
+    },
+    {
+        "content": {
+            "body": "The Greeks, including Aristotle, Vitruvius, and Pliny the Elder, were interested in the cause and mitigation of friction.",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "The Greeks, including Aristotle, Vitruvius, and Pliny the Elder, were interested in the cause and mitigation of friction."
+        },
+        "origin_server_ts": 1643779783542,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 12914
+        },
+        "event_id": "$ptJA2m9yHXrgx4Cl0mFUTVwiBy5gR25Z3oe0pdG33OU"
+    }
+]

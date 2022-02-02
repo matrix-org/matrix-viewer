@@ -77,6 +77,6 @@ async function main() {
 }
 
 
-main();
+//main();
 
 import './main2';
