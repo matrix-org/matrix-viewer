@@ -1,0 +1,159 @@
+[
+    {
+        "content": {
+            "join_rule": "public"
+        },
+        "origin_server_ts": 1630711781351,
+        "sender": "@madlittlemods:matrix.org",
+        "state_key": "",
+        "type": "m.room.join_rules",
+        "unsigned": {
+            "age": 13058602804
+        },
+        "event_id": "$9wq2K5_EvYmVWWfGZuPoSD9qmpmE_Gkr2Cj_AVxiRUU"
+    },
+    {
+        "content": {
+            "history_visibility": "shared"
+        },
+        "origin_server_ts": 1630711781440,
+        "sender": "@madlittlemods:matrix.org",
+        "state_key": "",
+        "type": "m.room.history_visibility",
+        "unsigned": {
+            "age": 13058602715
+        },
+        "event_id": "$22vR5vNHchWfcEh-sew2Lw74xUxloIMbHSYujn919a8"
+    },
+    {
+        "content": {
+            "name": "test-public1"
+        },
+        "origin_server_ts": 1630711781545,
+        "sender": "@madlittlemods:matrix.org",
+        "state_key": "",
+        "type": "m.room.name",
+        "unsigned": {
+            "age": 13058602610
+        },
+        "event_id": "$j3BKW_IekVAFUbGMMkJFfqyoQxXydEg9WoRER_H6WZM"
+    },
+    {
+        "content": {
+            "topic": "some room topic"
+        },
+        "origin_server_ts": 1630711789582,
+        "sender": "@madlittlemods:matrix.org",
+        "state_key": "",
+        "type": "m.room.topic",
+        "unsigned": {
+            "age": 13058594573
+        },
+        "event_id": "$-1F5lNPStFyosnNeCY7ZZ8WJw7Uiny2-ZV96g2cYYLs"
+    },
+    {
+        "content": {
+            "topic": "some room topic (just testing)"
+        },
+        "origin_server_ts": 1630711795159,
+        "sender": "@madlittlemods:matrix.org",
+        "state_key": "",
+        "type": "m.room.topic",
+        "unsigned": {
+            "replaces_state": "$-1F5lNPStFyosnNeCY7ZZ8WJw7Uiny2-ZV96g2cYYLs",
+            "prev_content": {
+                "topic": "some room topic"
+            },
+            "prev_sender": "@madlittlemods:matrix.org",
+            "age": 13058588996
+        },
+        "event_id": "$qgpNxe__zpn3oedI7llrBAEloBtrTru0uquARFTxvck"
+    },
+    {
+        "content": {
+            "body": "y",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "y"
+        },
+        "origin_server_ts": 1643751261463,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 19122692
+        },
+        "event_id": "$p2K-H4KLf9rFsijWtovL_8iBSA0RL6fsmXq1F-nvZZ0"
+    },
+    {
+        "content": {
+            "avatar_url": "mxc://matrix.org/djdngehyFuFlApXWpYotALoK",
+            "displayname": "erictroupetester",
+            "membership": "join"
+        },
+        "origin_server_ts": 1643751279424,
+        "sender": "@erictroupetester:matrix.org",
+        "state_key": "@erictroupetester:matrix.org",
+        "type": "m.room.member",
+        "unsigned": {
+            "age": 19104731
+        },
+        "event_id": "$Me_sKWilYAR3G4KifH1ytusbkCcZN955l63rrj-hj1E"
+    },
+    {
+        "content": {
+            "body": "o",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "o"
+        },
+        "origin_server_ts": 1643751285181,
+        "sender": "@erictroupetester:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 19098974
+        },
+        "event_id": "$dggun2-VMSDr9qT_oT_tl0w_5Xi68A7upvu996CSDjg"
+    },
+    {
+        "content": {
+            "body": "u",
+            "msgtype": "m.text",
+            "org.matrix.msc1767.text": "u"
+        },
+        "origin_server_ts": 1643751287241,
+        "sender": "@madlittlemods:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 19096914
+        },
+        "event_id": "$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q"
+    },
+    {
+        "content": {
+            "body": "> <@madlittlemods:matrix.org> u\n\nupdog",
+            "format": "org.matrix.custom.html",
+            "formatted_body": "<mx-reply><blockquote><a href=\"https://matrix.to/#/!OWqptMTjnQfUWubCid:matrix.org/$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q?via=matrix.org\">In reply to</a> <a href=\"https://matrix.to/#/@madlittlemods:matrix.org\">@madlittlemods:matrix.org</a><br>u</blockquote></mx-reply>updog",
+            "m.relates_to": {
+                "m.in_reply_to": {
+                    "event_id": "$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q"
+                }
+            },
+            "msgtype": "m.text",
+            "org.matrix.msc1767.message": [
+                {
+                    "body": "> <@madlittlemods:matrix.org> u\n\nupdog",
+                    "mimetype": "text/plain"
+                },
+                {
+                    "body": "<mx-reply><blockquote><a href=\"https://matrix.to/#/!OWqptMTjnQfUWubCid:matrix.org/$qK4Rp5t_ovTGstWu49Zw1FiplUBaFG36yenkShvqB0Q?via=matrix.org\">In reply to</a> <a href=\"https://matrix.to/#/@madlittlemods:matrix.org\">@madlittlemods:matrix.org</a><br>u</blockquote></mx-reply>updog",
+                    "mimetype": "text/html"
+                }
+            ]
+        },
+        "origin_server_ts": 1643751346493,
+        "sender": "@erictroupetester:matrix.org",
+        "type": "m.room.message",
+        "unsigned": {
+            "age": 19037662
+        },
+        "event_id": "$FcdFuZLl_G7W8HaQW9INkSrZoP_ZcBKTaYqB0sG4Kns"
+    }
+]
