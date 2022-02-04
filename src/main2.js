@@ -3,7 +3,6 @@ import {
   createNavigation,
   createRouter,
   MediaRepository,
-
   TilesCollection,
   FragmentIdComparer,
   tilesCreator as makeTilesCreator,
@@ -11,11 +10,11 @@ import {
   encodeKey,
   encodeEventIdKey,
   Timeline,
-  TimelineView
-} from "hydrogen-view-sdk";
+  TimelineView,
+} from 'hydrogen-view-sdk';
 
 const roomId = '!OWqptMTjnQfUWubCid:matrix.org';
-import eventsJson from './events2.json'
+import eventsJson from './events2.json';
 
 let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
@@ -24,38 +23,39 @@ function makeEventEntryFromEventJson(roomId, eventJson) {
   console.assert(eventJson);
 
   const eventIndex = eventIndexCounter;
-  const eventEntry = new EventEntry({
-    "fragmentId": 0,
-    "eventIndex": eventIndex, // TODO: What should this be?
-    "roomId": roomId,
-    "event": eventJson,
-    "displayName": "todo",
-    "avatarUrl": "mxc://matrix.org/todo",
-    "key": encodeKey(roomId, 0, eventIndex),
-    "eventIdKey": encodeEventIdKey(roomId, eventJson.event_id)
-  }, fragmentIdComparer);
+  const eventEntry = new EventEntry(
+    {
+      fragmentId: 0,
+      eventIndex: eventIndex, // TODO: What should this be?
+      roomId: roomId,
+      event: eventJson,
+      displayName: 'todo',
+      avatarUrl: 'mxc://matrix.org/todo',
+      key: encodeKey(roomId, 0, eventIndex),
+      eventIdKey: encodeEventIdKey(roomId, eventJson.event_id),
+    },
+    fragmentIdComparer
+  );
 
   eventIndexCounter++;
 
   return eventEntry;
 }
 
-
 async function asdf() {
-  const app = document.querySelector<HTMLDivElement>('#app2')!
-  
+  const app = document.querySelector('#app2');
+
   const config = {};
   const assetPaths = {};
   const platform = new Platform(app, assetPaths, config, { development: import.meta.env.DEV });
 
-  
   const timeline = new Timeline({
-      roomId: roomId,
-      //storage: this._storage,
-      fragmentIdComparer: fragmentIdComparer,
-      clock: platform.clock,
-      logger: platform.logger,
-      //hsApi: this._hsApi
+    roomId: roomId,
+    //storage: this._storage,
+    fragmentIdComparer: fragmentIdComparer,
+    clock: platform.clock,
+    logger: platform.logger,
+    //hsApi: this._hsApi
   });
 
   const tilesCreator = makeTilesCreator({
@@ -63,9 +63,9 @@ async function asdf() {
     roomVM: {
       room: {
         mediaRepository: new MediaRepository({
-          homeserver: 'https://matrix-client.matrix.org'
-        })
-      }
+          homeserver: 'https://matrix-client.matrix.org',
+        }),
+      },
     },
     timeline,
     urlCreator: {
@@ -79,17 +79,15 @@ async function asdf() {
     navigation: {
       segment: () => {
         return 'todo';
-      }
-    }
+      },
+    },
   });
 
-  console.log('eventsJson', eventsJson)
+  console.log('eventsJson', eventsJson);
   const eventEntries = eventsJson.map((eventJson) => {
     return makeEventEntryFromEventJson(roomId, eventJson);
   });
-  console.log('eventEntries', eventEntries)
-
-  
+  console.log('eventEntries', eventEntries);
 
   // We have to use `timeline._setupEntries([])` because it sets
   // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
@@ -106,7 +104,7 @@ async function asdf() {
   tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
 
   // Make the lazy-load images appear
-  for(const tile of tiles) {
+  for (const tile of tiles) {
     tile.notifyVisible();
   }
 
@@ -125,7 +123,9 @@ async function asdf() {
 
   const view = new TimelineView(timelineViewModel);
 
+  console.log('view.mount()', view.mount());
   app.appendChild(view.mount());
+  //app.insertAdjacentHTML('beforeend', view.mount());
 }
 
 asdf();

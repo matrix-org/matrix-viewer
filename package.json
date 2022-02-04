@@ -7,10 +7,13 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "prettier": "^2.5.1",
     "typescript": "^4.4.4",
     "vite": "^2.7.2"
   },
   "dependencies": {
-    "hydrogen-view-sdk": "^0.0.4"
+    "express": "^4.17.2",
+    "hydrogen-view-sdk": "^0.0.4",
+    "linkedom": "^0.13.2"
   }
 }
