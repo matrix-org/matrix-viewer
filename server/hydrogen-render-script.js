@@ -82,11 +82,11 @@ async function asdf() {
     },
   });
 
-  console.log('eventsJson', eventsJson);
+  //console.log('eventsJson', eventsJson);
   const eventEntries = eventsJson.map((eventJson) => {
     return makeEventEntryFromEventJson(roomId, eventJson);
   });
-  console.log('eventEntries', eventEntries);
+  //console.log('eventEntries', eventEntries);
 
   // We have to use `timeline._setupEntries([])` because it sets
   // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
@@ -96,7 +96,7 @@ async function asdf() {
   timeline.entries.subscribe({ onAdd: () => null, onUpdate: () => null });
   timeline.addEntries(eventEntries);
 
-  console.log('timeline.entries', timeline.entries.length, timeline.entries);
+  //console.log('timeline.entries', timeline.entries.length, timeline.entries);
 
   const tiles = new TilesCollection(timeline.entries, tilesCreator);
   // Trigger onSubscribeFirst -> tiles._populateTiles();
@@ -115,7 +115,7 @@ async function asdf() {
 
   const view = new TimelineView(timelineViewModel);
 
-  console.log('view.mount()', view.mount());
+  //console.log('view.mount()', view.mount());
   app.appendChild(view.mount());
   //app.insertAdjacentHTML('beforeend', view.mount());
 }

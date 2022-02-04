@@ -1,6 +1,7 @@
 const vm = require('vm');
 const path = require('path');
 const { readFile } = require('fs').promises;
+const crypto = require('crypto');
 const { parseHTML } = require('linkedom');
 const express = require('express');
 const app = express();
@@ -23,16 +24,28 @@ async function renderToString() {
     </html>
   `);
 
-  // So require(...) works in the vm
-  dom.require = require;
-  // So we can see logs from the underlying vm
-  dom.console = console;
+  if (!dom.crypto) {
+    dom.crypto = crypto.webcrypto;
+  }
+
+  if (!dom.requestAnimationFrame) {
+    dom.requestAnimationFrame = function (cb) {
+      setTimeout(cb, 0);
+    };
+  }
 
   const vmContext = vm.createContext(dom);
   // Make the dom properties available in sub-`require(...)` calls
-  vmContext.global.window = dom;
+  vmContext.global.window = dom.window;
   vmContext.global.document = dom.document;
+  vmContext.global.Node = dom.Node;
   vmContext.global.navigator = dom.navigator;
+  vmContext.global.DOMParser = dom.DOMParser;
+
+  // So require(...) works in the vm
+  vmContext.global.require = require;
+  // So we can see logs from the underlying vm
+  vmContext.global.console = console;
 
   const hydrogenRenderScriptCode = await readFile(
     path.resolve(__dirname, './hydrogen-render-script.js'),
@@ -40,18 +53,20 @@ async function renderToString() {
   );
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode);
   const vmResult = hydrogenRenderScript.runInContext(vmContext);
+  // Wait for everything to render
+  // (waiting on the promise returned from `hydrogen-render-script.js`)
   await vmResult;
-
-  console.log('vmResult', vmResult);
 
   const documentString = dom.document.toString();
   console.log('documentString', documentString);
+  return documentString;
 }
 
 app.get('/', async function (req, res) {
-  await renderToString();
+  const htmlOutput = await renderToString();
 
-  res.send('Hello World');
+  res.set('Content-Type', 'text/html');
+  res.send(htmlOutput);
 });
 
 app.listen(3050);
