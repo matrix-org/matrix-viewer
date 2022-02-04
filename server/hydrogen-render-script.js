@@ -41,7 +41,7 @@ function makeEventEntryFromEventJson(roomId, eventJson) {
   return eventEntry;
 }
 
-async function asdf() {
+async function mountHydrogen() {
   const app = document.querySelector('#app');
 
   const config = {};
@@ -117,7 +117,6 @@ async function asdf() {
 
   //console.log('view.mount()', view.mount());
   app.appendChild(view.mount());
-  //app.insertAdjacentHTML('beforeend', view.mount());
 }
 
-asdf();
+mountHydrogen();

@@ -15,9 +15,6 @@ async function renderToString() {
   const dom = parseHTML(`
     <!doctype html>
     <html lang="en">
-      <head>
-        <title>Hello SSR</title>
-      </head>
       <body>
         <div id="app" class="hydrogen">App container</div>
       </body>
@@ -57,16 +54,35 @@ async function renderToString() {
   // (waiting on the promise returned from `hydrogen-render-script.js`)
   await vmResult;
 
-  const documentString = dom.document.toString();
-  console.log('documentString', documentString);
+  const documentString = dom.document.querySelector('#app').toString();
+  //console.log('documentString', documentString);
   return documentString;
 }
 
-app.get('/', async function (req, res) {
+app.get('/style.css', async function (req, res) {
   const htmlOutput = await renderToString();
 
+  res.set('Content-Type', 'text/css');
+  res.sendFile(require.resolve('hydrogen-view-sdk/style.css'));
+});
+
+app.get('/', async function (req, res) {
+  const hydrogenHtmlOutput = await renderToString();
+
+  const pageHtml = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+      <link href="style.css" rel="stylesheet">
+      </head>
+      <body>
+        ${hydrogenHtmlOutput}
+      </body>
+    </html>
+  `;
+
   res.set('Content-Type', 'text/html');
-  res.send(htmlOutput);
+  res.send(pageHtml);
 });
 
 app.listen(3050);
