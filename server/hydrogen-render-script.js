@@ -13,7 +13,7 @@ const {
 } = require('hydrogen-view-sdk');
 
 const roomId = '!OWqptMTjnQfUWubCid:matrix.org';
-const eventsJson = require('../src/events2.json');
+const eventsJson = require('../fixtures/events2.json');
 
 let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);

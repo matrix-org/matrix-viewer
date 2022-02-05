@@ -16,7 +16,7 @@ async function renderToString() {
     <!doctype html>
     <html lang="en">
       <body>
-        <div id="app" class="hydrogen">App container</div>
+        <div id="app" class="hydrogen"></div>
       </body>
     </html>
   `);
@@ -55,7 +55,6 @@ async function renderToString() {
   await vmResult;
 
   const documentString = dom.document.querySelector('#app').toString();
-  //console.log('documentString', documentString);
   return documentString;
 }
 
