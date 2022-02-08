@@ -1,3 +1,4 @@
+const assert = require('assert');
 const {
   Platform,
   MediaRepository,
@@ -12,14 +13,11 @@ const {
   TimelineView,
 } = require('hydrogen-view-sdk');
 
-const roomId = '!OWqptMTjnQfUWubCid:matrix.org';
-const eventsJson = require('../fixtures/events2.json');
-
 let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
-function makeEventEntryFromEventJson(roomId, eventJson) {
-  console.assert(roomId);
-  console.assert(eventJson);
+function makeEventEntryFromEventJson(eventJson, memberEvent) {
+  assert(eventJson);
+  assert(memberEvent);
 
   const eventIndex = eventIndexCounter;
   const eventEntry = new EventEntry(
@@ -28,8 +26,8 @@ function makeEventEntryFromEventJson(roomId, eventJson) {
       eventIndex: eventIndex, // TODO: What should this be?
       roomId: roomId,
       event: eventJson,
-      displayName: 'todo',
-      avatarUrl: 'mxc://matrix.org/todo',
+      displayName: memberEvent.content && memberEvent.content.displayname,
+      avatarUrl: memberEvent.content && memberEvent.content.avatar_url,
       key: encodeKey(roomId, 0, eventIndex),
       eventIdKey: encodeEventIdKey(roomId, eventJson.event_id),
     },
@@ -42,6 +40,11 @@ function makeEventEntryFromEventJson(roomId, eventJson) {
 }
 
 async function mountHydrogen() {
+  const events = global.INPUT_EVENTS;
+  assert(events);
+  const stateEventMap = global.INPUT_STATE_EVENT_MAP;
+  assert(stateEventMap);
+
   const app = document.querySelector('#app');
 
   const config = {};
@@ -82,9 +85,9 @@ async function mountHydrogen() {
     },
   });
 
-  //console.log('eventsJson', eventsJson);
-  const eventEntries = eventsJson.map((eventJson) => {
-    return makeEventEntryFromEventJson(roomId, eventJson);
+  const eventEntries = events.map((event) => {
+    const memberEvent = stateEventMap[event.user_id];
+    return makeEventEntryFromEventJson(event, memberEvent);
   });
   //console.log('eventEntries', eventEntries);
 

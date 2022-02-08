@@ -1,0 +1,82 @@
+const assert = require('assert');
+const path = require('path');
+const fetch = require('node-fetch');
+const { matrixServerUrl } = require('../config.json');
+const secrets = require('../secrets.json');
+
+const matrixAccessToken = secrets['matrix-access-token'];
+assert(matrixAccessToken);
+
+class HTTPResponseError extends Error {
+  constructor(response, responseText, ...args) {
+    super(
+      `HTTP Error Response: ${response.status} ${response.statusText}: ${responseText}\n\tURL=${response.url}`,
+      ...args
+    );
+    this.response = response;
+  }
+}
+
+const checkStatus = async (response) => {
+  if (response.ok) {
+    // response.status >= 200 && response.status < 300
+    return response;
+  } else {
+    const responseText = await response.text();
+    throw new HTTPResponseError(response, responseText);
+  }
+};
+
+async function fetchEndpoint(endpoint) {
+  const res = await fetch(endpoint, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${matrixAccessToken}`,
+    },
+  });
+  await checkStatus(res);
+  const data = await res.json();
+  return data;
+}
+
+async function fetchEventsForTimestamp(roomId, ts) {
+  const timestampToEventEndpoint = path.join(
+    matrixServerUrl,
+    `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=f`
+  );
+  console.log('timestampToEventEndpoint', timestampToEventEndpoint);
+
+  const timestampToEventResData = await fetchEndpoint(timestampToEventEndpoint);
+  //console.log('timestampToEventResData', timestampToEventResData);
+
+  const eventIdForTimestamp = timestampToEventResData.event_id;
+  assert(eventIdForTimestamp);
+
+  const contextEndpoint = path.join(
+    matrixServerUrl,
+    `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0`
+  );
+  const contextResData = await fetchEndpoint(contextEndpoint);
+  //console.log('contextResData', contextResData);
+
+  const messagesEndpoint = path.join(
+    matrixServerUrl,
+    `_matrix/client/r0/rooms/${roomId}/messages?from=${contextResData.start}&limit=100&filter={"lazy_load_members":true,"include_redundant_members":true}`
+  );
+  const messageResData = await fetchEndpoint(messagesEndpoint);
+  //console.log('messageResData', messageResData);
+
+  const stateEventMap = {};
+  for (const stateEvent of messageResData.state) {
+    if (stateEvent.type === 'm.room.member') {
+      stateEventMap[stateEvent.state_key] = stateEventMap;
+    }
+  }
+
+  return {
+    stateEventMap,
+    events: messageResData.chunk,
+  };
+}
+
+module.exports = fetchEventsForTimestamp;

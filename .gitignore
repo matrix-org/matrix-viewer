@@ -4,3 +4,4 @@ dist
 dist-ssr
 *.local
 secrets.json
+config.json
