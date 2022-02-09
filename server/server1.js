@@ -16,7 +16,7 @@ app.get(
   asyncHandler(async function (req, res) {
     const { events, stateEventMap } = await fetchEventsForTimestamp(
       '!HBehERstyQBxyJDLfR:my.synapse.server',
-      new Date('2022-01-01').getTime()
+      new Date('2022-02-08').getTime()
     );
 
     const hydrogenHtmlOutput = await renderHydrogenToString(events, stateEventMap);

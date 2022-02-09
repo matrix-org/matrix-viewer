@@ -68,7 +68,7 @@ async function fetchEventsForTimestamp(roomId, ts) {
   const stateEventMap = {};
   for (const stateEvent of messageResData.state) {
     if (stateEvent.type === 'm.room.member') {
-      stateEventMap[stateEvent.state_key] = stateEventMap;
+      stateEventMap[stateEvent.state_key] = stateEvent;
     }
   }
 

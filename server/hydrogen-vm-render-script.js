@@ -89,8 +89,16 @@ async function mountHydrogen() {
     },
   });
 
+  // Something we can modify with new state updates as we see them
+  const workingStateEventMap = {
+    ...stateEventMap,
+  };
   const eventEntries = events.map((event) => {
-    const memberEvent = stateEventMap[event.user_id];
+    if (event.type === 'm.room.member') {
+      workingStateEventMap[event.state_key] = event;
+    }
+
+    const memberEvent = workingStateEventMap[event.user_id];
     return makeEventEntryFromEventJson(event, memberEvent);
   });
   //console.log('eventEntries', eventEntries);
