@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const { matrixServerUrl } = require('../config.json');
 const secrets = require('../secrets.json');
 
-const matrixAccessToken = secrets['matrix-access-token'];
+const matrixAccessToken = secrets.matrixAccessToken;
 assert(matrixAccessToken);
 
 class HTTPResponseError extends Error {
@@ -44,8 +44,6 @@ async function fetchEventsForTimestamp(roomId, ts) {
     matrixServerUrl,
     `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=f`
   );
-  console.log('timestampToEventEndpoint', timestampToEventEndpoint);
-
   const timestampToEventResData = await fetchEndpoint(timestampToEventEndpoint);
   //console.log('timestampToEventResData', timestampToEventResData);
 
@@ -61,11 +59,12 @@ async function fetchEventsForTimestamp(roomId, ts) {
 
   const messagesEndpoint = path.join(
     matrixServerUrl,
-    `_matrix/client/r0/rooms/${roomId}/messages?from=${contextResData.start}&limit=100&filter={"lazy_load_members":true,"include_redundant_members":true}`
+    `_matrix/client/r0/rooms/${roomId}/messages?from=${contextResData.start}&limit=50&filter={"lazy_load_members":true,"include_redundant_members":true}`
   );
   const messageResData = await fetchEndpoint(messagesEndpoint);
   //console.log('messageResData', messageResData);
 
+  //console.log('messageResData.state', messageResData.state);
   const stateEventMap = {};
   for (const stateEvent of messageResData.state) {
     if (stateEvent.type === 'm.room.member') {

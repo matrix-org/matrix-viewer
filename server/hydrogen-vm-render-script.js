@@ -13,6 +13,14 @@ const {
   TimelineView,
 } = require('hydrogen-view-sdk');
 
+const events = global.INPUT_EVENTS;
+assert(events);
+const stateEventMap = global.INPUT_STATE_EVENT_MAP;
+assert(stateEventMap);
+const config = global.INPUT_CONFIG;
+assert(config);
+assert(config.matrixServerUrl);
+
 let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
 function makeEventEntryFromEventJson(eventJson, memberEvent) {
@@ -40,17 +48,13 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
 }
 
 async function mountHydrogen() {
-  const events = global.INPUT_EVENTS;
-  assert(events);
-  const stateEventMap = global.INPUT_STATE_EVENT_MAP;
-  assert(stateEventMap);
-
   const app = document.querySelector('#app');
 
-  const config = {};
+  const platformConfig = {};
   const assetPaths = {};
-  const platform = new Platform(app, assetPaths, config, { development: true });
+  const platform = new Platform(app, assetPaths, platformConfig, { development: true });
 
+  // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
     roomId: roomId,
     //storage: this._storage,
@@ -65,7 +69,7 @@ async function mountHydrogen() {
     roomVM: {
       room: {
         mediaRepository: new MediaRepository({
-          homeserver: 'https://matrix-client.matrix.org',
+          homeserver: config.matrixServerUrl,
         }),
       },
     },
@@ -97,6 +101,7 @@ async function mountHydrogen() {
   timeline._setupEntries([]);
   // Make it safe to iterate a derived observable collection
   timeline.entries.subscribe({ onAdd: () => null, onUpdate: () => null });
+  // We use the timeline to setup the relations between entries
   timeline.addEntries(eventEntries);
 
   //console.log('timeline.entries', timeline.entries.length, timeline.entries);

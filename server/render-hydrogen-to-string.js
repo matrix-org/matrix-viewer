@@ -5,6 +5,8 @@ const { readFile } = require('fs').promises;
 const crypto = require('crypto');
 const { parseHTML } = require('linkedom');
 
+const config = require('../config.json');
+
 async function renderToString(events, stateEventMap) {
   assert(events);
   assert(stateEventMap);
@@ -40,6 +42,7 @@ async function renderToString(events, stateEventMap) {
 
   vmContext.global.INPUT_EVENTS = events;
   vmContext.global.INPUT_STATE_EVENT_MAP = stateEventMap;
+  vmContext.global.INPUT_CONFIG = config;
 
   const hydrogenRenderScriptCode = await readFile(
     path.resolve(__dirname, './hydrogen-vm-render-script.js'),
