@@ -15,6 +15,9 @@ const {
   RoomViewModel,
 } = require('hydrogen-view-sdk');
 
+const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
+const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
+
 const roomData = global.INPUT_ROOM_DATA;
 assert(roomData);
 const events = global.INPUT_EVENTS;
@@ -176,7 +179,17 @@ async function mountHydrogen() {
     kind: 'none',
   };
 
-  const view = new RoomView(roomViewModel);
+  const archiveViewModel = {
+    roomViewModel,
+    rightPanelModel: {
+      activeViewModel: {
+        type: 'custom',
+        customView: RightPanelContentView,
+      },
+    },
+  };
+
+  const view = new ArchiveView(archiveViewModel);
 
   //console.log('view.mount()', view.mount());
   app.appendChild(view.mount());

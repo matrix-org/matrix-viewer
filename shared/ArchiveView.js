@@ -1,17 +1,16 @@
-const {
-  TemplateView,
-  RoomView,
-  RightPanelView
-} = require('hydrogen-view-sdk');
+const { TemplateView, RoomView, RightPanelView } = require('hydrogen-view-sdk');
 
-export class ArchiveView extends TemplateView {
+class ArchiveView extends TemplateView {
   render(t, vm) {
-    return t.div({
+    return t.div(
+      {
         className: {
-            "ArchiveView": true,
+          ArchiveView: true,
         },
-    }, [
-
-    ]
+      },
+      [t.view(new RoomView(vm.roomViewModel)), t.view(new RightPanelView(vm.rightPanelModel))]
+    );
   }
 }
+
+module.exports = ArchiveView;

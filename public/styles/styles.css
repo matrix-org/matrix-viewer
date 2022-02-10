@@ -1,8 +1,16 @@
-.room-layout {
-  display: flex;
-}
-
-.right-panel {
-  width: 20%;
-  background-color: #f2f5f8;
+/* Based on .SessionView from Hydrogen */
+.ArchiveView {
+  /* this takes into account whether or not the url bar is hidden on mobile
+  (have tested Firefox Android and Safari on iOS),
+  see https://developers.google.com/web/updates/2016/12/url-bar-resizing */
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template:
+    'status status' auto
+    'middle right' 1fr /
+    1fr 300px;
+  min-height: 0;
+  min-width: 0;
 }

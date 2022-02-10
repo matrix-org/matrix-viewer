@@ -1,4 +1,5 @@
 const assert = require('assert');
+const path = require('path');
 const express = require('express');
 const asyncHandler = require('./lib/express-async-handler');
 const urlJoin = require('./lib/url-join');
@@ -16,6 +17,11 @@ const app = express();
 app.get('/hydrogen-styles.css', async function (req, res) {
   res.set('Content-Type', 'text/css');
   res.sendFile(require.resolve('hydrogen-view-sdk/style.css'));
+});
+
+app.get('/styles.css', async function (req, res) {
+  res.set('Content-Type', 'text/css');
+  res.sendFile(path.join(__dirname, '../public/styles/styles.css'));
 });
 
 app.get(
@@ -97,13 +103,7 @@ app.get(
       <link href="${stylesUrl}" rel="stylesheet">
       </head>
       <body>
-        <div class="room-layout">
-          ${hydrogenHtmlOutput}
-
-          <aside class="right-panel">
-
-          </aside>
-        </div>
+        ${hydrogenHtmlOutput}
       </body>
     </html>
   `;

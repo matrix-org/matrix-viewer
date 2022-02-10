@@ -21,8 +21,6 @@ async function fetchRoomData(roomId) {
     fetchEndpoint(stateAvatarEndpoint),
   ]);
 
-  console.log('stateAvatarResDataOutcome', stateAvatarResDataOutcome);
-
   let name;
   if (stateNameResDataOutcome.reason === undefined) {
     name = stateNameResDataOutcome.value.name;
