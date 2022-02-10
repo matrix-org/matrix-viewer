@@ -1,6 +1,8 @@
 const assert = require('assert');
-const path = require('path');
 const fetch = require('node-fetch');
+
+const urlJoin = require('./lib/url-join');
+
 const { matrixServerUrl } = require('../config.json');
 const secrets = require('../secrets.json');
 
@@ -10,7 +12,7 @@ assert(matrixAccessToken);
 class HTTPResponseError extends Error {
   constructor(response, responseText, ...args) {
     super(
-      `HTTP Error Response: ${response.status} ${response.statusText}: ${responseText}\n\tURL=${response.url}`,
+      `HTTP Error Response: ${response.status} ${response.statusText}: ${responseText}\n    URL=${response.url}`,
       ...args
     );
     this.response = response;
@@ -40,7 +42,10 @@ async function fetchEndpoint(endpoint) {
 }
 
 async function fetchEventsForTimestamp(roomId, ts) {
-  const timestampToEventEndpoint = path.join(
+  assert(roomId);
+  assert(ts);
+
+  const timestampToEventEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=f`
   );
@@ -50,14 +55,14 @@ async function fetchEventsForTimestamp(roomId, ts) {
   const eventIdForTimestamp = timestampToEventResData.event_id;
   assert(eventIdForTimestamp);
 
-  const contextEndpoint = path.join(
+  const contextEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0`
   );
   const contextResData = await fetchEndpoint(contextEndpoint);
   //console.log('contextResData', contextResData);
 
-  const messagesEndpoint = path.join(
+  const messagesEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/messages?from=${contextResData.start}&limit=50&filter={"lazy_load_members":true,"include_redundant_members":true}`
   );
