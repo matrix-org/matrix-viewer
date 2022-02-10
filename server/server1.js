@@ -3,6 +3,7 @@ const express = require('express');
 const asyncHandler = require('./lib/express-async-handler');
 const urlJoin = require('./lib/url-join');
 
+const fetchRoomData = require('./fetch-room-data');
 const fetchEventsForTimestamp = require('./fetch-events-for-timestamp');
 const renderHydrogenToString = require('./render-hydrogen-to-string');
 
@@ -12,7 +13,7 @@ assert(basePath);
 
 const app = express();
 
-app.get('/style.css', async function (req, res) {
+app.get('/hydrogen-styles.css', async function (req, res) {
   res.set('Content-Type', 'text/css');
   res.sendFile(require.resolve('hydrogen-view-sdk/style.css'));
 });
@@ -24,6 +25,8 @@ app.get(
   })
 );
 
+// Based off of the Gitter archive routes,
+// https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
 app.get(
   '/:roomIdOrAlias/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
   asyncHandler(async function (req, res) {
@@ -77,19 +80,30 @@ app.get(
       toTimestamp = Date.UTC(yyyy, mm, dd, toHour);
     }
 
-    const { events, stateEventMap } = await fetchEventsForTimestamp(roomIdOrAlias, fromTimestamp);
+    const [roomData, { events, stateEventMap }] = await Promise.all([
+      fetchRoomData(roomIdOrAlias),
+      fetchEventsForTimestamp(roomIdOrAlias, fromTimestamp),
+    ]);
 
-    const hydrogenHtmlOutput = await renderHydrogenToString(events, stateEventMap);
+    const hydrogenHtmlOutput = await renderHydrogenToString(roomData, events, stateEventMap);
 
-    const styleUrl = urlJoin(basePath, 'style.css');
+    const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
+    const stylesUrl = urlJoin(basePath, 'styles.css');
     const pageHtml = `
     <!doctype html>
     <html lang="en">
       <head>
-      <link href="${styleUrl}" rel="stylesheet">
+      <link href="${hydrogenStylesUrl}" rel="stylesheet">
+      <link href="${stylesUrl}" rel="stylesheet">
       </head>
       <body>
-        ${hydrogenHtmlOutput}
+        <div class="room-layout">
+          ${hydrogenHtmlOutput}
+
+          <aside class="right-panel">
+
+          </aside>
+        </div>
       </body>
     </html>
   `;

@@ -11,8 +11,12 @@ const {
   encodeEventIdKey,
   Timeline,
   TimelineView,
+  RoomView,
+  RoomViewModel,
 } = require('hydrogen-view-sdk');
 
+const roomData = global.INPUT_ROOM_DATA;
+assert(roomData);
 const events = global.INPUT_EVENTS;
 assert(events);
 const stateEventMap = global.INPUT_STATE_EVENT_MAP;
@@ -25,7 +29,6 @@ let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
 function makeEventEntryFromEventJson(eventJson, memberEvent) {
   assert(eventJson);
-  assert(memberEvent);
 
   const eventIndex = eventIndexCounter;
   const eventEntry = new EventEntry(
@@ -34,8 +37,8 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
       eventIndex: eventIndex, // TODO: What should this be?
       roomId: roomId,
       event: eventJson,
-      displayName: memberEvent.content && memberEvent.content.displayname,
-      avatarUrl: memberEvent.content && memberEvent.content.avatar_url,
+      displayName: memberEvent && memberEvent.content && memberEvent.content.displayname,
+      avatarUrl: memberEvent && memberEvent.content && memberEvent.content.avatar_url,
       key: encodeKey(roomId, 0, eventIndex),
       eventIdKey: encodeEventIdKey(roomId, eventJson.event_id),
     },
@@ -64,29 +67,35 @@ async function mountHydrogen() {
     //hsApi: this._hsApi
   });
 
+  const mediaRepository = new MediaRepository({
+    homeserver: config.matrixServerUrl,
+  });
+
+  const urlCreator = {
+    urlUntilSegment: () => {
+      return 'todo';
+    },
+    urlForSegments: () => {
+      return 'todo';
+    },
+  };
+
+  const navigation = {
+    segment: () => {
+      return 'todo';
+    },
+  };
+
   const tilesCreator = makeTilesCreator({
     platform,
     roomVM: {
       room: {
-        mediaRepository: new MediaRepository({
-          homeserver: config.matrixServerUrl,
-        }),
+        mediaRepository,
       },
     },
     timeline,
-    urlCreator: {
-      urlUntilSegment: () => {
-        return 'todo';
-      },
-      urlForSegments: () => {
-        return 'todo';
-      },
-    },
-    navigation: {
-      segment: () => {
-        return 'todo';
-      },
-    },
+    urlCreator,
+    navigation,
   });
 
   // Something we can modify with new state updates as we see them
@@ -129,7 +138,45 @@ async function mountHydrogen() {
     tiles: tiles,
   };
 
-  const view = new TimelineView(timelineViewModel);
+  // const view = new TimelineView(timelineViewModel);
+
+  // const roomViewModel = {
+  //   kind: 'room',
+  //   timelineViewModel,
+  //   composerViewModel: {
+  //     kind: 'none',
+  //   },
+  //   i18n: RoomViewModel.prototype.i18n,
+
+  //   id: roomData.id,
+  //   name: roomData.name,
+  //   avatarUrl(size) {
+  //     return getAvatarHttpUrl(roomData.avatarUrl, size, platform, mediaRepository);
+  //   },
+  // };
+
+  const room = {
+    name: roomData.name,
+    id: roomData.id,
+    avatarUrl: roomData.avatarUrl,
+    avatarColorId: roomData.id,
+    mediaRepository: mediaRepository,
+  };
+
+  const roomViewModel = new RoomViewModel({
+    room,
+    ownUserId: 'xxx',
+    platform,
+    urlCreator,
+    navigation,
+  });
+
+  roomViewModel._timelineVM = timelineViewModel;
+  roomViewModel._composerVM = {
+    kind: 'none',
+  };
+
+  const view = new RoomView(roomViewModel);
 
   //console.log('view.mount()', view.mount());
   app.appendChild(view.mount());

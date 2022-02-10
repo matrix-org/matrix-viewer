@@ -1,0 +1,8 @@
+.room-layout {
+  display: flex;
+}
+
+.right-panel {
+  width: 20%;
+  background-color: #f2f5f8;
+}

@@ -7,7 +7,8 @@ const { parseHTML } = require('linkedom');
 
 const config = require('../config.json');
 
-async function renderToString(events, stateEventMap) {
+async function renderToString(roomData, events, stateEventMap) {
+  assert(roomData);
   assert(events);
   assert(stateEventMap);
 
@@ -40,12 +41,13 @@ async function renderToString(events, stateEventMap) {
   // So we can see logs from the underlying vm
   vmContext.global.console = console;
 
+  vmContext.global.INPUT_ROOM_DATA = roomData;
   vmContext.global.INPUT_EVENTS = events;
   vmContext.global.INPUT_STATE_EVENT_MAP = stateEventMap;
   vmContext.global.INPUT_CONFIG = config;
 
   const hydrogenRenderScriptCode = await readFile(
-    path.resolve(__dirname, './hydrogen-vm-render-script.js'),
+    path.resolve(__dirname, '../shared/hydrogen-vm-render-script.js'),
     'utf8'
   );
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
