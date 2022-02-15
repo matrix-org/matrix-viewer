@@ -13,6 +13,7 @@ const {
   TimelineView,
   RoomView,
   RoomViewModel,
+  ViewModel,
 } = require('hydrogen-view-sdk');
 
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
@@ -179,29 +180,39 @@ async function mountHydrogen() {
     kind: 'none',
   };
 
+  class CalendarViewModel extends ViewModel {
+    constructor(options) {
+      super(options);
+      const { date } = options;
+      this._date = date;
+    }
+
+    get date() {
+      return this._date;
+    }
+
+    prevMonth() {
+      const prevMonthDate = new Date(this._date);
+      prevMonthDate.setMonth(this._date.getMonth() - 1);
+      this._date = prevMonthDate;
+      this.emitChange('date');
+    }
+
+    nextMonth() {
+      const nextMonthDate = new Date(this._date);
+      nextMonthDate.setMonth(this._date.getMonth() + 1);
+      this._date = nextMonthDate;
+      this.emitChange('date');
+    }
+  }
+
   const archiveViewModel = {
     roomViewModel,
     rightPanelModel: {
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
-
-        calendarViewModel: {
-          date: new Date(),
-          prevMonth: function () {
-            console.log('prevMonth');
-            const prevMonthDate = new Date(this.date);
-            prevMonthDate.setMonth(this.date.getMonth() - 1);
-            console.log('prevMonthDate', prevMonthDate);
-            this.date = prevMonthDate;
-          },
-          nextMonth: function () {
-            console.log('nextMonth');
-            const nextMonthDate = new Date(this.date);
-            nextMonthDate.setMonth(this.date.getMonth() + 1);
-            this.date = nextMonthDate;
-          },
-        },
+        calendarViewModel: new CalendarViewModel({ date: new Date() }),
       },
     },
   };

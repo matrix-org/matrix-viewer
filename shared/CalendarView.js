@@ -34,9 +34,6 @@ for (let i = 0; i < 7; i++) {
 
 class CalendarView extends TemplateView {
   render(t, vm) {
-    const date = vm.date;
-    console.log('CalendarView vm', vm);
-
     return t.div({ className: { CalendarView: true } }, [
       t.div({ className: { CalendarView_heading: true } }, [
         t.button(
@@ -62,38 +59,43 @@ class CalendarView extends TemplateView {
           ['\u276F']
         ),
       ]),
-      t.ol(
-        { className: { CalendarView_calendar: true } },
-        [].concat(
-          Object.keys(DAYS_OF_WEEK).map((dayKey) => {
-            return t.li({ className: { CalendarView_dayName: true } }, [DAYS_OF_WEEK[dayKey]]);
-          }),
-          (() => {
-            let dayNodes = [];
-            for (let i = 0; i < numDaysInMonthForDate(date); i++) {
-              // We only need to calculate the day offset for the first day of the month
-              let dayNumber;
-              if (i === 0) {
-                const dayNumberDate = new Date(date);
-                dayNumberDate.setDate(i + 1);
-                // day number from 0 (monday) to 6 (sunday)
-                dayNumber = dayNumberDate.getDay();
-              }
+      t.map(
+        (vm) => vm.date,
+        (date, t) => {
+          return t.ol(
+            { className: { CalendarView_calendar: true } },
+            [].concat(
+              Object.keys(DAYS_OF_WEEK).map((dayKey) => {
+                return t.li({ className: { CalendarView_dayName: true } }, [DAYS_OF_WEEK[dayKey]]);
+              }),
+              (() => {
+                let dayNodes = [];
+                for (let i = 0; i < numDaysInMonthForDate(date); i++) {
+                  // We only need to calculate the day offset for the first day of the month
+                  let dayNumber;
+                  if (i === 0) {
+                    const dayNumberDate = new Date(date);
+                    dayNumberDate.setDate(i + 1);
+                    // day number from 0 (monday) to 6 (sunday)
+                    dayNumber = dayNumberDate.getDay();
+                  }
 
-              dayNodes.push(
-                t.li(
-                  {
-                    className: { CalendarView_day: true },
-                    style: i === 0 ? `grid-column-start: ${dayNumber + 1};` : null,
-                  },
-                  [String(i + 1)]
-                )
-              );
-            }
+                  dayNodes.push(
+                    t.li(
+                      {
+                        className: { CalendarView_day: true },
+                        style: i === 0 ? `grid-column-start: ${dayNumber + 1};` : null,
+                      },
+                      [String(i + 1)]
+                    )
+                  );
+                }
 
-            return dayNodes;
-          })()
-        )
+                return dayNodes;
+              })()
+            )
+          );
+        }
       ),
     ]);
   }
