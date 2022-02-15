@@ -14,3 +14,48 @@
   min-height: 0;
   min-width: 0;
 }
+
+.CalendarView {
+  max-width: 280px;
+  font: 100% system-ui;
+}
+
+.CalendarView_heading {
+  display: flex;
+  justify-content: space-between;
+}
+
+.CalendarView_heading_prevButton,
+.CalendarView_heading_nextButton {
+  padding-left: 2em;
+  padding-right: 2em;
+
+  background: none;
+  border: 0;
+}
+
+.CalendarView_heading_prevButton:hover,
+.CalendarView_heading_nextButton:hover {
+  cursor: pointer;
+}
+
+.CalendarView_heading_text {
+}
+
+.CalendarView_calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.CalendarView_dayName {
+  background: #eee;
+}
+
+.CalendarView_day {
+  padding: 2px;
+}

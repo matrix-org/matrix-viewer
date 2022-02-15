@@ -1,5 +1,7 @@
 const { TemplateView } = require('hydrogen-view-sdk');
 
+const CalendarView = require('matrix-public-archive-shared/CalendarView');
+
 class RightPanelContentView extends TemplateView {
   render(t, vm) {
     return t.div(
@@ -8,7 +10,7 @@ class RightPanelContentView extends TemplateView {
           todo: true,
         },
       },
-      [t.div('test')]
+      [t.div('test'), t.view(new CalendarView(vm.calendarViewModel))]
     );
   }
 }

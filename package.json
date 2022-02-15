@@ -12,8 +12,8 @@
   "dependencies": {
     "express": "^4.17.2",
     "hydrogen-view-sdk": "^0.0.4",
-    "linkedom": "^0.13.2",
-    "node-fetch": "^2.6.7",
-    "matrix-public-archive-shared": "file:./shared/"
+    "linkedom": "^0.14.1",
+    "matrix-public-archive-shared": "file:./shared/",
+    "node-fetch": "^2.6.7"
   }
 }

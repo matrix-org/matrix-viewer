@@ -185,6 +185,20 @@ async function mountHydrogen() {
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
+
+        calendarViewModel: {
+          date: new Date(),
+          prevMonth: function () {
+            const prevMonthDate = new Date(this.date);
+            prevMonthDate.setMonth(displayedDate.getMonth() - 1);
+            this.date = prevMonthDate;
+          },
+          nextMOnth: function () {
+            const nextMonthDate = new Date(this.date);
+            nextMonthDate.setMonth(displayedDate.getMonth() + 1);
+            this.date = nextMonthDate;
+          },
+        },
       },
     },
   };
