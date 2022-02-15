@@ -2,6 +2,8 @@
   "name": "matrix-public-archive",
   "version": "0.0.0",
   "scripts": {
+    "start-dev": "node server/start-dev.js",
+    "nodemon": "nodemon",
     "vite": "vite"
   },
   "devDependencies": {
@@ -9,6 +11,8 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
+    "merge-options": "^3.0.4",
+    "nodemon": "^2.0.15",
     "prettier": "^2.5.1",
     "vite": "^2.8.2"
   },
