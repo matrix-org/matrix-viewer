@@ -1,3 +1,5 @@
+'use strict';
+
 const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
@@ -223,4 +225,7 @@ async function mountHydrogen() {
   app.replaceChildren(view.mount());
 }
 
+// N.B.: When we run this in a `vm`, it will return the last statement. It's
+// important to leave this as the last statement so we can await the promise it
+// returns and signal that all of the async tasks completed.
 mountHydrogen();

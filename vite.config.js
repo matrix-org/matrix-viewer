@@ -1,4 +1,6 @@
 // vite.config.js
+'use strict';
+
 const path = require('path');
 const { defineConfig } = require('vite');
 

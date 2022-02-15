@@ -1,3 +1,5 @@
+'use strict';
+
 const { TemplateView, RoomView, RightPanelView } = require('hydrogen-view-sdk');
 
 class ArchiveView extends TemplateView {

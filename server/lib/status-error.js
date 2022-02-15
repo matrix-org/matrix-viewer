@@ -3,8 +3,9 @@
 var http = require('http');
 
 /* Create an error as per http://bluebirdjs.com/docs/api/catch.html */
-function StatusError(status, message) {
-  if (!message) {
+function StatusError(status, inputMessage) {
+  let message = inputMessage;
+  if (!inputMessage) {
     message = http.STATUS_CODES[status] || http.STATUS_CODES['500'];
   }
 
