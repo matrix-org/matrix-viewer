@@ -24,6 +24,11 @@ app.get('/styles.css', async function (req, res) {
   res.sendFile(path.join(__dirname, '../public/styles/styles.css'));
 });
 
+app.get('/matrix-public-archive.js', async function (req, res) {
+  res.set('Content-Type', 'text/css');
+  res.sendFile(path.join(__dirname, '../dist/matrix-public-archive.es.js'));
+});
+
 app.get(
   '/:roomIdOrAlias/event/:eventId',
   asyncHandler(async function (req, res) {
@@ -95,6 +100,7 @@ app.get(
 
     const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, 'styles.css');
+    const jsBundleUrl = urlJoin(basePath, 'matrix-public-archive.js');
     const pageHtml = `
     <!doctype html>
     <html lang="en">
@@ -104,6 +110,7 @@ app.get(
       </head>
       <body>
         ${hydrogenHtmlOutput}
+        <script type="text/javascript" src="${jsBundleUrl}"></script>
       </body>
     </html>
   `;

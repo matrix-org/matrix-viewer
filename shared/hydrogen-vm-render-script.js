@@ -1,4 +1,4 @@
-const assert = require('assert');
+const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
   MediaRepository,
@@ -38,12 +38,12 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
     {
       fragmentId: 0,
       eventIndex: eventIndex, // TODO: What should this be?
-      roomId: roomId,
+      roomId: roomData.id,
       event: eventJson,
       displayName: memberEvent && memberEvent.content && memberEvent.content.displayname,
       avatarUrl: memberEvent && memberEvent.content && memberEvent.content.avatar_url,
-      key: encodeKey(roomId, 0, eventIndex),
-      eventIdKey: encodeEventIdKey(roomId, eventJson.event_id),
+      key: encodeKey(roomData.id, 0, eventIndex),
+      eventIdKey: encodeEventIdKey(roomData.id, eventJson.event_id),
     },
     fragmentIdComparer
   );
@@ -62,7 +62,7 @@ async function mountHydrogen() {
 
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
-    roomId: roomId,
+    roomId: roomData.id,
     //storage: this._storage,
     fragmentIdComparer: fragmentIdComparer,
     clock: platform.clock,
@@ -191,14 +191,14 @@ async function mountHydrogen() {
           prevMonth: function () {
             console.log('prevMonth');
             const prevMonthDate = new Date(this.date);
-            prevMonthDate.setMonth(displayedDate.getMonth() - 1);
+            prevMonthDate.setMonth(this.date.getMonth() - 1);
             console.log('prevMonthDate', prevMonthDate);
             this.date = prevMonthDate;
           },
           nextMonth: function () {
             console.log('nextMonth');
             const nextMonthDate = new Date(this.date);
-            nextMonthDate.setMonth(displayedDate.getMonth() + 1);
+            nextMonthDate.setMonth(this.date.getMonth() + 1);
             this.date = nextMonthDate;
           },
         },
@@ -209,7 +209,7 @@ async function mountHydrogen() {
   const view = new ArchiveView(archiveViewModel);
 
   //console.log('view.mount()', view.mount());
-  app.appendChild(view.mount());
+  app.replaceChildren(view.mount());
 }
 
 mountHydrogen();
