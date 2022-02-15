@@ -18,13 +18,13 @@ const {
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 
-const roomData = global.INPUT_ROOM_DATA;
+const roomData = window.matrixPublicArchiveContext.roomData;
 assert(roomData);
-const events = global.INPUT_EVENTS;
+const events = window.matrixPublicArchiveContext.events;
 assert(events);
-const stateEventMap = global.INPUT_STATE_EVENT_MAP;
+const stateEventMap = window.matrixPublicArchiveContext.stateEventMap;
 assert(stateEventMap);
-const config = global.INPUT_CONFIG;
+const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 
@@ -189,11 +189,14 @@ async function mountHydrogen() {
         calendarViewModel: {
           date: new Date(),
           prevMonth: function () {
+            console.log('prevMonth');
             const prevMonthDate = new Date(this.date);
             prevMonthDate.setMonth(displayedDate.getMonth() - 1);
+            console.log('prevMonthDate', prevMonthDate);
             this.date = prevMonthDate;
           },
-          nextMOnth: function () {
+          nextMonth: function () {
+            console.log('nextMonth');
             const nextMonthDate = new Date(this.date);
             nextMonthDate.setMonth(displayedDate.getMonth() + 1);
             this.date = nextMonthDate;

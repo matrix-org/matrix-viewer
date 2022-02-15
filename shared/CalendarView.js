@@ -35,6 +35,8 @@ for (let i = 0; i < 7; i++) {
 class CalendarView extends TemplateView {
   render(t, vm) {
     const date = vm.date;
+    console.log('CalendarView vm', vm);
+
     return t.div({ className: { CalendarView: true } }, [
       t.div({ className: { CalendarView_heading: true } }, [
         t.button(
@@ -44,9 +46,14 @@ class CalendarView extends TemplateView {
           },
           ['\u276E']
         ),
-        t.h4({ className: { CalendarView_heading_text: true } }, [
-          date.toLocaleString('default', { year: 'numeric', month: 'long' }),
-        ]),
+        t.map(
+          (vm) => vm.date,
+          (date, t) => {
+            return t.h4({ className: { CalendarView_heading_text: true } }, [
+              date.toLocaleString('default', { year: 'numeric', month: 'long' }),
+            ]);
+          }
+        ),
         t.button(
           {
             className: { CalendarView_heading_nextButton: true },

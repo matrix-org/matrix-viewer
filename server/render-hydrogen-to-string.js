@@ -14,7 +14,8 @@ async function renderToString(roomData, events, stateEventMap) {
 
   const dom = parseHTML(`
     <!doctype html>
-    <html lang="en">
+    <html>
+      <head></head>
       <body>
         <div id="app" class="hydrogen"></div>
       </body>
@@ -26,6 +27,23 @@ async function renderToString(roomData, events, stateEventMap) {
       setTimeout(cb, 0);
     };
   }
+
+  // Define this for the SSR context
+  dom.window.matrixPublicArchiveContext = {
+    roomData,
+    events,
+    stateEventMap,
+    config,
+  };
+  // Serialize it for when we run this again client-side
+  dom.document.body.insertAdjacentHTML(
+    'beforeend',
+    `
+    <script type="text/javascript">
+      window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
+    </script>
+    `
+  );
 
   const vmContext = vm.createContext(dom);
   // Make the dom properties available in sub-`require(...)` calls
@@ -41,11 +59,6 @@ async function renderToString(roomData, events, stateEventMap) {
   // So we can see logs from the underlying vm
   vmContext.global.console = console;
 
-  vmContext.global.INPUT_ROOM_DATA = roomData;
-  vmContext.global.INPUT_EVENTS = events;
-  vmContext.global.INPUT_STATE_EVENT_MAP = stateEventMap;
-  vmContext.global.INPUT_CONFIG = config;
-
   const hydrogenRenderScriptCode = await readFile(
     path.resolve(__dirname, '../shared/hydrogen-vm-render-script.js'),
     'utf8'
@@ -58,7 +71,7 @@ async function renderToString(roomData, events, stateEventMap) {
   // (waiting on the promise returned from `hydrogen-render-script.js`)
   await vmResult;
 
-  const documentString = dom.document.querySelector('#app').toString();
+  const documentString = dom.document.body.toString();
   return documentString;
 }
 
