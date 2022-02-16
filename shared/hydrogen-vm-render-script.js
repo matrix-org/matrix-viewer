@@ -92,12 +92,18 @@ async function mountHydrogen() {
     },
   };
 
+  const room = {
+    name: roomData.name,
+    id: roomData.id,
+    avatarUrl: roomData.avatarUrl,
+    avatarColorId: roomData.id,
+    mediaRepository: mediaRepository,
+  };
+
   const tilesCreator = makeTilesCreator({
     platform,
     roomVM: {
-      room: {
-        mediaRepository,
-      },
+      room,
     },
     timeline,
     urlCreator,
@@ -160,14 +166,6 @@ async function mountHydrogen() {
   //     return getAvatarHttpUrl(roomData.avatarUrl, size, platform, mediaRepository);
   //   },
   // };
-
-  const room = {
-    name: roomData.name,
-    id: roomData.id,
-    avatarUrl: roomData.avatarUrl,
-    avatarColorId: roomData.id,
-    mediaRepository: mediaRepository,
-  };
 
   const roomViewModel = new RoomViewModel({
     room,
