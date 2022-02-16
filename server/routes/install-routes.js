@@ -64,12 +64,12 @@ function installRoutes(app) {
 
   app.get('/styles.css', async function (req, res) {
     res.set('Content-Type', 'text/css');
-    res.sendFile(path.join(__dirname, '../public/styles/styles.css'));
+    res.sendFile(path.join(__dirname, '../../public/styles/styles.css'));
   });
 
   app.get('/matrix-public-archive.js', async function (req, res) {
     res.set('Content-Type', 'text/css');
-    res.sendFile(path.join(__dirname, '../dist/matrix-public-archive.es.js'));
+    res.sendFile(path.join(__dirname, '../../dist/matrix-public-archive.es.js'));
   });
 
   app.get(
