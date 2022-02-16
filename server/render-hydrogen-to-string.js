@@ -54,6 +54,8 @@ async function renderToString(roomData, events, stateEventMap) {
   vmContext.global.Node = dom.Node;
   vmContext.global.navigator = dom.navigator;
   vmContext.global.DOMParser = dom.DOMParser;
+  // Make sure `webcrypto` exists since it was only introduced in Node.js v17
+  assert(crypto.webcrypto);
   vmContext.global.crypto = crypto.webcrypto;
 
   // So require(...) works in the vm
