@@ -12,8 +12,8 @@ const {
   encodeKey,
   encodeEventIdKey,
   Timeline,
-  TimelineView,
-  RoomView,
+  // TimelineView,
+  // RoomView,
   RoomViewModel,
   ViewModel,
 } = require('hydrogen-view-sdk');

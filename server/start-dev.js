@@ -1,4 +1,5 @@
 'use strict';
+
 const path = require('path');
 const nodemon = require('nodemon');
 const { build } = require('vite');

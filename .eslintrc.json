@@ -86,11 +86,7 @@
     ],
     "node/no-missing-require": "error",
     "node/no-missing-import": "error",
-    "node/no-unsupported-features": [
-      "error",
-      {
-        "version": 10
-      }
-    ]
+    "node/no-unsupported-features/es-syntax": "error",
+    "node/no-unsupported-features/es-builtins": "error"
   }
 }

@@ -14,9 +14,7 @@ const config = require('../../config.json');
 const basePath = config.basePath;
 assert(basePath);
 
-function parseArchiveRangeFromReq(req, res) {
-  const roomIdOrAlias = req.params.roomIdOrAlias;
-
+function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
   // Month is the only zero-based index in this group
   const mm = parseInt(req.params.mm, 10) - 1;
@@ -39,23 +37,6 @@ function parseArchiveRangeFromReq(req, res) {
     if (Number.isNaN(fromHour) || fromHour < 0 || fromHour > 23) {
       throw new StatusError(404, 'From hour can only be in range 0-23');
     }
-
-    // Currently we force the range to always be 1 hour
-    // If the format isn't correct, redirect to the correct hour range
-    if (toHour !== fromHour + 1) {
-      res.redirect(
-        urlJoin(
-          basePath,
-          roomIdOrAlias,
-          'date',
-          req.params.yyyy,
-          req.params.mm,
-          req.params.dd,
-          `${fromHour}-${fromHour + 1}`
-        )
-      );
-      return;
-    }
   }
 
   const fromTimestamp = Date.UTC(yyyy, mm, dd, fromHour);
@@ -70,6 +51,8 @@ function parseArchiveRangeFromReq(req, res) {
     yyyy,
     mm,
     dd,
+    fromHour,
+    toHour,
   };
 }
 
@@ -104,7 +87,24 @@ function installRoutes(app) {
       const roomIdOrAlias = req.params.roomIdOrAlias;
       assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
 
-      const { fromTimestamp, toTimestamp } = parseArchiveRangeFromReq(req, res);
+      const { fromTimestamp, fromHour, toHour } = parseArchiveRangeFromReq(req);
+
+      // Currently we force the range to always be 1 hour
+      // If the format isn't correct, redirect to the correct hour range
+      if (toHour !== fromHour + 1) {
+        res.redirect(
+          urlJoin(
+            basePath,
+            roomIdOrAlias,
+            'date',
+            req.params.yyyy,
+            req.params.mm,
+            req.params.dd,
+            `${fromHour}-${fromHour + 1}`
+          )
+        );
+        return;
+      }
 
       const [roomData, { events, stateEventMap }] = await Promise.all([
         fetchRoomData(roomIdOrAlias),

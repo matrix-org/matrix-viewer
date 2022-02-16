@@ -1,3 +1,5 @@
+'use strict';
+
 const { TemplateView } = require('hydrogen-view-sdk');
 
 // Month in JavaScript is 0-indexed (January is 0, February is 1, etc),

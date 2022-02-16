@@ -1,3 +1,5 @@
+'use strict';
+
 const assert = require('assert');
 const vm = require('vm');
 const path = require('path');

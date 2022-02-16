@@ -3,8 +3,15 @@
   "version": "0.0.0",
   "scripts": {
     "start-dev": "node server/start-dev.js",
+    "lint": "eslint **/*.js",
+
     "nodemon": "nodemon",
-    "vite": "vite"
+    "vite": "vite",
+    "eslint": "eslint",
+    "prettier": "prettier"
+  },
+  "engines" : { 
+    "node" : ">=17.0.0" 
   },
   "devDependencies": {
     "eslint": "^8.8.0",

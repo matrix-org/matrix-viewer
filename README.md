@@ -24,3 +24,8 @@ the messages from a Matrix homeserver.
 
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
+
+## Prerequisites
+
+- Node.js v17
+  - We only need v17 because it includes `require('crypto').webcrypto`

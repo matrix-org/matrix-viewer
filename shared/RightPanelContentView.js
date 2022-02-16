@@ -1,3 +1,5 @@
+'use strict';
+
 const { TemplateView } = require('hydrogen-view-sdk');
 
 const CalendarView = require('matrix-public-archive-shared/CalendarView');

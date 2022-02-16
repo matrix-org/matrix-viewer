@@ -1,3 +1,5 @@
+'use strict';
+
 function assert(value, message) {
   console.assert(value, message);
   if (!value) {
