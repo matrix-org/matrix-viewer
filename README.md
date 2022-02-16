@@ -27,5 +27,5 @@ the maintenance burden of supporting more event types in Hydrogen.
 
 ## Prerequisites
 
-- Node.js v17
-  - We only need v17 because it includes `require('crypto').webcrypto`
+- Node.js v16
+  - We only need v16 because it includes [`require('crypto').webcrypto.subtle`](https://nodejs.org/docs/latest-v16.x/api/webcrypto.html#cryptosubtle) for [Matrix encryption (olm) which can't be disabled in Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
