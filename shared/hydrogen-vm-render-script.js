@@ -4,6 +4,8 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
   MediaRepository,
+  createNavigation,
+  createRouter,
 
   TilesCollection,
   FragmentIdComparer,
@@ -17,6 +19,7 @@ const {
   RoomViewModel,
   ViewModel,
 } = require('hydrogen-view-sdk');
+const urlJoin = require('url-join');
 
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
@@ -30,6 +33,7 @@ assert(stateEventMap);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
+assert(config.basePath);
 
 let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
@@ -63,6 +67,13 @@ async function mountHydrogen() {
   const assetPaths = {};
   const platform = new Platform(app, assetPaths, platformConfig, { development: true });
 
+  const navigation = createNavigation();
+  platform.setNavigation(navigation);
+  const urlRouter = createRouter({
+    navigation: navigation,
+    history: platform.history,
+  });
+
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
     roomId: roomData.id,
@@ -77,20 +88,20 @@ async function mountHydrogen() {
     homeserver: config.matrixServerUrl,
   });
 
-  const urlCreator = {
-    urlUntilSegment: () => {
-      return 'todo';
-    },
-    urlForSegments: () => {
-      return 'todo';
-    },
-  };
+  // const urlCreator = {
+  //   urlUntilSegment: () => {
+  //     return 'todo';
+  //   },
+  //   urlForSegments: () => {
+  //     return 'todo';
+  //   },
+  // };
 
-  const navigation = {
-    segment: () => {
-      return 'todo';
-    },
-  };
+  // const navigation = {
+  //   segment: () => {
+  //     return 'todo';
+  //   },
+  // };
 
   const room = {
     name: roomData.name,
@@ -106,7 +117,7 @@ async function mountHydrogen() {
       room,
     },
     timeline,
-    urlCreator,
+    urlCreator: urlRouter,
     navigation,
   });
 
@@ -171,7 +182,7 @@ async function mountHydrogen() {
     room,
     ownUserId: 'xxx',
     platform,
-    urlCreator,
+    urlCreator: urlRouter,
     navigation,
   });
 
@@ -189,6 +200,14 @@ async function mountHydrogen() {
 
     get date() {
       return this._date;
+    }
+
+    linkForDate(date) {
+      // Gives the date in YYYY-mm-dd format.
+      // date.toISOString() -> 2022-02-16T23:20:04.709Z
+      const urlDate = date.toISOString().split('T')[0].replaceAll('-', '/');
+
+      return urlJoin(config.basePath, `${room.id}/date/${urlDate}`);
     }
 
     prevMonth() {

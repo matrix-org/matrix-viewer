@@ -4,14 +4,13 @@
   "scripts": {
     "start-dev": "node server/start-dev.js",
     "lint": "eslint **/*.js",
-
     "nodemon": "nodemon",
     "vite": "vite",
     "eslint": "eslint",
     "prettier": "prettier"
   },
-  "engines" : { 
-    "node" : ">=16.0.0" 
+  "engines": {
+    "node": ">=16.0.0"
   },
   "devDependencies": {
     "eslint": "^8.8.0",
@@ -28,6 +27,7 @@
     "hydrogen-view-sdk": "^0.0.4",
     "linkedom": "^0.14.1",
     "matrix-public-archive-shared": "file:./shared/",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "url-join": "^4.0.1"
   }
 }

@@ -2,8 +2,8 @@
 
 const assert = require('assert');
 const path = require('path');
+const urlJoin = require('url-join');
 const asyncHandler = require('../lib/express-async-handler');
-const urlJoin = require('../lib/url-join');
 const StatusError = require('../lib/status-error');
 
 const fetchRoomData = require('../fetch-room-data');
@@ -51,6 +51,7 @@ function parseArchiveRangeFromReq(req) {
     yyyy,
     mm,
     dd,
+    hourRange,
     fromHour,
     toHour,
   };
@@ -75,6 +76,8 @@ function installRoutes(app) {
   app.get(
     '/:roomIdOrAlias/event/:eventId',
     asyncHandler(async function (req, res) {
+      // TODO: Fetch event to get `origin_server_ts` and redirect to
+      // /!roomId/2022/01/01?at=$eventId
       res.send('todo');
     })
   );
@@ -87,11 +90,11 @@ function installRoutes(app) {
       const roomIdOrAlias = req.params.roomIdOrAlias;
       assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
 
-      const { fromTimestamp, fromHour, toHour } = parseArchiveRangeFromReq(req);
+      const { fromTimestamp, hourRange, fromHour, toHour } = parseArchiveRangeFromReq(req);
 
-      // Currently we force the range to always be 1 hour
-      // If the format isn't correct, redirect to the correct hour range
-      if (toHour !== fromHour + 1) {
+      // If the hourRange is defined, we force the range to always be 1 hour. If
+      // the format isn't correct, redirect to the correct hour range
+      if (hourRange && toHour !== fromHour + 1) {
         res.redirect(
           urlJoin(
             basePath,
@@ -105,6 +108,9 @@ function installRoutes(app) {
         );
         return;
       }
+
+      // TODO: Highlight tile that matches ?at=$xxx
+      //const aroundId = req.query.at;
 
       const [roomData, { events, stateEventMap }] = await Promise.all([
         fetchRoomData(roomIdOrAlias),

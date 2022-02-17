@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const urlJoin = require('./lib/url-join');
+const urlJoin = require('url-join');
 const fetchEndpoint = require('./lib/fetch-endpoint');
 
 const { matrixServerUrl } = require('../config.json');

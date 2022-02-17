@@ -73,22 +73,23 @@ class CalendarView extends TemplateView {
               (() => {
                 let dayNodes = [];
                 for (let i = 0; i < numDaysInMonthForDate(date); i++) {
-                  // We only need to calculate the day offset for the first day of the month
-                  let dayNumber;
-                  if (i === 0) {
-                    const dayNumberDate = new Date(date);
-                    dayNumberDate.setDate(i + 1);
-                    // day number from 0 (monday) to 6 (sunday)
-                    dayNumber = dayNumberDate.getDay();
-                  }
+                  const dayNumberDate = new Date(date);
+                  dayNumberDate.setDate(i);
+
+                  // day number from 0 (monday) to 6 (sunday)
+                  const dayNumber = dayNumberDate.getDay();
+
+                  // +1 because we're going from 0-based day to 1-based `grid-column-start`
+                  // +1 because we actually start the week on Sunday(6) instead of Monday(0)
+                  const gridColumnStart = dayNumber + 1 + 1;
 
                   dayNodes.push(
                     t.li(
                       {
                         className: { CalendarView_day: true },
-                        style: i === 0 ? `grid-column-start: ${dayNumber + 1};` : null,
+                        style: i === 0 ? `grid-column-start: ${gridColumnStart};` : null,
                       },
-                      [String(i + 1)]
+                      [t.a({ href: vm.linkForDate(dayNumberDate) }, [String(i + 1)])]
                     )
                   );
                 }

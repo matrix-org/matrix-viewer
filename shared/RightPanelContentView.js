@@ -12,7 +12,14 @@ class RightPanelContentView extends TemplateView {
           todo: true,
         },
       },
-      [t.div('test'), t.view(new CalendarView(vm.calendarViewModel))]
+      [
+        t.div('test'),
+        t.input({
+          type: 'date',
+          value: vm.calendarViewModel.date.toISOString().split('T')[0],
+        }),
+        t.view(new CalendarView(vm.calendarViewModel)),
+      ]
     );
   }
 }
