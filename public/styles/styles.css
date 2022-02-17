@@ -1,3 +1,13 @@
+/* apply a natural box layout model to all elements, but allowing components to change */
+html {
+  box-sizing: border-box;
+}
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
 /* Based on .SessionView from Hydrogen */
 .ArchiveView {
   /* this takes into account whether or not the url bar is hidden on mobile
@@ -61,8 +71,26 @@
 }
 
 .CalendarView_dayLink {
+  display: inline-block;
+  width: 100%;
+  padding: 2px 5px;
+
+  text-decoration: none;
+}
+
+.CalendarView_dayLink:hover {
+  background-color: rgba(141, 151, 165, 0.1);
 }
 
 .CalendarView_dayLink_active {
-  background-color: #f00;
+  background-color: #0dbd8b;
+  color: #ffffff;
+}
+
+.CalendarView_dayLink_active:hover {
+  background-color: #0a8f69;
+}
+
+.CalendarView_dayLink_disabled {
+  opacity: 0.5;
 }

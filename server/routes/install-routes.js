@@ -3,6 +3,7 @@
 const assert = require('assert');
 const path = require('path');
 const urlJoin = require('url-join');
+const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
@@ -58,11 +59,18 @@ function parseArchiveRangeFromReq(req) {
 }
 
 function installRoutes(app) {
+  // We have to disable no-missing-require lint because it doesn't take into
+  // account `package.json`. `exports`, see
+  // https://github.com/mysticatea/eslint-plugin-node/issues/255
+  // eslint-disable-next-line node/no-missing-require
+  app.use(express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/'))));
+
   app.get('/hydrogen-styles.css', async function (req, res) {
     res.set('Content-Type', 'text/css');
     res.sendFile(require.resolve('hydrogen-view-sdk/style.css'));
   });
 
+  // Our own archive app styles
   app.get('/styles.css', async function (req, res) {
     res.set('Content-Type', 'text/css');
     res.sendFile(path.join(__dirname, '../../public/styles/styles.css'));

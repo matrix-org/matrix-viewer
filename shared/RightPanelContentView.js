@@ -15,7 +15,7 @@ class RightPanelContentView extends TemplateView {
       [
         t.div('test'),
         t.input({
-          type: 'date',
+          type: 'month',
           value: vm.calendarViewModel.activeDate.toISOString().split('T')[0],
         }),
         t.view(new CalendarView(vm.calendarViewModel)),

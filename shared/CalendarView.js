@@ -101,6 +101,7 @@ class CalendarView extends TemplateView {
                     t.li(
                       {
                         className: { CalendarView_day: true },
+                        // Offset the first day of the month to the proper day of the week
                         style: i === 0 ? `grid-column-start: ${gridColumnStart};` : null,
                       },
                       [
@@ -109,6 +110,7 @@ class CalendarView extends TemplateView {
                             className: {
                               CalendarView_dayLink: true,
                               CalendarView_dayLink_active: isActive,
+                              CalendarView_dayLink_disabled: isDayInFuture,
                             },
                             // Disable navigation to future days
                             href: isDayInFuture ? null : vm.linkForDate(dayNumberDate),
