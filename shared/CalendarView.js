@@ -2,6 +2,14 @@
 
 const { TemplateView } = require('hydrogen-view-sdk');
 
+function sameDay(date1, date2) {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
 // Month in JavaScript is 0-indexed (January is 0, February is 1, etc),
 // but by using 0 as the day it will give us the last day of the prior
 // month.
@@ -46,7 +54,7 @@ class CalendarView extends TemplateView {
           ['\u276E']
         ),
         t.map(
-          (vm) => vm.date,
+          (vm) => vm.calendarDate,
           (date, t) => {
             return t.h4({ className: { CalendarView_heading_text: true } }, [
               date.toLocaleString('default', { year: 'numeric', month: 'long' }),
@@ -62,8 +70,8 @@ class CalendarView extends TemplateView {
         ),
       ]),
       t.map(
-        (vm) => vm.date,
-        (date, t) => {
+        (vm) => vm.calendarDate,
+        (calendarDate, t) => {
           return t.ol(
             { className: { CalendarView_calendar: true } },
             [].concat(
@@ -71,10 +79,16 @@ class CalendarView extends TemplateView {
                 return t.li({ className: { CalendarView_dayName: true } }, [DAYS_OF_WEEK[dayKey]]);
               }),
               (() => {
+                const todayTs = Date.now();
+
                 let dayNodes = [];
-                for (let i = 0; i < numDaysInMonthForDate(date); i++) {
-                  const dayNumberDate = new Date(date);
+                for (let i = 0; i < numDaysInMonthForDate(calendarDate); i++) {
+                  const dayNumberDate = new Date(calendarDate);
                   dayNumberDate.setDate(i);
+                  const isDayInFuture = dayNumberDate.getTime() - todayTs > 0;
+
+                  // The current day displayed in the archive
+                  const isActive = sameDay(dayNumberDate, vm.activeDate);
 
                   // day number from 0 (monday) to 6 (sunday)
                   const dayNumber = dayNumberDate.getDay();
@@ -89,7 +103,19 @@ class CalendarView extends TemplateView {
                         className: { CalendarView_day: true },
                         style: i === 0 ? `grid-column-start: ${gridColumnStart};` : null,
                       },
-                      [t.a({ href: vm.linkForDate(dayNumberDate) }, [String(i + 1)])]
+                      [
+                        t.a(
+                          {
+                            className: {
+                              CalendarView_dayLink: true,
+                              CalendarView_dayLink_active: isActive,
+                            },
+                            // Disable navigation to future days
+                            href: isDayInFuture ? null : vm.linkForDate(dayNumberDate),
+                          },
+                          [String(i + 1)]
+                        ),
+                      ]
                     )
                   );
                 }

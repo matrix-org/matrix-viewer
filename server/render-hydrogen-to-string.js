@@ -9,7 +9,8 @@ const { parseHTML } = require('linkedom');
 
 const config = require('../config.json');
 
-async function renderToString(roomData, events, stateEventMap) {
+async function renderToString({ fromTimestamp, roomData, events, stateEventMap }) {
+  assert(fromTimestamp);
   assert(roomData);
   assert(events);
   assert(stateEventMap);
@@ -32,6 +33,7 @@ async function renderToString(roomData, events, stateEventMap) {
 
   // Define this for the SSR context
   dom.window.matrixPublicArchiveContext = {
+    fromTimestamp,
     roomData,
     events,
     stateEventMap,

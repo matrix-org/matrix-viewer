@@ -59,3 +59,10 @@
 .CalendarView_day {
   padding: 2px;
 }
+
+.CalendarView_dayLink {
+}
+
+.CalendarView_dayLink_active {
+  background-color: #f00;
+}

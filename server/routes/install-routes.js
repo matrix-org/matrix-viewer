@@ -117,7 +117,12 @@ function installRoutes(app) {
         fetchEventsForTimestamp(roomIdOrAlias, fromTimestamp),
       ]);
 
-      const hydrogenHtmlOutput = await renderHydrogenToString(roomData, events, stateEventMap);
+      const hydrogenHtmlOutput = await renderHydrogenToString({
+        fromTimestamp,
+        roomData,
+        events,
+        stateEventMap,
+      });
 
       const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
       const stylesUrl = urlJoin(basePath, 'styles.css');

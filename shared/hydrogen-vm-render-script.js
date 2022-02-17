@@ -6,6 +6,7 @@ const {
   MediaRepository,
   createNavigation,
   createRouter,
+  Segment,
 
   TilesCollection,
   FragmentIdComparer,
@@ -24,6 +25,8 @@ const urlJoin = require('url-join');
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 
+const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
+assert(fromTimestamp);
 const roomData = window.matrixPublicArchiveContext.roomData;
 assert(roomData);
 const events = window.matrixPublicArchiveContext.events;
@@ -60,6 +63,7 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
   return eventEntry;
 }
 
+// eslint-disable-next-line max-statements
 async function mountHydrogen() {
   const app = document.querySelector('#app');
 
@@ -88,20 +92,34 @@ async function mountHydrogen() {
     homeserver: config.matrixServerUrl,
   });
 
-  // const urlCreator = {
+  // const urlRouter = {
   //   urlUntilSegment: () => {
   //     return 'todo';
   //   },
-  //   urlForSegments: () => {
+  //   urlForSegments: (segments) => {
+  //     const isLightBox = segments.find((segment) => {
+  //       return segment.type === 'lightbox';
+  //       console.log('segment', segment);
+  //     });
+
+  //     if (isLightBox) {
+  //       return '#';
+  //     }
+
   //     return 'todo';
   //   },
   // };
 
   // const navigation = {
-  //   segment: () => {
-  //     return 'todo';
+  //   segment: (type, value) => {
+  //     return new Segment(type, value);
   //   },
   // };
+
+  const lightbox = navigation.observe('lightbox');
+  lightbox.subscribe((eventId) => {
+    this._updateLightbox(eventId);
+  });
 
   const room = {
     name: roomData.name,
@@ -194,12 +212,17 @@ async function mountHydrogen() {
   class CalendarViewModel extends ViewModel {
     constructor(options) {
       super(options);
-      const { date } = options;
-      this._date = date;
+      const { activeDate, calendarDate } = options;
+      this._activeDate = activeDate;
+      this._calendarDate = calendarDate;
     }
 
-    get date() {
-      return this._date;
+    get activeDate() {
+      return this._activeDate;
+    }
+
+    get calendarDate() {
+      return this._calendarDate;
     }
 
     linkForDate(date) {
@@ -211,27 +234,33 @@ async function mountHydrogen() {
     }
 
     prevMonth() {
-      const prevMonthDate = new Date(this._date);
+      const prevMonthDate = new Date(this._calendarDate);
       prevMonthDate.setMonth(this._date.getMonth() - 1);
-      this._date = prevMonthDate;
+      this._calendarDate = prevMonthDate;
       this.emitChange('date');
     }
 
     nextMonth() {
-      const nextMonthDate = new Date(this._date);
+      const nextMonthDate = new Date(this._calendarDate);
       nextMonthDate.setMonth(this._date.getMonth() + 1);
-      this._date = nextMonthDate;
+      this._calendarDate = nextMonthDate;
       this.emitChange('date');
     }
   }
 
+  const fromDate = new Date(fromTimestamp);
   const archiveViewModel = {
     roomViewModel,
     rightPanelModel: {
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
-        calendarViewModel: new CalendarViewModel({ date: new Date() }),
+        calendarViewModel: new CalendarViewModel({
+          // The day being shown in the archive
+          activeDate: fromDate,
+          // The month displayed in the calendar
+          calendarDate: fromDate,
+        }),
       },
     },
   };
