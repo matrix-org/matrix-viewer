@@ -258,15 +258,15 @@ async function mountHydrogen() {
     }
 
     onMonthInputChange(e) {
-      const selectedDate = new Date(e.target.valueAsDate);
-      console.log('onMonthInputChange selectedDate', selectedDate, e.target.valueAsDate);
-      this._calendarDate = selectedDate;
+      this._calendarDate = e.target.valueAsDate;
       this.emitChange('calendarDate');
     }
 
     onYearFallbackSelectChange(e) {
-      // TODO
-      console.log('onYearFallbackSelectChange', e);
+      const selectedDate = new Date(this._calendarDate);
+      selectedDate.setUTCFullYear(e.target.value);
+      this._calendarDate = selectedDate;
+      this.emitChange('calendarDate');
     }
   }
 

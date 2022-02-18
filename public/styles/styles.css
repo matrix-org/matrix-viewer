@@ -66,16 +66,24 @@ html {
   right: 0;
 
   opacity: 0;
+
+  cursor: pointer;
 }
 
 .fallback-input-month .CalendarView_heading_monthInput {
   display: none;
 }
 
+/* The little calendar icon button in the input that opens the date picker.
+ * We're stretching this out over the heading */
 .CalendarView_heading_monthInput::-webkit-calendar-picker-indicator {
   width: 100%;
   height: 100%;
+  margin-left: 0;
+
   background-color: #f00;
+
+  cursor: pointer;
 }
 
 .CalendarView_heading_yearSelectFallback {
@@ -91,6 +99,8 @@ html {
   height: 100%;
 
   opacity: 0;
+
+  cursor: pointer;
 }
 
 .fallback-input-month .CalendarView_heading_yearSelectFallback {
