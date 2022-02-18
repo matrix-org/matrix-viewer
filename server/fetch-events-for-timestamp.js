@@ -14,11 +14,12 @@ async function fetchEventsForTimestamp(roomId, ts) {
 
   const timestampToEventEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=f`
+    `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=b`
   );
   const timestampToEventResData = await fetchEndpoint(timestampToEventEndpoint);
   const eventIdForTimestamp = timestampToEventResData.event_id;
   assert(eventIdForTimestamp);
+  console.log('eventIdForTimestamp', eventIdForTimestamp);
 
   const contextEndpoint = urlJoin(
     matrixServerUrl,

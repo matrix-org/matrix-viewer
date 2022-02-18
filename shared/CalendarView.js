@@ -89,7 +89,11 @@ class CalendarView extends TemplateView {
               t.input({
                 type: 'month',
                 className: { CalendarView_heading_monthInput: true },
-                value: `${calendarDate.getUTCFullYear()}-${calendarDate.getUTCMonth() + 1}`,
+                value: `${calendarDate.getUTCFullYear()}-${
+                  // ('0' + '2') -> '02'
+                  // ('0' + '12') -> '12'
+                  ('0' + (calendarDate.getUTCMonth() + 1)).slice(-2)
+                }`,
                 onChange: (e) => vm.onMonthInputChange(e),
               }),
 
@@ -155,10 +159,6 @@ class CalendarView extends TemplateView {
 
                   // day number from 0 (monday) to 6 (sunday)
                   const dayNumber = dayNumberDate.getUTCDay();
-
-                  console.log(
-                    `dayNumberDate=${dayNumberDate.getUTCDate()} (${dayNumber}) isDayInFuture=${isDayInFuture}, ${dayNumberDate.getTime()}, ${todayTs}`
-                  );
 
                   // +1 because we're going from 0-based day to 1-based `grid-column-start`
                   const gridColumnStart = dayNumber + 1;
