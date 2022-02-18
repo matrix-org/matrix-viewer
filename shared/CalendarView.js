@@ -1,12 +1,14 @@
 'use strict';
 
+// Be mindful to do all date operations in UTC (the archive is all in UTC date/times)
+
 const { TemplateView } = require('hydrogen-view-sdk');
 
 function sameDay(date1, date2) {
   return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
+    date1.getUTCFullYear() === date2.getUTCFullYear() &&
+    date1.getUTCMonth() === date2.getUTCMonth() &&
+    date1.getUTCDate() === date2.getUTCDate()
   );
 }
 
@@ -34,6 +36,7 @@ const DAYS_OF_WEEK = {
 const today = new Date();
 for (let i = 0; i < 7; i++) {
   const lookupDate = new Date(today);
+  // Date is a 1-based number
   lookupDate.setUTCDate(i + 1);
 
   const lookup = lookupDate.toLocaleString('en-US', { weekday: 'short', timeZone: 'UTC' });
@@ -143,7 +146,8 @@ class CalendarView extends TemplateView {
                 let dayNodes = [];
                 for (let i = 0; i < numDaysInMonthForDate(calendarDate); i++) {
                   const dayNumberDate = new Date(calendarDate);
-                  dayNumberDate.setUTCDate(i);
+                  // Date is a 1-based number
+                  dayNumberDate.setUTCDate(i + 1);
                   const isDayInFuture = dayNumberDate.getTime() - todayTs > 0;
 
                   // The current day displayed in the archive
@@ -152,10 +156,12 @@ class CalendarView extends TemplateView {
                   // day number from 0 (monday) to 6 (sunday)
                   const dayNumber = dayNumberDate.getUTCDay();
 
-                  // +1 because we actually start the week on the calendar on Sunday(6) instead of Monday(0)
-                  // %7 to rollover the 7-day week
+                  console.log(
+                    `dayNumberDate=${dayNumberDate.getUTCDate()} (${dayNumber}) isDayInFuture=${isDayInFuture}, ${dayNumberDate.getTime()}, ${todayTs}`
+                  );
+
                   // +1 because we're going from 0-based day to 1-based `grid-column-start`
-                  const gridColumnStart = ((dayNumber + 1) % 7) + 1;
+                  const gridColumnStart = dayNumber + 1;
 
                   dayNodes.push(
                     t.li(
@@ -175,7 +181,7 @@ class CalendarView extends TemplateView {
                             // Disable navigation to future days
                             href: isDayInFuture ? null : vm.archiveUrlForDate(dayNumberDate),
                           },
-                          [String(i + 1)]
+                          [String(dayNumberDate.getUTCDate())]
                         ),
                       ]
                     )
