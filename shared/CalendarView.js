@@ -152,9 +152,10 @@ class CalendarView extends TemplateView {
                   // day number from 0 (monday) to 6 (sunday)
                   const dayNumber = dayNumberDate.getUTCDay();
 
+                  // +1 because we actually start the week on the calendar on Sunday(6) instead of Monday(0)
+                  // %7 to rollover the 7-day week
                   // +1 because we're going from 0-based day to 1-based `grid-column-start`
-                  // +1 because we actually start the week on Sunday(6) instead of Monday(0)
-                  const gridColumnStart = dayNumber + 1 + 1;
+                  const gridColumnStart = ((dayNumber + 1) % 7) + 1;
 
                   dayNodes.push(
                     t.li(
