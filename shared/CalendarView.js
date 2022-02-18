@@ -16,7 +16,7 @@ function sameDay(date1, date2) {
 //
 // via https://stackoverflow.com/a/1184359/796832
 function numDaysInMonthForDate(date) {
-  return new Date(date.getYear(), date.getMonth() + 1, 0).getDate();
+  return new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 0).getUTCDate();
 }
 
 // Map from day of week to the localized name of the day
@@ -34,10 +34,10 @@ const DAYS_OF_WEEK = {
 const today = new Date();
 for (let i = 0; i < 7; i++) {
   const lookupDate = new Date(today);
-  lookupDate.setDate(i + 1);
+  lookupDate.setUTCDate(i + 1);
 
-  const lookup = lookupDate.toLocaleString('en-US', { weekday: 'short' });
-  const localized = lookupDate.toLocaleString('default', { weekday: 'short' });
+  const lookup = lookupDate.toLocaleString('en-US', { weekday: 'short', timeZone: 'UTC' });
+  const localized = lookupDate.toLocaleString('default', { weekday: 'short', timeZone: 'UTC' });
 
   DAYS_OF_WEEK[lookup] = localized;
 }
@@ -45,25 +45,84 @@ for (let i = 0; i < 7; i++) {
 class CalendarView extends TemplateView {
   render(t, vm) {
     return t.div({ className: { CalendarView: true } }, [
-      t.div({ className: { CalendarView_heading: true } }, [
+      t.div({ className: { CalendarView_header: true } }, [
         t.button(
           {
-            className: { CalendarView_heading_prevButton: true },
+            className: { CalendarView_header_prevButton: true },
             onClick: () => vm.prevMonth(),
           },
           ['\u276E']
         ),
         t.map(
           (vm) => vm.calendarDate,
-          (date, t) => {
-            return t.h4({ className: { CalendarView_heading_text: true } }, [
-              date.toLocaleString('default', { year: 'numeric', month: 'long' }),
+          (calendarDate, t) => {
+            return t.h4({ className: { CalendarView_heading: true } }, [
+              t.span({ className: { CalendarView_heading_text: true } }, [
+                calendarDate.toLocaleString('default', {
+                  year: 'numeric',
+                  month: 'long',
+                  timeZone: 'UTC',
+                }),
+                t.svg(
+                  {
+                    xmlns: 'http://www.w3.org/2000/svg',
+                    width: '18',
+                    height: '18',
+                    viewBox: '0 0 18 18',
+                    fill: 'none',
+                  },
+                  [
+                    t.path({
+                      d: 'M6 7.5L9 10.5L12 7.5',
+                      stroke: 'currentColor',
+                      'stroke-width': '1.5',
+                      'stroke-linecap': 'round',
+                      'stroke-linejoin': 'round',
+                    }),
+                  ]
+                ),
+              ]),
+
+              t.input({
+                type: 'month',
+                className: { CalendarView_heading_monthInput: true },
+                value: `${calendarDate.getUTCFullYear()}-${calendarDate.getUTCMonth() + 1}`,
+                onChange: (e) => vm.onMonthInputChange(e),
+              }),
+
+              t.select(
+                {
+                  className: {
+                    CalendarView_heading_yearSelectFallback: true,
+                  },
+                  onChange: (e) => vm.onYearFallbackSelectChange(e),
+                },
+                [].concat(
+                  (() => {
+                    let yearSelectNodes = [];
+                    const today = new Date();
+                    for (let year = today.getUTCFullYear(); year > 1960; year--) {
+                      yearSelectNodes.push(
+                        t.option(
+                          {
+                            value: year,
+                            selected: year === calendarDate.getUTCFullYear(),
+                          },
+                          [`${year}`]
+                        )
+                      );
+                    }
+
+                    return yearSelectNodes;
+                  })()
+                )
+              ),
             ]);
           }
         ),
         t.button(
           {
-            className: { CalendarView_heading_nextButton: true },
+            className: { CalendarView_header_nextButton: true },
             onClick: () => vm.nextMonth(),
           },
           ['\u276F']
@@ -84,14 +143,14 @@ class CalendarView extends TemplateView {
                 let dayNodes = [];
                 for (let i = 0; i < numDaysInMonthForDate(calendarDate); i++) {
                   const dayNumberDate = new Date(calendarDate);
-                  dayNumberDate.setDate(i);
+                  dayNumberDate.setUTCDate(i);
                   const isDayInFuture = dayNumberDate.getTime() - todayTs > 0;
 
                   // The current day displayed in the archive
                   const isActive = sameDay(dayNumberDate, vm.activeDate);
 
                   // day number from 0 (monday) to 6 (sunday)
-                  const dayNumber = dayNumberDate.getDay();
+                  const dayNumber = dayNumberDate.getUTCDay();
 
                   // +1 because we're going from 0-based day to 1-based `grid-column-start`
                   // +1 because we actually start the week on Sunday(6) instead of Monday(0)
@@ -113,7 +172,7 @@ class CalendarView extends TemplateView {
                               CalendarView_dayLink_disabled: isDayInFuture,
                             },
                             // Disable navigation to future days
-                            href: isDayInFuture ? null : vm.linkForDate(dayNumberDate),
+                            href: isDayInFuture ? null : vm.archiveUrlForDate(dayNumberDate),
                           },
                           [String(i + 1)]
                         ),

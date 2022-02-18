@@ -38,6 +38,15 @@ assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
 
+function addSupportClasses() {
+  const input = document.createElement('input');
+  input.type = 'month';
+  const isMonthTypeSupported = input.type === 'month';
+
+  // Signal `<input type="month">` support to our CSS
+  document.body.classList.toggle('fallback-input-month', !isMonthTypeSupported);
+}
+
 let eventIndexCounter = 0;
 const fragmentIdComparer = new FragmentIdComparer([]);
 function makeEventEntryFromEventJson(eventJson, memberEvent) {
@@ -225,7 +234,7 @@ async function mountHydrogen() {
       return this._calendarDate;
     }
 
-    linkForDate(date) {
+    archiveUrlForDate(date) {
       // Gives the date in YYYY-mm-dd format.
       // date.toISOString() -> 2022-02-16T23:20:04.709Z
       const urlDate = date.toISOString().split('T')[0].replaceAll('-', '/');
@@ -235,16 +244,29 @@ async function mountHydrogen() {
 
     prevMonth() {
       const prevMonthDate = new Date(this._calendarDate);
-      prevMonthDate.setMonth(this._date.getMonth() - 1);
+      prevMonthDate.setUTCMonth(this._calendarDate.getUTCMonth() - 1);
       this._calendarDate = prevMonthDate;
-      this.emitChange('date');
+      this.emitChange('calendarDate');
     }
 
     nextMonth() {
       const nextMonthDate = new Date(this._calendarDate);
-      nextMonthDate.setMonth(this._date.getMonth() + 1);
+      nextMonthDate.setUTCMonth(this._calendarDate.getUTCMonth() + 1);
+      console.log('nextMonthDate', nextMonthDate);
       this._calendarDate = nextMonthDate;
-      this.emitChange('date');
+      this.emitChange('calendarDate');
+    }
+
+    onMonthInputChange(e) {
+      const selectedDate = new Date(e.target.valueAsDate);
+      console.log('onMonthInputChange selectedDate', selectedDate, e.target.valueAsDate);
+      this._calendarDate = selectedDate;
+      this.emitChange('calendarDate');
+    }
+
+    onYearFallbackSelectChange(e) {
+      // TODO
+      console.log('onYearFallbackSelectChange', e);
     }
   }
 
@@ -269,6 +291,8 @@ async function mountHydrogen() {
 
   //console.log('view.mount()', view.mount());
   app.replaceChildren(view.mount());
+
+  addSupportClasses();
 }
 
 // N.B.: When we run this in a `vm`, it will return the last statement. It's

@@ -30,13 +30,13 @@ html {
   font: 100% system-ui;
 }
 
-.CalendarView_heading {
+.CalendarView_header {
   display: flex;
   justify-content: space-between;
 }
 
-.CalendarView_heading_prevButton,
-.CalendarView_heading_nextButton {
+.CalendarView_header_prevButton,
+.CalendarView_header_nextButton {
   padding-left: 2em;
   padding-right: 2em;
 
@@ -44,12 +44,57 @@ html {
   border: 0;
 }
 
-.CalendarView_heading_prevButton:hover,
-.CalendarView_heading_nextButton:hover {
+.CalendarView_header_prevButton:hover,
+.CalendarView_header_nextButton:hover {
   cursor: pointer;
 }
 
+.CalendarView_heading {
+  position: relative;
+}
+
 .CalendarView_heading_text {
+  display: inline-flex;
+  align-items: center;
+}
+
+.CalendarView_heading_monthInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+
+  opacity: 0;
+}
+
+.fallback-input-month .CalendarView_heading_monthInput {
+  display: none;
+}
+
+.CalendarView_heading_monthInput::-webkit-calendar-picker-indicator {
+  width: 100%;
+  height: 100%;
+  background-color: #f00;
+}
+
+.CalendarView_heading_yearSelectFallback {
+  display: none;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+
+  width: 100%;
+  height: 100%;
+
+  opacity: 0;
+}
+
+.fallback-input-month .CalendarView_heading_yearSelectFallback {
+  display: block;
 }
 
 .CalendarView_calendar {
