@@ -14,6 +14,7 @@ const viteConfig = require('../vite.config');
 nodemon({
   script: path.join(__dirname, './server.js'),
   ext: 'js json',
+  delay: 2500,
   ignoreRoot: ['.git'],
   ignore: [path.join(__dirname, '../dist/*')],
 });
