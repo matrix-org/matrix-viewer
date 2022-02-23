@@ -1,10 +1,6 @@
 'use strict';
 
-const assert = require('assert');
 const fetch = require('node-fetch');
-
-const { matrixAccessToken } = require('../../secrets.json');
-assert(matrixAccessToken);
 
 class HTTPResponseError extends Error {
   constructor(response, responseText, ...args) {
@@ -26,11 +22,11 @@ const checkResponseStatus = async (response) => {
   }
 };
 
-async function fetchEndpoint(endpoint) {
+async function fetchEndpoint(endpoint, { accessToken }) {
   const res = await fetch(endpoint, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${matrixAccessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   await checkResponseStatus(res);

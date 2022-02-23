@@ -15,6 +15,9 @@ const config = require('../../config.json');
 const basePath = config.basePath;
 assert(basePath);
 
+const { matrixAccessToken } = require('../../secrets.json');
+assert(matrixAccessToken);
+
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
   // Month is the only zero-based index in this group
@@ -121,8 +124,8 @@ function installRoutes(app) {
       //const aroundId = req.query.at;
 
       const [roomData, { events, stateEventMap }] = await Promise.all([
-        fetchRoomData(roomIdOrAlias),
-        fetchEventsForTimestamp(roomIdOrAlias, fromTimestamp),
+        fetchRoomData(matrixAccessToken, roomIdOrAlias),
+        fetchEventsForTimestamp(matrixAccessToken, roomIdOrAlias, fromTimestamp),
       ]);
 
       const hydrogenHtmlOutput = await renderHydrogenToString({

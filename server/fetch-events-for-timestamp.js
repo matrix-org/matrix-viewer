@@ -8,7 +8,8 @@ const fetchEndpoint = require('./lib/fetch-endpoint');
 const { matrixServerUrl } = require('../config.json');
 assert(matrixServerUrl);
 
-async function fetchEventsForTimestamp(roomId, ts) {
+async function fetchEventsForTimestamp(accessToken, roomId, ts) {
+  assert(accessToken);
   assert(roomId);
   assert(ts);
 
@@ -16,7 +17,9 @@ async function fetchEventsForTimestamp(roomId, ts) {
     matrixServerUrl,
     `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=b`
   );
-  const timestampToEventResData = await fetchEndpoint(timestampToEventEndpoint);
+  const timestampToEventResData = await fetchEndpoint(timestampToEventEndpoint, {
+    accessToken,
+  });
   const eventIdForTimestamp = timestampToEventResData.event_id;
   assert(eventIdForTimestamp);
   console.log('eventIdForTimestamp', eventIdForTimestamp);
@@ -25,14 +28,18 @@ async function fetchEventsForTimestamp(roomId, ts) {
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0`
   );
-  const contextResData = await fetchEndpoint(contextEndpoint);
+  const contextResData = await fetchEndpoint(contextEndpoint, {
+    accessToken,
+  });
   //console.log('contextResData', contextResData);
 
   const messagesEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/messages?from=${contextResData.start}&limit=50&filter={"lazy_load_members":true,"include_redundant_members":true}`
   );
-  const messageResData = await fetchEndpoint(messagesEndpoint);
+  const messageResData = await fetchEndpoint(messagesEndpoint, {
+    accessToken,
+  });
 
   //console.log('messageResData.state', messageResData.state);
   const stateEventMap = {};

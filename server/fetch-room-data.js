@@ -8,7 +8,10 @@ const fetchEndpoint = require('./lib/fetch-endpoint');
 const { matrixServerUrl } = require('../config.json');
 assert(matrixServerUrl);
 
-async function fetchRoomData(roomId) {
+async function fetchRoomData(accessToken, roomId) {
+  assert(accessToken);
+  assert(roomId);
+
   const stateNameEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/state/m.room.name`
@@ -19,8 +22,12 @@ async function fetchRoomData(roomId) {
   );
 
   const [stateNameResDataOutcome, stateAvatarResDataOutcome] = await Promise.allSettled([
-    fetchEndpoint(stateNameEndpoint),
-    fetchEndpoint(stateAvatarEndpoint),
+    fetchEndpoint(stateNameEndpoint, {
+      accessToken,
+    }),
+    fetchEndpoint(stateAvatarEndpoint, {
+      accessToken,
+    }),
   ]);
 
   let name;
