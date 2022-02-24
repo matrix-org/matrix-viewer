@@ -6,7 +6,6 @@ const {
   MediaRepository,
   createNavigation,
   createRouter,
-  Segment,
 
   TilesCollection,
   FragmentIdComparer,

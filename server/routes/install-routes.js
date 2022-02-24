@@ -8,7 +8,7 @@ const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
 const fetchRoomData = require('../fetch-room-data');
-const fetchEventsForTimestamp = require('../fetch-events-for-timestamp');
+const fetchEventsInRange = require('../fetch-events-in-range');
 const renderHydrogenToString = require('../render-hydrogen-to-string');
 
 const config = require('../lib/config');
@@ -16,6 +16,8 @@ const basePath = config.get('basePath');
 assert(basePath);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
+const archiveMessageLimit = config.get('archiveMessageLimit');
+assert(archiveMessageLimit);
 
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
@@ -100,7 +102,8 @@ function installRoutes(app) {
       const roomIdOrAlias = req.params.roomIdOrAlias;
       assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
 
-      const { fromTimestamp, hourRange, fromHour, toHour } = parseArchiveRangeFromReq(req);
+      const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
+        parseArchiveRangeFromReq(req);
 
       // If the hourRange is defined, we force the range to always be 1 hour. If
       // the format isn't correct, redirect to the correct hour range
@@ -124,10 +127,18 @@ function installRoutes(app) {
 
       const [roomData, { events, stateEventMap }] = await Promise.all([
         fetchRoomData(matrixAccessToken, roomIdOrAlias),
-        fetchEventsForTimestamp(matrixAccessToken, roomIdOrAlias, fromTimestamp),
+        fetchEventsInRange(
+          matrixAccessToken,
+          roomIdOrAlias,
+          fromTimestamp,
+          toTimestamp,
+          archiveMessageLimit
+        ),
       ]);
 
-      console.log('events', JSON.stringify(events, null, 2));
+      if (events.length >= archiveMessageLimit) {
+        throw new Error('TODO: Redirect user to smaller hour range');
+      }
 
       const hydrogenHtmlOutput = await renderHydrogenToString({
         fromTimestamp,

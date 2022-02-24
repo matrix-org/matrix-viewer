@@ -2,6 +2,7 @@
   "basePort": "3050",
   "basePath": "http://localhost:3050",
   "matrixServerUrl": "http://localhost:8008/",
+  "archiveMessageLimit": 500,
   "testMatrixServerUrl1": "http://localhost:11008/",
   "testMatrixServerUrl2": "http://localhost:12008/",
 

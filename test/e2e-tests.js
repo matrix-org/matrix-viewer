@@ -4,9 +4,10 @@ process.env.NODE_ENV = 'test';
 
 const assert = require('assert');
 const urlJoin = require('url-join');
+const escapeStringRegexp = require('escape-string-regexp');
 const { MatrixAuth } = require('matrix-bot-sdk');
+const { parseHTML } = require('linkedom');
 
-const server = require('../server/server');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
@@ -14,10 +15,11 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const config = require('../server/lib/config');
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
-const basePath = config.get('basePath');
 assert(testMatrixServerUrl1);
 assert(testMatrixServerUrl2);
+const basePath = config.get('basePath');
 assert(basePath);
+const interactive = config.get('interactive');
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
@@ -69,10 +71,20 @@ async function createTestRoom(client) {
 }
 
 describe('matrix-public-archive', () => {
-  after(() => {
-    //server.close();
+  let server;
+  before(() => {
+    // Start the archive server
+    server = require('../server/server');
   });
 
+  after(() => {
+    if (!interactive) {
+      server.close();
+    }
+  });
+
+  // Sanity check that our test homeservers can actually federate with each
+  // other. The rest of the tests won't work properly if this isn't working.
   it('Test federation between fixture homeservers', async () => {
     try {
       const hs1Client = await getTestClientForHs(testMatrixServerUrl1);
@@ -133,6 +145,7 @@ describe('matrix-public-archive', () => {
     }
   });
 
+  // eslint-disable-next-line max-statements
   it('can render diverse messages', async () => {
     try {
       const client = await getTestClientForHs(testMatrixServerUrl1);
@@ -146,68 +159,122 @@ describe('matrix-public-archive', () => {
       const mxcUri = await client.uploadContentFromUrl(
         'https://en.wikipedia.org/wiki/Friction#/media/File:Friction_between_surfaces.jpg'
       );
-      await client.sendMessage(roomId, {
+      const imageEventId = await client.sendMessage(roomId, {
         body: 'Friction_between_surfaces.jpeg',
         info: {
           size: 396644,
           mimetype: 'image/jpeg',
+          thumbnail_info: {
+            w: 800,
+            h: 390,
+            mimetype: 'image/jpeg',
+            size: 126496,
+          },
           w: 1894,
           h: 925,
           'xyz.amorgan.blurhash': 'LkR3G|IU?w%NbwbIemae_NxuD$M{',
+          // TODO: How to get a proper thumnail URL that will load?
+          thumbnail_url: mxcUri,
         },
         msgtype: 'm.image',
         url: mxcUri,
       });
 
       // A normal text message
-      await client.sendMessage(roomId, {
+      const normalMessageText1 =
+        '^ Figure 1: Simulated blocks with fractal rough surfaces, exhibiting static frictional interactions';
+      const normalMessageEventId1 = await client.sendMessage(roomId, {
         msgtype: 'm.text',
-        body: '^ Figure 1: Simulated blocks with fractal rough surfaces, exhibiting static frictional interactions',
+        body: normalMessageText1,
       });
 
-      // A normal text message
-      await client.sendMessage(roomId, {
+      // Another normal text message
+      const normalMessageText2 =
+        'The topography of the Moon has been measured with laser altimetry and stereo image analysis.';
+      const normalMessageEventId2 = await client.sendMessage(roomId, {
         msgtype: 'm.text',
-        body: 'The topography of the Moon has been measured with laser altimetry and stereo image analysis.',
+        body: normalMessageText2,
       });
 
       // Test replies
-      const eventToReplyTo = await client.sendMessage(roomId, {
+      const replyMessageText = `The concentration of maria on the near side likely reflects the substantially thicker crust of the highlands of the Far Side, which may have formed in a slow-velocity impact of a second moon of Earth a few tens of millions of years after the Moon's formation.`;
+      const replyMessageEventId = await client.sendMessage(roomId, {
         'org.matrix.msc1767.message': [
           {
-            body: "> <@ericgittertester:my.synapse.server> The topography of the Moon has been measured with laser altimetry and stereo image analysis.\n\nThe concentration of maria on the near side likely reflects the substantially thicker crust of the highlands of the Far Side, which may have formed in a slow-velocity impact of a second moon of Earth a few tens of millions of years after the Moon's formation.",
+            body: '> <@ericgittertester:my.synapse.server> ${normalMessageText2}',
             mimetype: 'text/plain',
           },
           {
-            body: '<mx-reply><blockquote><a href="https://matrix.to/#/!HBehERstyQBxyJDLfR:my.synapse.server/$uEeScM2gfILkLpG8sOBTK7vcS0w_t3a9EVIAnSwqyiY?via=my.synapse.server">In reply to</a> <a href="https://matrix.to/#/@ericgittertester:my.synapse.server">@ericgittertester:my.synapse.server</a><br>The topography of the Moon has been measured with laser altimetry and stereo image analysis.</blockquote></mx-reply>The concentration of maria on the near side likely reflects the substantially thicker crust of the highlands of the Far Side, which may have formed in a slow-velocity impact of a second moon of Earth a few tens of millions of years after the Moon\'s formation.',
+            body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${normalMessageEventId2}?via=my.synapse.server">In reply to</a> <a href="https://matrix.to/#/@ericgittertester:my.synapse.server">@ericgittertester:my.synapse.server</a><br>${normalMessageText2}</blockquote></mx-reply>${replyMessageText}`,
             mimetype: 'text/html',
           },
         ],
-        body: "> <@ericgittertester:my.synapse.server> The topography of the Moon has been measured with laser altimetry and stereo image analysis.\n\nThe concentration of maria on the near side likely reflects the substantially thicker crust of the highlands of the Far Side, which may have formed in a slow-velocity impact of a second moon of Earth a few tens of millions of years after the Moon's formation.",
+        body: `> <@ericgittertester:my.synapse.server> ${normalMessageText2}\n\n${replyMessageText}`,
         msgtype: 'm.text',
         format: 'org.matrix.custom.html',
-        formatted_body:
-          '<mx-reply><blockquote><a href="https://matrix.to/#/!HBehERstyQBxyJDLfR:my.synapse.server/$uEeScM2gfILkLpG8sOBTK7vcS0w_t3a9EVIAnSwqyiY?via=my.synapse.server">In reply to</a> <a href="https://matrix.to/#/@ericgittertester:my.synapse.server">@ericgittertester:my.synapse.server</a><br>The topography of the Moon has been measured with laser altimetry and stereo image analysis.</blockquote></mx-reply>The concentration of maria on the near side likely reflects the substantially thicker crust of the highlands of the Far Side, which may have formed in a slow-velocity impact of a second moon of Earth a few tens of millions of years after the Moon\'s formation.',
+        formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${normalMessageEventId2}?via=my.synapse.server">In reply to</a> <a href="https://matrix.to/#/@ericgittertester:my.synapse.server">@ericgittertester:my.synapse.server</a><br>${normalMessageText2}</blockquote></mx-reply>${replyMessageText}`,
         'm.relates_to': {
           'm.in_reply_to': {
-            event_id: '$uEeScM2gfILkLpG8sOBTK7vcS0w_t3a9EVIAnSwqyiY',
+            event_id: normalMessageEventId2,
           },
         },
       });
 
       // Test reactions
+      const reactionText = '😅';
       await client.sendEvent(roomId, 'm.reaction', {
         'm.relates_to': {
           rel_type: 'm.annotation',
-          event_id: eventToReplyTo,
-          key: '��',
+          event_id: replyMessageEventId,
+          key: reactionText,
         },
       });
 
       const archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, new Date());
+      if (interactive) {
+        console.log('Interactive URL for test', archiveUrl);
+      }
 
       const archivePageHtml = await fetchEndpointAsText(archiveUrl);
-      console.log('archivePageHtml', archivePageHtml);
+
+      const dom = parseHTML(archivePageHtml);
+
+      // Make sure the image message is visible
+      const imageElement = dom.document.querySelector(`[data-event-id="${imageEventId}"] img`);
+      assert(imageElement);
+      assert.match(imageElement.getAttribute('src'), new RegExp(`^http://.*`));
+      assert.strictEqual(imageElement.getAttribute('alt'), 'Friction_between_surfaces.jpeg');
+
+      // Make sure the normal message is visible
+      assert.match(
+        dom.document.querySelector(`[data-event-id="${normalMessageEventId1}"]`).outerHTML,
+        new RegExp(`.*${escapeStringRegexp(normalMessageText1)}.*`)
+      );
+
+      // Make sure the other normal message is visible
+      assert.match(
+        dom.document.querySelector(`[data-event-id="${normalMessageEventId2}"]`).outerHTML,
+        new RegExp(`.*${escapeStringRegexp(normalMessageText2)}.*`)
+      );
+
+      const replyMessageElement = dom.document.querySelector(
+        `[data-event-id="${replyMessageEventId}"]`
+      );
+      // Make sure the reply text is there
+      assert.match(
+        replyMessageElement.outerHTML,
+        new RegExp(`.*${escapeStringRegexp(replyMessageText)}.*`)
+      );
+      // Make sure it also includes the message we're replying to
+      assert.match(
+        replyMessageElement.outerHTML,
+        new RegExp(`.*${escapeStringRegexp(normalMessageEventId2)}.*`)
+      );
+      // Make sure the reaction also exists
+      assert.match(
+        replyMessageElement.outerHTML,
+        new RegExp(`.*${escapeStringRegexp(reactionText)}.*`)
+      );
     } catch (err) {
       if (err.body) {
         // FIXME: Remove this try/catch once the matrix-bot-sdk no longer throws
@@ -227,4 +294,10 @@ describe('matrix-public-archive', () => {
   it(`can render day back in time from room on remote homeserver we haven't backfilled from`);
 
   it(`will redirect to hour pagination when there are too many messages`);
+
+  it(`will render a room with only a day of messages`);
+
+  it(
+    `will render a room with a sparse amount of messages (a few per day) with no contamination between days`
+  );
 });
