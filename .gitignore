@@ -3,5 +3,10 @@ node_modules
 dist
 dist-ssr
 *.local
-secrets.json
+
+config.user-overrides.json
+config/config.dev.user-overrides.json
+config/config.beta.user-overrides.json
+config/config.prod.user-overrides.json
 config.json
+secrets.json

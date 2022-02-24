@@ -7,7 +7,7 @@ const { readFile } = require('fs').promises;
 const crypto = require('crypto');
 const { parseHTML } = require('linkedom');
 
-const config = require('../config.json');
+const config = require('./lib/config');
 
 async function renderToString({ fromTimestamp, roomData, events, stateEventMap }) {
   assert(fromTimestamp);
@@ -37,7 +37,11 @@ async function renderToString({ fromTimestamp, roomData, events, stateEventMap }
     roomData,
     events,
     stateEventMap,
-    config,
+    config: {
+      basePort: config.get('basePort'),
+      basePath: config.get('basePath'),
+      matrixServerUrl: config.get('matrixServerUrl'),
+    },
   };
   // Serialize it for when we run this again client-side
   dom.document.body.insertAdjacentHTML(

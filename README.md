@@ -5,11 +5,12 @@ config/secrets, using a draft branch of Hydrogen, etc.
 
 In the vein of [feature parity with
 Gitter](https://github.com/vector-im/roadmap/issues/26), the goal is to make a
-public archive site like Gitter's archives which search engines can index and
-keep all of the content accessible/available. There is already
-https://view.matrix.org/ (https://github.com/matrix-org/matrix-static) but there
-is some desire to make something with more Element-feeling polish and loading
-faster (avoid the slow 502's errors that are frequent on `view.matrix.org`).
+public archive site for `world_readable` Matrix rooms like Gitter's archives
+which search engines can index and keep all of the content accessible/available.
+There is already https://view.matrix.org/
+(https://github.com/matrix-org/matrix-static) but there is some desire to make
+something with more Element-feeling polish and loading faster (avoid the slow
+502's errors that are frequent on `view.matrix.org`).
 
 ## Plan summary
 

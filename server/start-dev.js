@@ -7,6 +7,8 @@ const mergeOptions = require('merge-options');
 
 const viteConfig = require('../vite.config');
 
+console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
+
 // Listen for any changes to files and restart the Node.js server process
 //
 // For API docs, see
@@ -14,7 +16,6 @@ const viteConfig = require('../vite.config');
 nodemon({
   script: path.join(__dirname, './server.js'),
   ext: 'js json',
-  delay: 2500,
   ignoreRoot: ['.git'],
   ignore: [path.join(__dirname, '../dist/*')],
 });
@@ -40,3 +41,5 @@ build(
     },
   })
 );
+
+console.log('start-dev2 process.env.NODE_ENV', process.env.NODE_ENV);

@@ -4,6 +4,7 @@
   "scripts": {
     "start-dev": "node server/start-dev.js",
     "lint": "eslint **/*.js",
+    "test": "npm run mocha -- test/e2e-tests.js --timeout 15000",
     "nodemon": "nodemon",
     "vite": "vite",
     "mocha": "mocha",
@@ -31,6 +32,7 @@
     "matrix-bot-sdk": "^0.5.19",
     "matrix-js-sdk": "^15.5.2",
     "matrix-public-archive-shared": "file:./shared/",
+    "nconf": "^0.11.3",
     "node-fetch": "^2.6.7",
     "url-join": "^4.0.1"
   }

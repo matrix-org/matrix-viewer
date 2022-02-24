@@ -11,11 +11,10 @@ const fetchRoomData = require('../fetch-room-data');
 const fetchEventsForTimestamp = require('../fetch-events-for-timestamp');
 const renderHydrogenToString = require('../render-hydrogen-to-string');
 
-const config = require('../../config.json');
-const basePath = config.basePath;
+const config = require('../lib/config');
+const basePath = config.get('basePath');
 assert(basePath);
-
-const { matrixAccessToken } = require('../../secrets.json');
+const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 
 function parseArchiveRangeFromReq(req) {
@@ -127,6 +126,8 @@ function installRoutes(app) {
         fetchRoomData(matrixAccessToken, roomIdOrAlias),
         fetchEventsForTimestamp(matrixAccessToken, roomIdOrAlias, fromTimestamp),
       ]);
+
+      console.log('events', JSON.stringify(events, null, 2));
 
       const hydrogenHtmlOutput = await renderHydrogenToString({
         fromTimestamp,

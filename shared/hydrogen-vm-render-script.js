@@ -20,10 +20,10 @@ const {
   RoomViewModel,
   ViewModel,
 } = require('hydrogen-view-sdk');
-const urlJoin = require('url-join');
 
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
+const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -37,6 +37,8 @@ const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
+
+const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
 
 function addSupportClasses() {
   const input = document.createElement('input');
@@ -235,11 +237,7 @@ async function mountHydrogen() {
     }
 
     archiveUrlForDate(date) {
-      // Gives the date in YYYY-mm-dd format.
-      // date.toISOString() -> 2022-02-16T23:20:04.709Z
-      const urlDate = date.toISOString().split('T')[0].replaceAll('-', '/');
-
-      return urlJoin(config.basePath, `${room.id}/date/${urlDate}`);
+      return matrixPublicArchiveURLCreator.archiveUrlForDate(room.id, date);
     }
 
     prevMonth() {

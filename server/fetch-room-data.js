@@ -3,9 +3,10 @@
 const assert = require('assert');
 
 const urlJoin = require('url-join');
-const fetchEndpoint = require('./lib/fetch-endpoint');
+const { fetchEndpointAsJson } = require('./lib/fetch-endpoint');
 
-const { matrixServerUrl } = require('../config.json');
+const config = require('./lib/config');
+const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
 async function fetchRoomData(accessToken, roomId) {
@@ -22,10 +23,10 @@ async function fetchRoomData(accessToken, roomId) {
   );
 
   const [stateNameResDataOutcome, stateAvatarResDataOutcome] = await Promise.allSettled([
-    fetchEndpoint(stateNameEndpoint, {
+    fetchEndpointAsJson(stateNameEndpoint, {
       accessToken,
     }),
-    fetchEndpoint(stateAvatarEndpoint, {
+    fetchEndpointAsJson(stateAvatarEndpoint, {
       accessToken,
     }),
   ]);

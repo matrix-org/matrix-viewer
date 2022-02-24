@@ -5,6 +5,10 @@ const path = require('path');
 const { defineConfig } = require('vite');
 
 module.exports = defineConfig({
+  // We have to specify this otherwise Vite will override NODE_ENV as
+  // `production` when we start the server and watch build in our `start-dev.js`.
+  mode: process.env.NODE_ENV || 'dev',
+
   //root: './',
   //base: './',
   outDir: './dist',

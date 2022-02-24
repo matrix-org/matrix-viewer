@@ -3,9 +3,10 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 
-const fetchEndpoint = require('./lib/fetch-endpoint');
+const { fetchEndpointAsJson } = require('./lib/fetch-endpoint');
 
-const { matrixServerUrl } = require('../config.json');
+const config = require('./lib/config');
+const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
 async function fetchEventsForTimestamp(accessToken, roomId, ts) {
@@ -13,11 +14,18 @@ async function fetchEventsForTimestamp(accessToken, roomId, ts) {
   assert(roomId);
   assert(ts);
 
+  // TODO: Only join world_readable rooms
+  const joinEndpoint = urlJoin(matrixServerUrl, `_matrix/client/r0/join/${roomId}`);
+  await fetchEndpointAsJson(joinEndpoint, {
+    method: 'POST',
+    accessToken,
+  });
+
   const timestampToEventEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=b`
   );
-  const timestampToEventResData = await fetchEndpoint(timestampToEventEndpoint, {
+  const timestampToEventResData = await fetchEndpointAsJson(timestampToEventEndpoint, {
     accessToken,
   });
   const eventIdForTimestamp = timestampToEventResData.event_id;
@@ -28,16 +36,17 @@ async function fetchEventsForTimestamp(accessToken, roomId, ts) {
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0`
   );
-  const contextResData = await fetchEndpoint(contextEndpoint, {
+  const contextResData = await fetchEndpointAsJson(contextEndpoint, {
     accessToken,
   });
   //console.log('contextResData', contextResData);
 
+  // Add filter={"lazy_load_members":true,"include_redundant_members":true} to get member state events included
   const messagesEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/messages?from=${contextResData.start}&limit=50&filter={"lazy_load_members":true,"include_redundant_members":true}`
   );
-  const messageResData = await fetchEndpoint(messagesEndpoint, {
+  const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
     accessToken,
   });
 

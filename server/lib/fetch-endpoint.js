@@ -22,16 +22,45 @@ const checkResponseStatus = async (response) => {
   }
 };
 
-async function fetchEndpoint(endpoint, { accessToken }) {
+async function fetchEndpoint(endpoint, options = {}) {
+  const { method, accessToken } = options;
+  const headers = options.headers || {};
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
   const res = await fetch(endpoint, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
+    method,
+    headers,
   });
   await checkResponseStatus(res);
+
+  return res;
+}
+
+async function fetchEndpointAsText(endpoint, options) {
+  const res = await fetchEndpoint(endpoint, options);
+  const data = await res.text();
+  return data;
+}
+
+async function fetchEndpointAsJson(endpoint, options) {
+  const opts = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  };
+
+  const res = await fetchEndpoint(endpoint, opts);
   const data = await res.json();
   return data;
 }
 
-module.exports = fetchEndpoint;
+module.exports = {
+  fetchEndpoint,
+  fetchEndpointAsText,
+  fetchEndpointAsJson,
+};
