@@ -145,6 +145,68 @@ describe('matrix-public-archive', () => {
     }
   });
 
+  it('shows all events in a given day', async () => {
+    try {
+      const client = await getTestClientForHs(testMatrixServerUrl1);
+      const roomId = await createTestRoom(client);
+
+      const archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, new Date());
+      // Just render the page initially so that the archiver user is already joined to the page.
+      // We don't want their join event masking the one-off problem where we're missing the latest message in the room.
+      await fetchEndpointAsText(archiveUrl);
+
+      const messageTextList = [
+        `Amontons' First Law: The force of friction is directly proportional to the applied load.`,
+        `Amontons' Second Law: The force of friction is independent of the apparent area of contact.`,
+        // We're aiming for this to be the last message in the room
+        `Coulomb's Law of Friction: Kinetic friction is independent of the sliding velocity.`,
+      ];
+
+      const eventIds = [];
+      for (const messageText of messageTextList) {
+        const eventId = await client.sendMessage(roomId, {
+          msgtype: 'm.text',
+          body: messageText,
+        });
+        eventIds.push(eventId);
+      }
+
+      // Sanity check that we actually sent some messages
+      assert.strictEqual(eventIds.length, 3);
+
+      if (interactive) {
+        console.log('Interactive URL for test', archiveUrl);
+      }
+
+      const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+      const dom = parseHTML(archivePageHtml);
+
+      // Make sure the messages are visible
+      for (let i = 0; i < eventIds.length; i++) {
+        const eventId = eventIds[i];
+        const eventText = messageTextList[i];
+        assert.match(
+          dom.document.querySelector(`[data-event-id="${eventId}"]`).outerHTML,
+          new RegExp(`.*${escapeStringRegexp(eventText)}.*`)
+        );
+      }
+    } catch (err) {
+      if (err.body) {
+        // FIXME: Remove this try/catch once the matrix-bot-sdk no longer throws
+        // huge response objects as errors, see
+        // https://github.com/turt2live/matrix-bot-sdk/pull/158
+        throw new Error(
+          `Error occured in matrix-bot-sdk (this new error is to stop it from logging the huge response) statusCode=${
+            err.statusCode
+          } body=${JSON.stringify(err.body)}`
+        );
+      }
+
+      throw err;
+    }
+  });
+
   // eslint-disable-next-line max-statements
   it('can render diverse messages', async () => {
     try {

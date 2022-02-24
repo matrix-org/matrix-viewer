@@ -59,7 +59,7 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   // Add filter={"lazy_load_members":true,"include_redundant_members":true} to get member state events included
   const messagesEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/r0/rooms/${roomId}/messages?dir=b&from=${contextResData.start}&limit=${limit}&filter={"lazy_load_members":true,"include_redundant_members":true}`
+    `_matrix/client/r0/rooms/${roomId}/messages?dir=b&from=${contextResData.end}&limit=${limit}&filter={"lazy_load_members":true,"include_redundant_members":true}`
   );
   const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
     accessToken,
@@ -86,6 +86,8 @@ async function fetchEventsInRange(accessToken, roomId, startTs, endTs, limit) {
   assert(endTs);
   assert(limit);
 
+  //console.log('fetchEventsInRange', startTs, endTs);
+
   // Fetch events from endTs and before
   const { events, stateEventMap } = await fetchEventsFromTimestampBackwards(
     accessToken,
@@ -93,6 +95,8 @@ async function fetchEventsInRange(accessToken, roomId, startTs, endTs, limit) {
     endTs,
     limit
   );
+
+  //console.log('events', events.length);
 
   let eventsInRange = events;
   // `events` are in reverse-chronological order.
@@ -112,6 +116,8 @@ async function fetchEventsInRange(accessToken, roomId, startTs, endTs, limit) {
       eventsInRange.push(event);
     }
   }
+
+  //console.log('eventsInRange', eventsInRange.length);
 
   const chronologicalEventsInRange = eventsInRange.reverse();
 
