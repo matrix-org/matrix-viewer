@@ -79,7 +79,12 @@ async function mountHydrogen() {
 
   const platformConfig = {};
   const assetPaths = {};
-  const platform = new Platform(app, assetPaths, platformConfig, { development: true });
+  const platform = new Platform({
+    container: app,
+    assetPaths,
+    config: platformConfig,
+    options: { development: true },
+  });
 
   const navigation = createNavigation();
   platform.setNavigation(navigation);
@@ -139,15 +144,15 @@ async function mountHydrogen() {
     mediaRepository: mediaRepository,
   };
 
-  const tilesCreator = makeTilesCreator({
-    platform,
-    roomVM: {
-      room,
-    },
-    timeline,
-    urlCreator: urlRouter,
-    navigation,
-  });
+  // const tilesCreator = makeTilesCreator({
+  //   platform,
+  //   roomVM: {
+  //     room,
+  //   },
+  //   timeline,
+  //   urlCreator: urlRouter,
+  //   navigation,
+  // });
 
   // Something we can modify with new state updates as we see them
   const workingStateEventMap = {
@@ -162,6 +167,7 @@ async function mountHydrogen() {
     return makeEventEntryFromEventJson(event, memberEvent);
   });
   //console.log('eventEntries', eventEntries);
+  console.log('eventEntries', eventEntries.length);
 
   // We have to use `timeline._setupEntries([])` because it sets
   // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
@@ -174,19 +180,19 @@ async function mountHydrogen() {
 
   //console.log('timeline.entries', timeline.entries.length, timeline.entries);
 
-  const tiles = new TilesCollection(timeline.entries, tilesCreator);
-  // Trigger onSubscribeFirst -> tiles._populateTiles();
-  tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
+  // const tiles = new TilesCollection(timeline.entries, tilesCreator);
+  // // Trigger onSubscribeFirst -> tiles._populateTiles();
+  // tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
 
-  // Make the lazy-load images appear
-  for (const tile of tiles) {
-    tile.notifyVisible();
-  }
+  // // Make the lazy-load images appear
+  // for (const tile of tiles) {
+  //   tile.notifyVisible();
+  // }
 
   const timelineViewModel = {
     showJumpDown: false,
     setVisibleTileRange: () => {},
-    tiles: tiles,
+    timeline,
   };
 
   // const view = new TimelineView(timelineViewModel);
