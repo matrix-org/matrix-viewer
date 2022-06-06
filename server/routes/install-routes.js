@@ -67,7 +67,7 @@ function installRoutes(app) {
   // account `package.json`. `exports`, see
   // https://github.com/mysticatea/eslint-plugin-node/issues/255
   // eslint-disable-next-line node/no-missing-require
-  app.use(express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/index.js'))));
+  app.use(express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/main.js'))));
 
   app.get('/hydrogen-styles.css', async function (req, res) {
     res.set('Content-Type', 'text/css');

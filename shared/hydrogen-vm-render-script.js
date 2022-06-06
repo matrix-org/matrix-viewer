@@ -9,7 +9,7 @@ const {
 
   TilesCollection,
   FragmentIdComparer,
-  tilesCreator: makeTilesCreator,
+  tileClassForEntry,
   EventEntry,
   encodeKey,
   encodeEventIdKey,
@@ -79,7 +79,12 @@ async function mountHydrogen() {
 
   const platformConfig = {};
   const assetPaths = {};
-  const platform = new Platform(app, assetPaths, platformConfig, { development: true });
+  const platform = new Platform({
+    container: app,
+    assetPaths,
+    config: platformConfig,
+    options: { development: true },
+  });
 
   const navigation = createNavigation();
   platform.setNavigation(navigation);
@@ -139,16 +144,6 @@ async function mountHydrogen() {
     mediaRepository: mediaRepository,
   };
 
-  const tilesCreator = makeTilesCreator({
-    platform,
-    roomVM: {
-      room,
-    },
-    timeline,
-    urlCreator: urlRouter,
-    navigation,
-  });
-
   // Something we can modify with new state updates as we see them
   const workingStateEventMap = {
     ...stateEventMap,
@@ -162,6 +157,7 @@ async function mountHydrogen() {
     return makeEventEntryFromEventJson(event, memberEvent);
   });
   //console.log('eventEntries', eventEntries);
+  console.log('eventEntries', eventEntries.length);
 
   // We have to use `timeline._setupEntries([])` because it sets
   // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
@@ -174,8 +170,21 @@ async function mountHydrogen() {
 
   //console.log('timeline.entries', timeline.entries.length, timeline.entries);
 
-  const tiles = new TilesCollection(timeline.entries, tilesCreator);
-  // Trigger onSubscribeFirst -> tiles._populateTiles();
+  const tiles = new TilesCollection(timeline.entries, {
+    tileClassForEntry,
+    platform,
+    navigation,
+    urlCreator: urlRouter,
+    timeline,
+    roomVM: {
+      room,
+    },
+  });
+  // Trigger `onSubscribeFirst` -> `tiles._populateTiles()` so it creates a tile
+  // for each entry to display. This way we can also call `tile.notifyVisible()`
+  // on each tile so that the tile creation doesn't happen later when the
+  // `TilesListView` is mounted and subscribes which is a bit out of our
+  // control.
   tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
 
   // Make the lazy-load images appear
@@ -186,7 +195,7 @@ async function mountHydrogen() {
   const timelineViewModel = {
     showJumpDown: false,
     setVisibleTileRange: () => {},
-    tiles: tiles,
+    tiles,
   };
 
   // const view = new TimelineView(timelineViewModel);
