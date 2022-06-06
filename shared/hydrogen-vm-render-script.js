@@ -9,7 +9,6 @@ const {
 
   TilesCollection,
   FragmentIdComparer,
-  //tilesCreator: makeTilesCreator,
   tileClassForEntry,
   EventEntry,
   encodeKey,
@@ -145,16 +144,6 @@ async function mountHydrogen() {
     mediaRepository: mediaRepository,
   };
 
-  // const tilesCreator = makeTilesCreator({
-  //   platform,
-  //   roomVM: {
-  //     room,
-  //   },
-  //   timeline,
-  //   urlCreator: urlRouter,
-  //   navigation,
-  // });
-
   // Something we can modify with new state updates as we see them
   const workingStateEventMap = {
     ...stateEventMap,
@@ -184,15 +173,19 @@ async function mountHydrogen() {
   const tiles = new TilesCollection(timeline.entries, {
     tileClassForEntry,
     platform,
-    urlCreator: urlRouter,
     navigation,
+    urlCreator: urlRouter,
     timeline,
     roomVM: {
       room,
     },
   });
-  // Trigger `_populateTiles`
-  tiles.initialize();
+  // Trigger `onSubscribeFirst` -> `tiles._populateTiles()` so it creates a tile
+  // for each entry to display. This way we can also call `tile.notifyVisible()`
+  // on each tile so that the tile creation doesn't happen later when the
+  // `TilesListView` is mounted and subscribes which is a bit out of our
+  // control.
+  tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
 
   // Make the lazy-load images appear
   for (const tile of tiles) {
