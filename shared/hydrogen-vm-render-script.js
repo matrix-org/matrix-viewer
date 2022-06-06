@@ -9,7 +9,8 @@ const {
 
   TilesCollection,
   FragmentIdComparer,
-  tilesCreator: makeTilesCreator,
+  //tilesCreator: makeTilesCreator,
+  tileClassForEntry,
   EventEntry,
   encodeKey,
   encodeEventIdKey,
@@ -180,19 +181,28 @@ async function mountHydrogen() {
 
   //console.log('timeline.entries', timeline.entries.length, timeline.entries);
 
-  // const tiles = new TilesCollection(timeline.entries, tilesCreator);
-  // // Trigger onSubscribeFirst -> tiles._populateTiles();
-  // tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
+  const tiles = new TilesCollection(timeline.entries, {
+    tileClassForEntry,
+    platform,
+    urlCreator: urlRouter,
+    navigation,
+    timeline,
+    roomVM: {
+      room,
+    },
+  });
+  // Trigger `_populateTiles`
+  tiles.initialize();
 
-  // // Make the lazy-load images appear
-  // for (const tile of tiles) {
-  //   tile.notifyVisible();
-  // }
+  // Make the lazy-load images appear
+  for (const tile of tiles) {
+    tile.notifyVisible();
+  }
 
   const timelineViewModel = {
     showJumpDown: false,
     setVisibleTileRange: () => {},
-    timeline,
+    tiles,
   };
 
   // const view = new TimelineView(timelineViewModel);

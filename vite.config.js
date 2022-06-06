@@ -23,6 +23,8 @@ module.exports = defineConfig({
     },
   },
   build: {
+    sourcemap: 'inline',
+
     // Fix `Error: 'default' is not exported by ...` when importin CommonJS files,
     // see https://github.com/vitejs/vite/issues/2679
     commonjsOptions: { include: [] },
