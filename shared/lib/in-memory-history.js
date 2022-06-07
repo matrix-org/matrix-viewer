@@ -23,6 +23,14 @@ class InMemoryHistory extends BaseObservableValue {
     this.#hash = `#/session/123/room/${roomId}`;
   }
 
+  handleEvent(event) {
+    console.log('handleEvent event', event);
+    if (event.type === 'hashchange') {
+      this.#hash = document.location.hash;
+      this.emit(this.get());
+    }
+  }
+
   get() {
     return this.#hash;
   }
@@ -30,15 +38,18 @@ class InMemoryHistory extends BaseObservableValue {
   /** does not emit */
   replaceUrlSilently(url) {
     this.#hash = url;
+    this.emit(this.get());
   }
 
   /** does not emit */
   pushUrlSilently(url) {
     this.#hash = url;
+    this.emit(this.get());
   }
 
   pushUrl(url) {
     this.#hash = url;
+    this.emit(this.get());
   }
 
   urlAsPath(url) {
@@ -51,6 +62,15 @@ class InMemoryHistory extends BaseObservableValue {
 
   pathAsUrl(path) {
     return `#${path}`;
+  }
+
+  onSubscribeFirst() {
+    console.log('InMemoryHistory: onSubscribeFirst');
+    window.addEventListener('hashchange', this);
+  }
+
+  onUnsubscribeLast() {
+    window.removeEventListener('hashchange', this);
   }
 
   getLastUrl() {

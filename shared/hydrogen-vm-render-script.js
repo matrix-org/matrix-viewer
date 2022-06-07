@@ -18,6 +18,7 @@ const {
   // RoomView,
   RoomViewModel,
   ViewModel,
+  setupLightboxNavigation,
 } = require('hydrogen-view-sdk');
 
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
@@ -89,12 +90,15 @@ async function mountHydrogen() {
 
   const navigation = createNavigation();
   const inMemoryHistory = new InMemoryHistory(roomData.id);
+  inMemoryHistory.subscribe(() => null);
   platform.setNavigation(navigation);
   const urlRouter = createRouter({
     navigation: navigation,
     //history: platform.history,
     history: inMemoryHistory,
   });
+  // Make it listen to changes from the history instance
+  urlRouter.attach();
   // Populate the `Navigation` with segments to work from
   urlRouter.tryRestoreLastUrl();
 
@@ -136,10 +140,10 @@ async function mountHydrogen() {
   //   },
   // };
 
-  const lightbox = navigation.observe('lightbox');
-  lightbox.subscribe((eventId) => {
-    this._updateLightbox(eventId);
-  });
+  // const lightbox = navigation.observe('lightbox');
+  // lightbox.subscribe((eventId) => {
+  //   this._updateLightbox(eventId);
+  // });
 
   const room = {
     name: roomData.name,
@@ -161,8 +165,12 @@ async function mountHydrogen() {
     const memberEvent = workingStateEventMap[event.user_id];
     return makeEventEntryFromEventJson(event, memberEvent);
   });
-  //console.log('eventEntries', eventEntries);
   console.log('eventEntries', eventEntries.length);
+
+  // Map of `event_id` to `EventEntry`
+  const eventEntriesByEventId = eventEntries.reduce((currentMap, eventEntry) => {
+    currentMap[eventEntry.id] = eventEntry;
+  }, {});
 
   // We have to use `timeline._setupEntries([])` because it sets
   // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
@@ -282,9 +290,9 @@ async function mountHydrogen() {
   }
 
   const fromDate = new Date(fromTimestamp);
-  const archiveViewModel = {
-    roomViewModel,
-    rightPanelModel: {
+  class ArchiveViewModel extends ViewModel {
+    roomViewModel = roomViewModel;
+    rightPanelModel = {
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
@@ -295,8 +303,29 @@ async function mountHydrogen() {
           calendarDate: fromDate,
         }),
       },
-    },
-  };
+    };
+
+    lightboxViewModel = null;
+
+    constructor(options) {
+      super(options);
+
+      this.#setupNavigation();
+    }
+
+    #setupNavigation() {
+      setupLightboxNavigation(this, 'lightboxViewModel');
+    }
+
+    _roomFromNavigation() {
+      return room;
+    }
+  }
+
+  const archiveViewModel = new ArchiveViewModel({
+    navigation: navigation,
+    urlCreator: urlRouter,
+  });
 
   const view = new ArchiveView(archiveViewModel);
 
