@@ -19,8 +19,8 @@ class InMemoryHistory extends BaseObservableValue {
     assert(roomId);
 
     // Since we're viewing an archive of a room, let's mimic the URL of the room
-    // view
-    this.#hash = `#/session/123/room/${roomId}`;
+    // view unless a hash already exists
+    this.#hash = document?.location?.hash || `#/session/123/room/${roomId}`;
   }
 
   handleEvent(event) {

@@ -170,6 +170,7 @@ async function mountHydrogen() {
   // Map of `event_id` to `EventEntry`
   const eventEntriesByEventId = eventEntries.reduce((currentMap, eventEntry) => {
     currentMap[eventEntry.id] = eventEntry;
+    return currentMap;
   }, {});
 
   // We have to use `timeline._setupEntries([])` because it sets
@@ -305,8 +306,6 @@ async function mountHydrogen() {
       },
     };
 
-    lightboxViewModel = null;
-
     constructor(options) {
       super(options);
 
@@ -314,11 +313,12 @@ async function mountHydrogen() {
     }
 
     #setupNavigation() {
-      setupLightboxNavigation(this, 'lightboxViewModel');
-    }
-
-    _roomFromNavigation() {
-      return room;
+      setupLightboxNavigation(this, 'lightboxViewModel', (eventId) => {
+        return {
+          room,
+          eventEntry: eventEntriesByEventId[eventId],
+        };
+      });
     }
   }
 
