@@ -54,7 +54,6 @@ class InMemoryHistory extends BaseObservableValue {
   }
 
   getLastUrl() {
-    //throw new Error('Not implemented in InMemoryHistory');
     return this.#hash;
   }
 }
