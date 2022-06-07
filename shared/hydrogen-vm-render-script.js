@@ -23,6 +23,7 @@ const {
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const InMemoryHistory = require('matrix-public-archive-shared/lib/in-memory-history');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -87,11 +88,15 @@ async function mountHydrogen() {
   });
 
   const navigation = createNavigation();
+  const inMemoryHistory = new InMemoryHistory();
   platform.setNavigation(navigation);
   const urlRouter = createRouter({
     navigation: navigation,
-    history: platform.history,
+    //history: platform.history,
+    history: inMemoryHistory,
   });
+  // Populate the `Navigation` with segments to work from
+  urlRouter.tryRestoreLastUrl();
 
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
