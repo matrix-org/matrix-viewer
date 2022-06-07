@@ -88,7 +88,7 @@ async function mountHydrogen() {
   });
 
   const navigation = createNavigation();
-  const inMemoryHistory = new InMemoryHistory();
+  const inMemoryHistory = new InMemoryHistory(roomData.id);
   platform.setNavigation(navigation);
   const urlRouter = createRouter({
     navigation: navigation,
