@@ -1,6 +1,12 @@
 'use strict';
 
-const { TemplateView, RoomView, RightPanelView, viewClassForTile } = require('hydrogen-view-sdk');
+const {
+  TemplateView,
+  RoomView,
+  RightPanelView,
+  LightboxView,
+  viewClassForTile,
+} = require('hydrogen-view-sdk');
 
 class ArchiveView extends TemplateView {
   render(t, vm) {
@@ -13,6 +19,10 @@ class ArchiveView extends TemplateView {
       [
         t.view(new RoomView(vm.roomViewModel, viewClassForTile)),
         t.view(new RightPanelView(vm.rightPanelModel)),
+        t.mapView(
+          (vm) => vm.lightboxViewModel,
+          (lightboxViewModel) => (lightboxViewModel ? new LightboxView(lightboxViewModel) : null)
+        ),
       ]
     );
   }

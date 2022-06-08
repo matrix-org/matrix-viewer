@@ -14,15 +14,15 @@ const {
   encodeKey,
   encodeEventIdKey,
   Timeline,
-  // TimelineView,
-  // RoomView,
   RoomViewModel,
   ViewModel,
+  setupLightboxNavigation,
 } = require('hydrogen-view-sdk');
 
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -73,6 +73,45 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
   return eventEntry;
 }
 
+// For any `<a href="">` (anchor with a blank href), instead of reloading the
+// page just remove the hash. Also cleanup whenever the hash changes for
+// whatever reason.
+//
+// For example, when closing the lightbox by clicking the close "x" icon, it
+// would reload the page instead of SPA because `href=""` will cause a page
+// navigation if we didn't have this code. Also cleanup whenever the hash is
+// emptied out (like when pressing escape in the lightbox).
+function supressBlankAnchorsReloadingThePage() {
+  const eventHandler = {
+    clearHash() {
+      // Cause a `hashchange` event to be fired
+      document.location.hash = '';
+      // Cleanup the leftover `#` left on the URL
+      window.history.replaceState(null, null, window.location.pathname);
+    },
+    handleEvent(e) {
+      // For any `<a href="">` (anchor with a blank href), instead of reloading
+      // the page just remove the hash.
+      if (
+        e.type === 'click' &&
+        e.target.tagName?.toLowerCase() === 'a' &&
+        e.target?.getAttribute('href') === ''
+      ) {
+        this.clearHash();
+        // Prevent the page navigation (reload)
+        e.preventDefault();
+      }
+      // Also cleanup whenever the hash is emptied out (like when pressing escape in the lightbox)
+      else if (e.type === 'hashchange' && document.location.hash === '') {
+        this.clearHash();
+      }
+    },
+  };
+
+  document.addEventListener('click', eventHandler);
+  window.addEventListener('hashchange', eventHandler);
+}
+
 // eslint-disable-next-line max-statements
 async function mountHydrogen() {
   const app = document.querySelector('#app');
@@ -88,52 +127,31 @@ async function mountHydrogen() {
 
   const navigation = createNavigation();
   platform.setNavigation(navigation);
+
+  const archiveHistory = new ArchiveHistory(roomData.id);
   const urlRouter = createRouter({
     navigation: navigation,
-    history: platform.history,
+    // We use our own history because we want the hash to be relative to the
+    // room and not include the session/room.
+    //
+    // Normally, people use `history: platform.history,`
+    history: archiveHistory,
   });
+  // Make it listen to changes from the history instance. And populate the
+  // `Navigation` with path segments to work from so `href`'s rendered on the
+  // page don't say `undefined`.
+  urlRouter.attach();
 
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
     roomId: roomData.id,
-    //storage: this._storage,
     fragmentIdComparer: fragmentIdComparer,
     clock: platform.clock,
     logger: platform.logger,
-    //hsApi: this._hsApi
   });
 
   const mediaRepository = new MediaRepository({
     homeserver: config.matrixServerUrl,
-  });
-
-  // const urlRouter = {
-  //   urlUntilSegment: () => {
-  //     return 'todo';
-  //   },
-  //   urlForSegments: (segments) => {
-  //     const isLightBox = segments.find((segment) => {
-  //       return segment.type === 'lightbox';
-  //       console.log('segment', segment);
-  //     });
-
-  //     if (isLightBox) {
-  //       return '#';
-  //     }
-
-  //     return 'todo';
-  //   },
-  // };
-
-  // const navigation = {
-  //   segment: (type, value) => {
-  //     return new Segment(type, value);
-  //   },
-  // };
-
-  const lightbox = navigation.observe('lightbox');
-  lightbox.subscribe((eventId) => {
-    this._updateLightbox(eventId);
   });
 
   const room = {
@@ -156,8 +174,13 @@ async function mountHydrogen() {
     const memberEvent = workingStateEventMap[event.user_id];
     return makeEventEntryFromEventJson(event, memberEvent);
   });
-  //console.log('eventEntries', eventEntries);
   console.log('eventEntries', eventEntries.length);
+
+  // Map of `event_id` to `EventEntry`
+  const eventEntriesByEventId = eventEntries.reduce((currentMap, eventEntry) => {
+    currentMap[eventEntry.id] = eventEntry;
+    return currentMap;
+  }, {});
 
   // We have to use `timeline._setupEntries([])` because it sets
   // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
@@ -198,23 +221,6 @@ async function mountHydrogen() {
     tiles,
   };
 
-  // const view = new TimelineView(timelineViewModel);
-
-  // const roomViewModel = {
-  //   kind: 'room',
-  //   timelineViewModel,
-  //   composerViewModel: {
-  //     kind: 'none',
-  //   },
-  //   i18n: RoomViewModel.prototype.i18n,
-
-  //   id: roomData.id,
-  //   name: roomData.name,
-  //   avatarUrl(size) {
-  //     return getAvatarHttpUrl(roomData.avatarUrl, size, platform, mediaRepository);
-  //   },
-  // };
-
   const roomViewModel = new RoomViewModel({
     room,
     ownUserId: 'xxx',
@@ -223,6 +229,7 @@ async function mountHydrogen() {
     navigation,
   });
 
+  // FIXME: We shouldn't have to dive into the internal fields to make this work
   roomViewModel._timelineVM = timelineViewModel;
   roomViewModel._composerVM = {
     kind: 'none',
@@ -277,9 +284,9 @@ async function mountHydrogen() {
   }
 
   const fromDate = new Date(fromTimestamp);
-  const archiveViewModel = {
-    roomViewModel,
-    rightPanelModel: {
+  class ArchiveViewModel extends ViewModel {
+    roomViewModel = roomViewModel;
+    rightPanelModel = {
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
@@ -290,18 +297,40 @@ async function mountHydrogen() {
           calendarDate: fromDate,
         }),
       },
-    },
-  };
+    };
+
+    constructor(options) {
+      super(options);
+
+      this.#setupNavigation();
+    }
+
+    #setupNavigation() {
+      setupLightboxNavigation(this, 'lightboxViewModel', (eventId) => {
+        return {
+          room,
+          eventEntry: eventEntriesByEventId[eventId],
+        };
+      });
+    }
+  }
+
+  const archiveViewModel = new ArchiveViewModel({
+    navigation: navigation,
+    urlCreator: urlRouter,
+    history: archiveHistory,
+  });
 
   const view = new ArchiveView(archiveViewModel);
 
-  //console.log('view.mount()', view.mount());
   app.replaceChildren(view.mount());
 
   addSupportClasses();
+
+  supressBlankAnchorsReloadingThePage();
 }
 
-// N.B.: When we run this in a `vm`, it will return the last statement. It's
-// important to leave this as the last statement so we can await the promise it
-// returns and signal that all of the async tasks completed.
+// N.B.: When we run this in a virtual machine (`vm`), it will return the last
+// statement. It's important to leave this as the last statement so we can await
+// the promise it returns and signal that all of the async tasks completed.
 mountHydrogen();
