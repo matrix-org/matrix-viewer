@@ -3,8 +3,9 @@
 const { History } = require('hydrogen-view-sdk');
 const assert = require('./assert');
 
-// Mock a full hash whenever someone asks via `history.get()` but make URL's
-// relative to the room (remove session and room) from the hash.
+// Mock a full hash whenever someone asks via `history.get()` but when
+// constructing URL's for use `href` etc, they should relative to the room
+// (remove session and room from the hash).
 class ArchiveHistory extends History {
   constructor(roomId) {
     super();
@@ -13,6 +14,8 @@ class ArchiveHistory extends History {
     this._baseHash = `#/session/123/room/${roomId}`;
   }
 
+  // Even though the page hash is relative to the room, we still expose the full
+  // hash for Hydrogen to route things internally as expected.
   get() {
     const hash = super.get()?.replace(/^#/, '') ?? '';
     return this._baseHash + hash;
@@ -28,6 +31,9 @@ class ArchiveHistory extends History {
     }
   }
 
+  // Make the URLs we use in the UI of the app relative to the room:
+  // Before: #/session/123/room/!HBehERstyQBxyJDLfR:my.synapse.server/lightbox/$17cgP6YBP9ny9xuU1vBmpOYFhRG4zpOe9SOgWi2Wxsk
+  // After: #/lightbox/$17cgP6YBP9ny9xuU1vBmpOYFhRG4zpOe9SOgWi2Wxsk
   pathAsUrl(path) {
     const leftoverPath = super.pathAsUrl(path).replace(this._baseHash, '');
     // Only add back the hash when there is hash content beyond the base so we

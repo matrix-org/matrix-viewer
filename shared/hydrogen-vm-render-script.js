@@ -14,8 +14,6 @@ const {
   encodeKey,
   encodeEventIdKey,
   Timeline,
-  // TimelineView,
-  // RoomView,
   RoomViewModel,
   ViewModel,
   setupLightboxNavigation,
@@ -75,12 +73,14 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
   return eventEntry;
 }
 
-// For any `<a href="">` (anchor with a blank href), instead of reloading
-// the page just remove the hash.
+// For any `<a href="">` (anchor with a blank href), instead of reloading the
+// page just remove the hash. Also cleanup whenever the hash changes for
+// whatever reason.
 //
-// For example, when closing the lightbox via the close "x" icon, it would
-// reload the page instead of SPA because `href=""` will cause a page
-// navigation if we didn't have this code.
+// For example, when closing the lightbox by clicking the close "x" icon, it
+// would reload the page instead of SPA because `href=""` will cause a page
+// navigation if we didn't have this code. Also cleanup whenever the hash is
+// emptied out (like when pressing escape in the lightbox).
 function supressBlankAnchorsReloadingThePage() {
   const eventHandler = {
     clearHash() {
@@ -145,45 +145,14 @@ async function mountHydrogen() {
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
     roomId: roomData.id,
-    //storage: this._storage,
     fragmentIdComparer: fragmentIdComparer,
     clock: platform.clock,
     logger: platform.logger,
-    //hsApi: this._hsApi
   });
 
   const mediaRepository = new MediaRepository({
     homeserver: config.matrixServerUrl,
   });
-
-  // const urlRouter = {
-  //   urlUntilSegment: () => {
-  //     return 'todo';
-  //   },
-  //   urlForSegments: (segments) => {
-  //     const isLightBox = segments.find((segment) => {
-  //       return segment.type === 'lightbox';
-  //       console.log('segment', segment);
-  //     });
-
-  //     if (isLightBox) {
-  //       return '#';
-  //     }
-
-  //     return 'todo';
-  //   },
-  // };
-
-  // const navigation = {
-  //   segment: (type, value) => {
-  //     return new Segment(type, value);
-  //   },
-  // };
-
-  // const lightbox = navigation.observe('lightbox');
-  // lightbox.subscribe((eventId) => {
-  //   this._updateLightbox(eventId);
-  // });
 
   const room = {
     name: roomData.name,
@@ -252,23 +221,6 @@ async function mountHydrogen() {
     tiles,
   };
 
-  // const view = new TimelineView(timelineViewModel);
-
-  // const roomViewModel = {
-  //   kind: 'room',
-  //   timelineViewModel,
-  //   composerViewModel: {
-  //     kind: 'none',
-  //   },
-  //   i18n: RoomViewModel.prototype.i18n,
-
-  //   id: roomData.id,
-  //   name: roomData.name,
-  //   avatarUrl(size) {
-  //     return getAvatarHttpUrl(roomData.avatarUrl, size, platform, mediaRepository);
-  //   },
-  // };
-
   const roomViewModel = new RoomViewModel({
     room,
     ownUserId: 'xxx',
@@ -277,6 +229,7 @@ async function mountHydrogen() {
     navigation,
   });
 
+  // FIXME: We shouldn't have to dive into the internal fields to make this work
   roomViewModel._timelineVM = timelineViewModel;
   roomViewModel._composerVM = {
     kind: 'none',
@@ -370,7 +323,6 @@ async function mountHydrogen() {
 
   const view = new ArchiveView(archiveViewModel);
 
-  //console.log('view.mount()', view.mount());
   app.replaceChildren(view.mount());
 
   addSupportClasses();
@@ -378,7 +330,7 @@ async function mountHydrogen() {
   supressBlankAnchorsReloadingThePage();
 }
 
-// N.B.: When we run this in a `vm`, it will return the last statement. It's
-// important to leave this as the last statement so we can await the promise it
-// returns and signal that all of the async tasks completed.
+// N.B.: When we run this in a virtual machine (`vm`), it will return the last
+// statement. It's important to leave this as the last statement so we can await
+// the promise it returns and signal that all of the async tasks completed.
 mountHydrogen();
