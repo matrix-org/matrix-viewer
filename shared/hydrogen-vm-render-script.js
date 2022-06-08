@@ -82,7 +82,13 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
 // reload the page instead of SPA because `href=""` will cause a page
 // navigation if we didn't have this code.
 function supressBlankAnchorsReloadingThePage() {
-  document.body.addEventListener('click', {
+  const eventHandler = {
+    clearHash() {
+      // Cause a `hashchange` event to be fired
+      document.location.hash = '';
+      // Cleanup the leftover `#` left on the URL
+      window.history.replaceState(null, null, window.location.pathname);
+    },
     handleEvent(e) {
       // For any `<a href="">` (anchor with a blank href), instead of reloading
       // the page just remove the hash.
@@ -91,15 +97,19 @@ function supressBlankAnchorsReloadingThePage() {
         e.target.tagName?.toLowerCase() === 'a' &&
         e.target?.getAttribute('href') === ''
       ) {
-        // Cause a `hashchange` event to be fired
-        document.location.hash = '';
-        // Cleanup the leftover `#` left on the URL
-        window.history.replaceState(null, null, window.location.pathname);
+        this.clearHash();
         // Prevent the page navigation (reload)
         e.preventDefault();
       }
+      // Also cleanup whenever the hash is emptied out (like when pressing escape in the lightbox)
+      else if (e.type === 'hashchange' && document.location.hash === '') {
+        this.clearHash();
+      }
     },
-  });
+  };
+
+  document.addEventListener('click', eventHandler);
+  window.addEventListener('hashchange', eventHandler);
 }
 
 // eslint-disable-next-line max-statements
@@ -116,8 +126,9 @@ async function mountHydrogen() {
   });
 
   const navigation = createNavigation();
-  const archiveHistory = new ArchiveHistory(roomData.id);
   platform.setNavigation(navigation);
+
+  const archiveHistory = new ArchiveHistory(roomData.id);
   const urlRouter = createRouter({
     navigation: navigation,
     // We use our own history because we want the hash to be relative to the
@@ -354,6 +365,7 @@ async function mountHydrogen() {
   const archiveViewModel = new ArchiveViewModel({
     navigation: navigation,
     urlCreator: urlRouter,
+    history: archiveHistory,
   });
 
   const view = new ArchiveView(archiveViewModel);
