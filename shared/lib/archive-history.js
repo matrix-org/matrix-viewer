@@ -3,6 +3,8 @@
 const { History } = require('hydrogen-view-sdk');
 const assert = require('./assert');
 
+// Mock a full hash whenever someone asks via `history.get()` but make URL's
+// relative to the room (remove session and room) from the hash.
 class ArchiveHistory extends History {
   constructor(roomId) {
     super();
@@ -17,8 +19,10 @@ class ArchiveHistory extends History {
   }
 
   replaceUrlSilently(url) {
-    // We don't need to do this when server-side rendering in Node.js
-    // because we the #hash is not available to servers.
+    // We don't need to do this when server-side rendering in Node.js because
+    // the #hash is not available to servers. This will be called as a
+    // downstream call of `urlRouter.attach()` which we do when bootstraping
+    // everything.
     if (window.history) {
       super.replaceUrlSilently(url);
     }

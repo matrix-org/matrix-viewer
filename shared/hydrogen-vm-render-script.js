@@ -24,7 +24,6 @@ const {
 const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const InMemoryHistory = require('matrix-public-archive-shared/lib/in-memory-history');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
@@ -117,17 +116,14 @@ async function mountHydrogen() {
   });
 
   const navigation = createNavigation();
-  // const inMemoryHistory = new InMemoryHistory(roomData.id);
-  // // Make it listen to hashchange
-  // inMemoryHistory.subscribe(() => null);
   const archiveHistory = new ArchiveHistory(roomData.id);
-  // // Make it listen to hashchange
-  // archiveHistory.subscribe(() => null);
   platform.setNavigation(navigation);
   const urlRouter = createRouter({
     navigation: navigation,
-    // history: platform.history,
-    // history: inMemoryHistory,
+    // We use our own history because we want the hash to be relative to the
+    // room and not include the session/room.
+    //
+    // Normally, people use `history: platform.history,`
     history: archiveHistory,
   });
   // Make it listen to changes from the history instance. And populate the
