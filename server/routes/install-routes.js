@@ -71,7 +71,11 @@ function installRoutes(app) {
 
   app.get('/hydrogen-styles.css', async function (req, res) {
     res.set('Content-Type', 'text/css');
-    res.sendFile(require.resolve('hydrogen-view-sdk/style.css'));
+    // We have to disable no-missing-require lint because it doesn't take into
+    // account `package.json`. `exports`, see
+    // https://github.com/mysticatea/eslint-plugin-node/issues/255
+    // eslint-disable-next-line node/no-missing-require
+    res.sendFile(require.resolve('hydrogen-view-sdk/assets/theme-element-light.css'));
   });
 
   // Our own archive app styles
