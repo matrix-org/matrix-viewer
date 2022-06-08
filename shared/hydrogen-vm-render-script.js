@@ -25,6 +25,7 @@ const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
 const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const InMemoryHistory = require('matrix-public-archive-shared/lib/in-memory-history');
+const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -89,18 +90,23 @@ async function mountHydrogen() {
   });
 
   const navigation = createNavigation();
-  const inMemoryHistory = new InMemoryHistory(roomData.id);
-  inMemoryHistory.subscribe(() => null);
+  // const inMemoryHistory = new InMemoryHistory(roomData.id);
+  // // Make it listen to hashchange
+  // inMemoryHistory.subscribe(() => null);
+  const archiveHistory = new ArchiveHistory(roomData.id);
+  // // Make it listen to hashchange
+  // archiveHistory.subscribe(() => null);
   platform.setNavigation(navigation);
   const urlRouter = createRouter({
     navigation: navigation,
-    //history: platform.history,
-    history: inMemoryHistory,
+    // history: platform.history,
+    // history: inMemoryHistory,
+    history: archiveHistory,
   });
-  // Make it listen to changes from the history instance
+  // Make it listen to changes from the history instance. And populate the
+  // `Navigation` with path segments to work from so `href`'s rendered on the
+  // page don't say `undefined`.
   urlRouter.attach();
-  // Populate the `Navigation` with segments to work from
-  urlRouter.tryRestoreLastUrl();
 
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
