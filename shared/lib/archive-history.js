@@ -25,9 +25,11 @@ class ArchiveHistory extends History {
   }
 
   pathAsUrl(path) {
-    // FIXME: When closing the modal it reloads the page instead of SPA because
-    // this makes `href=""` for the close button.
     const leftoverPath = super.pathAsUrl(path).replace(this._baseHash, '');
+    // Only add back the hash when there is hash content beyond the base so we
+    // don't end up with an extraneous `#` on the end of the URL. This will end
+    // up creating some `<a href="">` (anchors with a blank href) but we have
+    // some code to clean this up, see `supressBlankAnchorsReloadingThePage`.
     if (leftoverPath.length) {
       return `#${leftoverPath}`;
     }

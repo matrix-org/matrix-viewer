@@ -76,6 +76,33 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
   return eventEntry;
 }
 
+// For any `<a href="">` (anchor with a blank href), instead of reloading
+// the page just remove the hash.
+//
+// For example, when closing the lightbox via the close "x" icon, it would
+// reload the page instead of SPA because `href=""` will cause a page
+// navigation if we didn't have this code.
+function supressBlankAnchorsReloadingThePage() {
+  document.body.addEventListener('click', {
+    handleEvent(e) {
+      // For any `<a href="">` (anchor with a blank href), instead of reloading
+      // the page just remove the hash.
+      if (
+        e.type === 'click' &&
+        e.target.tagName?.toLowerCase() === 'a' &&
+        e.target?.getAttribute('href') === ''
+      ) {
+        // Cause a `hashchange` event to be fired
+        document.location.hash = '';
+        // Cleanup the leftover `#` left on the URL
+        window.history.replaceState(null, null, window.location.pathname);
+        // Prevent the page navigation (reload)
+        e.preventDefault();
+      }
+    },
+  });
+}
+
 // eslint-disable-next-line max-statements
 async function mountHydrogen() {
   const app = document.querySelector('#app');
@@ -339,6 +366,8 @@ async function mountHydrogen() {
   app.replaceChildren(view.mount());
 
   addSupportClasses();
+
+  supressBlankAnchorsReloadingThePage();
 }
 
 // N.B.: When we run this in a `vm`, it will return the last statement. It's

@@ -1,5 +1,7 @@
 'use strict';
 
+console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
+
 const path = require('path');
 const nodemon = require('nodemon');
 const { build } = require('vite');
@@ -7,7 +9,15 @@ const mergeOptions = require('merge-options');
 
 const viteConfig = require('../vite.config');
 
-console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
+// Build the client-side JavaScript bundle when we see any changes
+build(
+  mergeOptions(viteConfig, {
+    build: {
+      // Rebuild when we see changes
+      watch: true,
+    },
+  })
+);
 
 // Listen for any changes to files and restart the Node.js server process
 //
@@ -30,16 +40,15 @@ nodemon
   })
   .on('restart', function (files) {
     console.log('App restarted due to: ', files);
-  });
-
-// Build the client-side JavaScript bundle when we see any changes
-build(
-  mergeOptions(viteConfig, {
-    build: {
-      // Rebuild when we see changes
-      watch: true,
-    },
   })
-);
+  .on('crash', function () {
+    console.log('Nodemon: script crashed for some reason');
+  })
+  // .on('watching', (file) => {
+  //   console.log('watching');
+  // })
+  .on('log', function (data) {
+    console.log(`Nodemon logs: ${data.type}: ${data.message}`);
+  });
 
 console.log('start-dev2 process.env.NODE_ENV', process.env.NODE_ENV);
