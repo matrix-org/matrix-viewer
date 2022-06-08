@@ -50,5 +50,3 @@ nodemon
   .on('log', function (data) {
     console.log(`Nodemon logs: ${data.type}: ${data.message}`);
   });
-
-console.log('start-dev2 process.env.NODE_ENV', process.env.NODE_ENV);
