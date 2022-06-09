@@ -208,27 +208,27 @@ describe('matrix-public-archive', () => {
       const imageBuffer = await readFile(
         path.resolve(__dirname, './fixtures/friction_between_surfaces.jpg')
       );
+      const imageFileName = 'friction_between_surfaces.jpg';
       const mxcUri = await uploadContent({
         client,
         roomId,
         data: imageBuffer,
-        contentType: 'image/jpeg',
+        fileName: imageFileName,
       });
       const imageEventId = await sendMessageOnArchiveDate({
         client,
         roomId,
         content: {
-          body: 'friction_between_surfaces.jpg',
+          body: imageFileName,
           info: {
             size: 17471,
             mimetype: 'image/jpeg',
             w: 640,
             h: 312,
             'xyz.amorgan.blurhash': 'LkR3G|IU?w%NbxbIemae_NxuD$M{',
-            // TODO: How to get a proper thumnail URL that will load?
-            thumbnail_url: mxcUri,
           },
           msgtype: 'm.image',
+          // TODO: How can we get the thumbnail to load? The full lightbox version works.
           url: mxcUri,
         },
       });
@@ -310,7 +310,7 @@ describe('matrix-public-archive', () => {
       const imageElement = dom.document.querySelector(`[data-event-id="${imageEventId}"] img`);
       assert(imageElement);
       assert.match(imageElement.getAttribute('src'), new RegExp(`^http://.*`));
-      assert.strictEqual(imageElement.getAttribute('alt'), 'friction_between_surfaces.jpg');
+      assert.strictEqual(imageElement.getAttribute('alt'), imageFileName);
 
       // Make sure the normal message is visible
       assert.match(

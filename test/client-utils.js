@@ -3,7 +3,7 @@
 const assert = require('assert');
 const { URLSearchParams } = require('url');
 const urlJoin = require('url-join');
-const { fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
+const { fetchEndpointAsJson, fetchEndpoint } = require('../server/lib/fetch-endpoint');
 
 const config = require('../server/lib/config');
 const matrixAccessToken = config.get('matrixAccessToken');
@@ -34,12 +34,15 @@ async function getTestClientForHs(testMatrixServerUrl) {
     }
   );
 
+  const userId = registerResponse['user_id'];
+  assert(userId);
+
   return {
     homeserverUrl: testMatrixServerUrl,
     // We use the application service AS token because we need to be able to use
     // the `?ts` timestamp massaging when sending events
     accessToken: matrixAccessToken,
-    userId: registerResponse.user_id,
+    userId: userId,
   };
 }
 
@@ -71,7 +74,9 @@ async function createTestRoom(client) {
     }
   );
 
-  return createRoomResponse['room_id'];
+  const roomId = createRoomResponse['room_id'];
+  assert(roomId);
+  return roomId;
 }
 
 async function joinRoom({ client, roomId, viaServers }) {
@@ -86,7 +91,7 @@ async function joinRoom({ client, roomId, viaServers }) {
     qs.append('user_id', client.userId);
   }
 
-  const createRoomResponse = await fetchEndpointAsJson(
+  const joinRoomResponse = await fetchEndpointAsJson(
     urlJoin(client.homeserverUrl, `/_matrix/client/v3/join/${roomId}?${qs.toString()}`),
     {
       method: 'POST',
@@ -94,7 +99,9 @@ async function joinRoom({ client, roomId, viaServers }) {
     }
   );
 
-  return createRoomResponse['room_id'];
+  const joinedRoomId = joinRoomResponse['room_id'];
+  assert(joinedRoomId);
+  return joinedRoomId;
 }
 
 async function sendEvent({ client, roomId, eventType, content, timestamp }) {
@@ -129,7 +136,9 @@ async function sendEvent({ client, roomId, eventType, content, timestamp }) {
     }
   );
 
-  return sendResponse['event_id'];
+  const eventId = sendResponse['event_id'];
+  assert(eventId);
+  return eventId;
 }
 
 async function sendMessage({ client, roomId, content, timestamp }) {
@@ -156,7 +165,6 @@ async function createMessagesInRoom({ client, roomId, numMessages, prefix, times
 }
 
 // Uploads the given data Buffer and returns the MXC URI of the uploaded content
-// TODO: Use this and make sure it works
 async function uploadContent({ client, roomId, data, fileName, contentType }) {
   assert(client);
   assert(roomId);
@@ -171,7 +179,9 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
     qs.append('filename', fileName);
   }
 
-  const uploadResponse = await fetchEndpointAsJson(
+  // We don't want to use `fetchEndpointAsJson` here because it will
+  // `JSON.stringify(...)` the body data
+  const uploadResponse = await fetchEndpoint(
     urlJoin(client.homeserverUrl, `/_matrix/media/v3/upload`),
     {
       method: 'POST',
@@ -183,7 +193,11 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
     }
   );
 
-  return uploadResponse['content_uri'];
+  const uploadResponseData = await uploadResponse.json();
+
+  const mxcUri = uploadResponseData['content_uri'];
+  assert(mxcUri);
+  return mxcUri;
 }
 
 module.exports = {
