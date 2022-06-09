@@ -7,11 +7,18 @@ const urlJoin = require('url-join');
 const escapeStringRegexp = require('escape-string-regexp');
 const { parseHTML } = require('linkedom');
 
-const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
-
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-
+const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');
+
+const {
+  getTestClientForHs,
+  createTestRoom,
+  joinRoom,
+  sendMessage,
+  createMessagesInRoom,
+} = require('./client-utils');
+
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
 assert(testMatrixServerUrl1);
@@ -26,144 +33,6 @@ const HOMESERVER_URL_TO_PRETTY_NAME_MAP = {
   [testMatrixServerUrl1]: 'hs1',
   [testMatrixServerUrl2]: 'hs2',
 };
-
-let txnCount = 0;
-function getTxnId() {
-  txnCount++;
-  return `${new Date().getTime()}--${txnCount}`;
-}
-
-async function getTestClientForHs(testMatrixServerUrl) {
-  const registerBody = {
-    username: `user-t${new Date().getTime()}-r${Math.floor(Math.random() * 1000000000)}`,
-    password: 'password',
-  };
-
-  let registerResponse;
-  try {
-    registerResponse = await fetchEndpointAsJson(
-      urlJoin(testMatrixServerUrl, '/_matrix/client/v3/register'),
-      {
-        method: 'POST',
-        body: registerBody,
-      }
-    );
-  } catch (err) {
-    // 401 means we need to do user-interactive authentication (UIA), so try and complete a stage
-    if (err.response.status === 401) {
-      const sessionId = err.session;
-      // We just assume this is the flow we can use
-      const flow = 'm.login.dummy';
-
-      registerBody['auth'] = {
-        type: flow,
-        session: sessionId,
-      };
-
-      registerResponse = await fetchEndpointAsJson(
-        urlJoin(testMatrixServerUrl, '/_matrix/client/v3/register'),
-        {
-          method: 'POST',
-          body: registerBody,
-        }
-      );
-    }
-  }
-
-  const accessToken = registerResponse['access_token'];
-  if (!accessToken) throw new Error('No access token returned');
-  return {
-    homeserverUrl: testMatrixServerUrl,
-    accessToken,
-  };
-}
-
-async function sendMessage({ client, roomId, content, timestamp }) {
-  assert(client);
-  assert(roomId);
-  assert(content);
-
-  let qs = '';
-  if (timestamp) {
-    qs = `?ts=${timestamp}`;
-  }
-
-  const sendResponse = await fetchEndpointAsJson(
-    urlJoin(
-      client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${roomId}/send/m.room.message/${getTxnId()}${qs}`
-    ),
-    {
-      method: 'PUT',
-      body: content,
-      accessToken: client.accessToken,
-    }
-  );
-
-  return sendResponse['event_id'];
-}
-
-async function createMessagesInRoom({ client, roomId, numMessages, prefix, timestamp }) {
-  let eventIds = [];
-  for (let i = 0; i < numMessages; i++) {
-    const eventId = await sendMessage({
-      client,
-      roomId,
-      content: {
-        msgtype: 'm.text',
-        body: `${prefix} - message${i}`,
-      },
-      timestamp,
-    });
-    eventIds.push(eventId);
-  }
-
-  return eventIds;
-}
-
-async function createTestRoom(client) {
-  const createRoomResponse = await fetchEndpointAsJson(
-    urlJoin(client.homeserverUrl, `/_matrix/client/v3/createRoom`),
-    {
-      method: 'POST',
-      body: {
-        preset: 'public_chat',
-        name: 'the hangout spot',
-        initial_state: [
-          {
-            type: 'm.room.history_visibility',
-            state_key: '',
-            content: {
-              history_visibility: 'world_readable',
-            },
-          },
-        ],
-      },
-      accessToken: client.accessToken,
-    }
-  );
-
-  return createRoomResponse['room_id'];
-}
-
-async function joinRoom({ client, roomId, viaServers }) {
-  let qs = '';
-  if (viaServers) {
-    qs = [].concat(viaServers).reduce((currentQs, viaServer) => {
-      return `${currentQs}&server_name=${viaServer}`;
-    }, '?');
-  }
-
-  const createRoomResponse = await fetchEndpointAsJson(
-    urlJoin(client.homeserverUrl, `/_matrix/client/v3/join/${roomId}${qs}`),
-    {
-      method: 'POST',
-      accessToken: client.accessToken,
-    }
-  );
-
-  return createRoomResponse['room_id'];
-}
 
 describe('matrix-public-archive', () => {
   let server;
@@ -237,7 +106,7 @@ describe('matrix-public-archive', () => {
     // midnight and it rolls over to the next day.
     const archiveDate = new Date(Date.UTC(2022, 0, 3));
     let archiveUrl;
-    let numMessagesSent;
+    let numMessagesSent = 0;
     afterEach(() => {
       if (interactive) {
         console.log('Interactive URL for test', archiveUrl);
@@ -254,7 +123,6 @@ describe('matrix-public-archive', () => {
     async function sendMessageOnArchiveDate(options) {
       const minute = 1000 * 60;
       // Adjust the timestamp by a minute each time so there is some visual difference.
-      // FIXME: This currently does not work because the test client is not an application service
       options.timestamp = archiveDate.getTime() + minute * numMessagesSent;
       numMessagesSent++;
 
