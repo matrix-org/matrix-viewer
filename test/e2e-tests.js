@@ -218,19 +218,13 @@ describe('matrix-public-archive', () => {
         client,
         roomId,
         content: {
-          body: 'Friction_between_surfaces.jpeg',
+          body: 'friction_between_surfaces.jpg',
           info: {
-            size: 396644,
+            size: 17471,
             mimetype: 'image/jpeg',
-            thumbnail_info: {
-              w: 800,
-              h: 390,
-              mimetype: 'image/jpeg',
-              size: 126496,
-            },
-            w: 1894,
-            h: 925,
-            'xyz.amorgan.blurhash': 'LkR3G|IU?w%NbwbIemae_NxuD$M{',
+            w: 640,
+            h: 312,
+            'xyz.amorgan.blurhash': 'LkR3G|IU?w%NbxbIemae_NxuD$M{',
             // TODO: How to get a proper thumnail URL that will load?
             thumbnail_url: mxcUri,
           },
@@ -316,7 +310,7 @@ describe('matrix-public-archive', () => {
       const imageElement = dom.document.querySelector(`[data-event-id="${imageEventId}"] img`);
       assert(imageElement);
       assert.match(imageElement.getAttribute('src'), new RegExp(`^http://.*`));
-      assert.strictEqual(imageElement.getAttribute('alt'), 'Friction_between_surfaces.jpeg');
+      assert.strictEqual(imageElement.getAttribute('alt'), 'friction_between_surfaces.jpg');
 
       // Make sure the normal message is visible
       assert.match(
