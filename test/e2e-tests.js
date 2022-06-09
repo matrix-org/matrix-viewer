@@ -3,9 +3,11 @@
 process.env.NODE_ENV = 'test';
 
 const assert = require('assert');
+const path = require('path');
 const urlJoin = require('url-join');
 const escapeStringRegexp = require('escape-string-regexp');
 const { parseHTML } = require('linkedom');
+const { readFile } = require('fs').promises;
 
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
@@ -15,8 +17,10 @@ const {
   getTestClientForHs,
   createTestRoom,
   joinRoom,
+  sendEvent,
   sendMessage,
   createMessagesInRoom,
+  uploadContent,
 } = require('./client-utils');
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
@@ -129,6 +133,16 @@ describe('matrix-public-archive', () => {
       return sendMessage(options);
     }
 
+    // Sends a message and makes sure that a timestamp was provided
+    async function sendEventOnArchiveDate(options) {
+      const minute = 1000 * 60;
+      // Adjust the timestamp by a minute each time so there is some visual difference.
+      options.timestamp = archiveDate.getTime() + minute * numMessagesSent;
+      numMessagesSent++;
+
+      return sendEvent(options);
+    }
+
     it('shows all events in a given day', async () => {
       const client = await getTestClientForHs(testMatrixServerUrl1);
       const roomId = await createTestRoom(client);
@@ -190,9 +204,16 @@ describe('matrix-public-archive', () => {
       // TODO: Set avatar of room
 
       // Test image
-      const mxcUri = await client.uploadContentFromUrl(
-        'https://en.wikipedia.org/wiki/Friction#/media/File:Friction_between_surfaces.jpg'
+      // via https://en.wikipedia.org/wiki/Friction#/media/File:Friction_between_surfaces.jpg (CaoHao)
+      const imageBuffer = await readFile(
+        path.resolve(__dirname, './fixtures/friction_between_surfaces.jpg')
       );
+      const mxcUri = await uploadContent({
+        client,
+        roomId,
+        data: imageBuffer,
+        contentType: 'image/jpeg',
+      });
       const imageEventId = await sendMessageOnArchiveDate({
         client,
         roomId,
@@ -272,11 +293,16 @@ describe('matrix-public-archive', () => {
 
       // Test reactions
       const reactionText = '😅';
-      await client.sendEvent(roomId, 'm.reaction', {
-        'm.relates_to': {
-          rel_type: 'm.annotation',
-          event_id: replyMessageEventId,
-          key: reactionText,
+      await sendEventOnArchiveDate({
+        client,
+        roomId,
+        eventType: 'm.reaction',
+        content: {
+          'm.relates_to': {
+            rel_type: 'm.annotation',
+            event_id: replyMessageEventId,
+            key: reactionText,
+          },
         },
       });
 

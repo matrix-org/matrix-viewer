@@ -97,7 +97,7 @@ async function joinRoom({ client, roomId, viaServers }) {
   return createRoomResponse['room_id'];
 }
 
-async function sendMessage({ client, roomId, content, timestamp }) {
+async function sendEvent({ client, roomId, eventType, content, timestamp }) {
   assert(client);
   assert(roomId);
   assert(content);
@@ -120,7 +120,7 @@ async function sendMessage({ client, roomId, content, timestamp }) {
   const sendResponse = await fetchEndpointAsJson(
     urlJoin(
       client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${roomId}/send/m.room.message/${getTxnId()}?${qs.toString()}`
+      `/_matrix/client/v3/rooms/${roomId}/send/${eventType}/${getTxnId()}?${qs.toString()}`
     ),
     {
       method: 'PUT',
@@ -130,6 +130,10 @@ async function sendMessage({ client, roomId, content, timestamp }) {
   );
 
   return sendResponse['event_id'];
+}
+
+async function sendMessage({ client, roomId, content, timestamp }) {
+  return sendEvent({ client, roomId, eventType: 'm.room.message', content, timestamp });
 }
 
 // Create a number of messages in the given room
@@ -186,6 +190,7 @@ module.exports = {
   getTestClientForHs,
   createTestRoom,
   joinRoom,
+  sendEvent,
   sendMessage,
   createMessagesInRoom,
   uploadContent,
