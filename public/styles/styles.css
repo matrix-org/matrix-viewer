@@ -8,6 +8,10 @@ html {
   box-sizing: inherit;
 }
 
+body {
+  margin: 0;
+}
+
 /* Based on .SessionView from Hydrogen */
 .ArchiveView {
   /* this takes into account whether or not the url bar is hidden on mobile
