@@ -20,7 +20,7 @@ function configureNodeEnv() {
 }
 
 const nodeEnv = configureNodeEnv();
-console.log('nodeEnv', nodeEnv);
+console.log(`Config is using nodeEnv=${nodeEnv}`);
 const configDir = path.join(__dirname, '../../config');
 
 nconf.argv().env('__');

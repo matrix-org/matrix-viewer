@@ -31,8 +31,6 @@
     "express": "^4.17.2",
     "hydrogen-view-sdk": "^0.0.4",
     "linkedom": "^0.14.1",
-    "matrix-bot-sdk": "^0.5.19",
-    "matrix-js-sdk": "^15.5.2",
     "matrix-public-archive-shared": "file:./shared/",
     "nconf": "^0.11.3",
     "node-fetch": "^2.6.7",

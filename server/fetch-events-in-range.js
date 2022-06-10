@@ -16,7 +16,7 @@ assert(matrixServerUrl);
 // Consider this scenario: dayStart(fromTs) <---- msg1 <- msg2 <-- msg3 <---- dayEnd(toTs)
 //  - ❌ If we start from dayStart and look backwards, we will find nothing.
 //  - ❌ If we start from dayStart and look forwards, we will find msg1, but federated backfill won't be able to paginate forwards
-//  - ✅ If we start from dayEnd and look backwards, we will msg3
+//  - ✅ If we start from dayEnd and look backwards, we will find msg3
 //  - ❌ If we start from dayEnd and look forwards, we will find nothing
 //
 // Returns events in reverse-chronological order.

@@ -33,6 +33,7 @@ async function fetchEndpoint(endpoint, options = {}) {
   const res = await fetch(endpoint, {
     method,
     headers,
+    body: options.body,
   });
   await checkResponseStatus(res);
 
@@ -49,10 +50,15 @@ async function fetchEndpointAsJson(endpoint, options) {
   const opts = {
     ...options,
     headers: {
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
   };
+
+  if (options.body) {
+    opts.body = JSON.stringify(options.body);
+  }
 
   const res = await fetchEndpoint(endpoint, opts);
   const data = await res.json();

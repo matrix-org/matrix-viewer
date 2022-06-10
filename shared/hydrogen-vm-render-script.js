@@ -174,7 +174,7 @@ async function mountHydrogen() {
     const memberEvent = workingStateEventMap[event.user_id];
     return makeEventEntryFromEventJson(event, memberEvent);
   });
-  console.log('eventEntries', eventEntries.length);
+  //console.log('eventEntries', eventEntries.length);
 
   // Map of `event_id` to `EventEntry`
   const eventEntriesByEventId = eventEntries.reduce((currentMap, eventEntry) => {
