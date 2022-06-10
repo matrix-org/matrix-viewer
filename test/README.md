@@ -15,19 +15,19 @@ $ docker-compose --project-name matrix_public_archive_test -f test/docker-compos
 
 ## Running the tests
 
-```
+```sh
 $ npm run test
 ```
 
 Or if you want to keep `matrix-public-archive` server running after the tests run and explore the output from the interactive URL's printed on the screen, use:
 
-```
+```sh
 $ npm run test-interactive
 ```
 
 ### Developer utility
 
-```
+```sh
 $ docker ps --all | grep test_hs
 $ docker logs -f --tail 10 matrix_public_archive_test_hs1_1
 $ docker logs -f --tail 10 matrix_public_archive_test_hs2_1
