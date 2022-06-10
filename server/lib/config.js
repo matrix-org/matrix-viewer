@@ -1,6 +1,7 @@
 'use strict';
 
-// This file is based off the Gitter config, https://gitlab.com/gitlab-org/gitter/env/blob/master/lib/config.js
+// This file is based off the Gitter config,
+// https://gitlab.com/gitlab-org/gitter/env/blob/master/lib/config.js
 
 const path = require('path');
 const nconf = require('nconf');
@@ -23,6 +24,10 @@ const nodeEnv = configureNodeEnv();
 console.log(`Config is using nodeEnv=${nodeEnv}`);
 const configDir = path.join(__dirname, '../../config');
 
+// Setup nconf to use (in-order):
+//   1. Command-line arguments (argv)
+//   2. Environment variables (env)
+//   3. `config/config-{env}.json` files
 nconf.argv().env('__');
 
 nconf.add('envUser', {
