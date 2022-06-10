@@ -228,7 +228,6 @@ describe('matrix-public-archive', () => {
             'xyz.amorgan.blurhash': 'LkR3G|IU?w%NbxbIemae_NxuD$M{',
           },
           msgtype: 'm.image',
-          // TODO: How can we get the thumbnail to load? The full lightbox version works.
           url: mxcUri,
         },
       });

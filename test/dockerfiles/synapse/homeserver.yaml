@@ -6,6 +6,7 @@ report_stats: False
 signing_key_path: /conf/server.signing.key
 trusted_key_servers: []
 enable_registration: true
+enable_registration_without_verification: true
 
 ## Listeners ##
 
@@ -93,6 +94,13 @@ rc_joins:
     burst_count: 9999
 
 federation_rr_transactions_per_room_per_second: 9999
+
+## Media Store ##
+
+# Whether to generate new thumbnails on the fly. This lets the image thumbnails
+# load in the tests.
+#
+dynamic_thumbnails: true
 
 ## API Configuration ##
 
