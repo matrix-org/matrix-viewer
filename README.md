@@ -26,7 +26,41 @@ the messages from a Matrix homeserver.
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
 
-## Prerequisites
+## Setup
+
+### Prerequisites
 
 - Node.js v16
   - We only need v16 because it includes [`require('crypto').webcrypto.subtle`](https://nodejs.org/docs/latest-v16.x/api/webcrypto.html#cryptosubtle) for [Matrix encryption (olm) which can't be disabled in Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
+
+### Get the app running
+
+```sh
+# We need to use a draft branch of Hydrogen to get the custom changes needed for
+# `matrix-public-archive` to run. Hopefully soon, we can get all of the custom
+# changes mainlined so this isn't necessary.
+$ git clone git@github.com:vector-im/hydrogen-web.git
+$ cd hydrogen-web
+$ git checkout madlittlemods/matrix-public-archive-scratch-changes
+$ yarn install
+$ yarn build:sdk
+$ cd target/ && npm link && cd ..
+$ cd ..
+
+# Now clone and install the `matrix-public-archive` project
+$ git clone git@github.com:matrix-org/matrix-public-archive.git
+$ cd matrix-public-archive
+$ npm install
+$ npm link hydrogen-view-sdk
+# If you just want to run the tests,you can skip to the "Running tests" section at this point
+$ cp config/config.default.json config/config.user-overrides.json
+# Edit config/config.user-overrides.json so that it points to your homeserver
+# and has an access token
+
+# Now we can finally start the app
+$ npm start-dev
+```
+
+## Running tests
+
+See the [testing readme](./test/README.md).
