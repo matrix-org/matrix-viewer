@@ -1,4 +1,4 @@
-name: Tests
+name: Containerize
 
 on:
   push:
@@ -9,15 +9,14 @@ on:
 env:
   REGISTRY: ghcr.io
   GHCR_NAMESPACE: matrix-org/matrix-public-archive
-  IMAGE_NAME: matrix-public-archive-test-homeserver
+  IMAGE_NAME: matrix-public-archive
 
 jobs:
-  # Create and publish a Docker image for a Synapse test instance that can
-  # federate with each other.
+  # Create and publish a Docker image for matrix-public-archive
   #
   # Based off of
   # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images#publishing-images-to-github-packages
-  build-test-synapse-image:
+  build-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,7 +24,7 @@ jobs:
 
     outputs:
       # Make the Docker image name available to use in other jobs as `${{
-      # needs.build-test-synapse-image.outputs.docker_image_name }}`. Also see
+      # needs.build-image.outputs.docker_image_name }}`. Also see
       # the `save_var` step below for how this works.
       docker_image_name: ${{ steps.save_var.outputs.docker_image_name }}
 
@@ -47,7 +46,7 @@ jobs:
       # the next job.
       #
       # via https://github.community/t/how-to-use-env-with-container-image/17252/25
-      - name: Save the Docker image name to a variable so we can share and re-use it in other jobs via `${{ needs.build-test-synapse-image.outputs.docker_image_name }}`
+      - name: Save the Docker image name to a variable so we can share and re-use it in other jobs via `${{ needs.build-image.outputs.docker_image_name }}`
         id: save_var
         run: echo "::set-output name=docker_image_name::${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}"
 
@@ -70,52 +69,7 @@ jobs:
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           push: true
-          context: test/dockerfiles/
-          file: 'test/dockerfiles/Synapse.Dockerfile'
+          context: '.'
+          file: 'Dockerfile'
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-  tests:
-    needs: [build-test-synapse-image]
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [16.x]
-
-    services:
-      # We need two homeservers that federate with each other to test with
-      hs1:
-        image: ${{ needs.build-test-synapse-image.outputs.docker_image_name }}:${{ github.sha }}
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 11008:8008
-        env:
-          SERVER_NAME: hs1
-      hs2:
-        image: ${{ needs.build-test-synapse-image.outputs.docker_image_name }}:${{ github.sha }}
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 12008:8008
-        env:
-          SERVER_NAME: hs2
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run build
-        run: npm run build
-
-      - name: Test!
-        run: npm test

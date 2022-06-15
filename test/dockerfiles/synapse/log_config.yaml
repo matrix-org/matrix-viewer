@@ -17,6 +17,11 @@ handlers:
     # log to stdout, for easier use with 'docker logs'
     stream: 'ext://sys.stdout'
 
+
+# loggers:
+#     synapse.rest.media.v1.thumbnail_resource:
+#         level: DEBUG
+
 root:
     level: INFO
     handlers: [console]
