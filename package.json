@@ -4,6 +4,7 @@
   "scripts": {
     "start-dev": "node server/start-dev.js",
     "lint": "eslint **/*.js",
+    "build": "vite build",
     "test": "npm run mocha -- test/e2e-tests.js --timeout 15000",
     "test-interactive": "npm run mocha -- test/e2e-tests.js --timeout 15000 --interactive",
     "nodemon": "nodemon",
