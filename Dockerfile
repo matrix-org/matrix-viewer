@@ -17,8 +17,6 @@ COPY shared /app/shared/
 COPY vite.config.js /app/
 # Build the client-side bundle
 RUN npm run build
-# Copy the build we just made
-COPY dist /app/
 
 # Copy the rest of the app
 COPY server /app/server/
