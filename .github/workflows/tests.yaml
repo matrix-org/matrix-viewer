@@ -59,14 +59,14 @@ jobs:
 
     services:
       hs1:
-        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver
+        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.ref_name }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
         env:
           SERVER_NAME: hs1
       hs2:
-        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver
+        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.ref_name }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
