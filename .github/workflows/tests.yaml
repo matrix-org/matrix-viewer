@@ -60,6 +60,8 @@ jobs:
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 11008:8008
         env:
           SERVER_NAME: hs1
       hs2:
@@ -70,6 +72,8 @@ jobs:
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 12008:8008
         env:
           SERVER_NAME: hs2
 
