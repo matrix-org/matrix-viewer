@@ -36,6 +36,18 @@ the maintenance burden of supporting more event types in Hydrogen.
 ### Get the app running
 
 ```sh
+$ npm install
+
+# Edit config/config.user-overrides.json so that `matrixServerUrl` points to your homeserver
+# and has `matrixAccessToken` defined
+$ cp config/config.default.json config/config.user-overrides.json
+
+$ npm run start-dev
+```
+
+## Development
+
+```sh
 # We need to use a draft branch of Hydrogen to get the custom changes needed for
 # `matrix-public-archive` to run. Hopefully soon, we can get all of the custom
 # changes mainlined so this isn't necessary.
@@ -52,15 +64,16 @@ $ git clone git@github.com:matrix-org/matrix-public-archive.git
 $ cd matrix-public-archive
 $ npm install
 $ npm link hydrogen-view-sdk
-# If you just want to run the tests,you can skip to the "Running tests" section at this point
+# If you just want to run the tests, you can skip to the "Running tests" section at this point
+#
+# Edit config/config.user-overrides.json so that `matrixServerUrl` points to your homeserver
+# and has `matrixAccessToken` defined
 $ cp config/config.default.json config/config.user-overrides.json
-# Edit config/config.user-overrides.json so that it points to your homeserver
-# and has an access token
 
 # Now we can finally start the app
-$ npm start-dev
+$ npm run start-dev
 ```
 
-## Running tests
+### Running tests
 
 See the [testing readme](./test/README.md).
