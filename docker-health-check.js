@@ -1,7 +1,6 @@
 'use strict';
 
 const assert = require('assert');
-const urlJoin = require('url-join');
 
 const { fetchEndpointAsJson } = require('./server/lib/fetch-endpoint');
 
