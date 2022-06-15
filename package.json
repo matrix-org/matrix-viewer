@@ -2,9 +2,10 @@
   "name": "matrix-public-archive",
   "version": "0.0.0",
   "scripts": {
-    "start-dev": "node server/start-dev.js",
     "lint": "eslint **/*.js",
     "build": "vite build",
+    "start": "node server/server.js",
+    "start-dev": "node server/start-dev.js",
     "test": "npm run mocha -- test/e2e-tests.js --timeout 15000",
     "test-interactive": "npm run mocha -- test/e2e-tests.js --timeout 15000 --interactive",
     "nodemon": "nodemon",
