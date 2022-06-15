@@ -4,8 +4,6 @@ RUN mkdir -p /app
 
 WORKDIR /app
 
-RUN npm install npm@^8 --location=global
-
 # Copy the health-check script
 COPY docker-health-check.js /app/
 
