@@ -66,7 +66,7 @@ jobs:
         # Can't use env variables because they aren't available to the
         # services.<service_id> context
         # (https://docs.github.com/en/actions/learn-github-actions/contexts)
-        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.ref_name }}
+        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.sha }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
