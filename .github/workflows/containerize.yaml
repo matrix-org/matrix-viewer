@@ -73,3 +73,21 @@ jobs:
           file: 'Dockerfile'
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  test-image:
+    needs: [build-image]
+    runs-on: ubuntu-latest
+    services:
+      matrix-public-archive:
+        image: ${{ needs.build-image.outputs.docker_image_name }}:sha-${{ github.sha }}
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 3050:3050
+        env:
+          SERVER_NAME: hs1
+
+    steps:
+      - name: See if the container will respond to a request
+        run: curl http://matrix-public-archive:3050/health-check
