@@ -4,6 +4,8 @@ RUN mkdir -p /app
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y curl
+
 RUN npm install npm@^8 --location=global
 
 # Copy just what we need to install the dependencies so this layer can be cached
@@ -22,6 +24,6 @@ RUN npm run build
 # Copy the rest of the app
 COPY server /app/server/
 
-HEALTHCHECK CMD curl --fail http://localhost:3050/health-check || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:3050/health-check
 
 ENTRYPOINT ["/bin/bash", "-c", "npm start"]

@@ -74,6 +74,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  # Just make sure the container can start-up and responds to the health check
   test-image:
     needs: [build-image]
     runs-on: ubuntu-latest
