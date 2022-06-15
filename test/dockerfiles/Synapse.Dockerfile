@@ -1,15 +1,8 @@
-# A dockerfile which builds an image suitable for testing Synapse under
-# complement.
+# A dockerfile which builds an image suitable for creating test Synapse
+# instances which federate with each other.
 #
-# Currently this is based on the published 'synapse:latest' image -- ie, the
-# most recent Synapse release.
-#
-# Also... none of the tests seem to pass yet. They do run though.
-#
-# To use it:
-#
-# (cd dockerfiles && docker build -t complement-synapse -f Synapse.Dockerfile .)
-# COMPLEMENT_BASE_IMAGE=complement-synapse go test -v ./tests
+# Currently this is based on Complement Synapse images which are based on the
+# published 'synapse:latest' image -- ie, the most recent Synapse release.
 
 ARG SYNAPSE_VERSION=latest
 
@@ -30,6 +23,8 @@ WORKDIR /data
 
 EXPOSE 8008 8448
 
+# Make sure the entrypoint is executable
+RUN ["chmod", "+x", "/conf/start.sh"]
 ENTRYPOINT ["/conf/start.sh"]
 
 HEALTHCHECK --start-period=5s --interval=1s --timeout=1s \
