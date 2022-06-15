@@ -12,6 +12,7 @@ env:
   IMAGE_NAME: matrix-public-archive-test-homeserver
 
 jobs:
+
   # Create and publish a Docker image for a Synapse test instance that can
   # federate with each other.
   #
@@ -22,6 +23,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    outputs:
+      docker_image_name: ${{ steps.save_var.outputs.docker_image_name }}
 
     steps:
       - name: Checkout repository
@@ -43,6 +47,11 @@ jobs:
           context: test/dockerfiles/
           file: 'test/dockerfiles/Synapse.Dockerfile'
 
+      # Via https://github.community/t/how-to-use-env-with-container-image/17252/25
+      - name: Save Docker image name to a variable so we can re-use it in other jobs via ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
+        id: save_var
+        run: echo "::set-output name=docker_image_name::${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
   tests:
     needs: [deploy-test-synapse-image]
     runs-on: ubuntu-latest
@@ -53,10 +62,7 @@ jobs:
 
     services:
       hs1:
-        # Can't use env variables because they aren't available to the
-        # services.<service_id> context
-        # (https://docs.github.com/en/actions/learn-github-actions/contexts)
-        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.sha }}
+        image: ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -65,10 +71,7 @@ jobs:
         env:
           SERVER_NAME: hs1
       hs2:
-        # Can't use env variables because they aren't available to the
-        # services.<service_id> context
-        # (https://docs.github.com/en/actions/learn-github-actions/contexts)
-        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.sha }}
+        image: ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
