@@ -12,7 +12,6 @@ env:
   IMAGE_NAME: matrix-public-archive-test-homeserver
 
 jobs:
-
   # Create and publish a Docker image for a Synapse test instance that can
   # federate with each other.
   #
@@ -25,14 +24,16 @@ jobs:
       packages: write
 
     outputs:
-      # Make the Docker image name available to use in other jobs as `${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}`
+      # Make the Docker image name available to use in other jobs as `${{
+      # needs.deploy-test-synapse-image.outputs.docker_image_name }}`. Also see
+      # the `save_var` step below for how this works.
       docker_image_name: ${{ steps.save_var.outputs.docker_image_name }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Log in to the Container registry
+      - name: Log in to the GitHub Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
           registry: ${{ env.REGISTRY }}
@@ -42,11 +43,11 @@ jobs:
       # Trick to get env variables available in `needs` context which is
       # available to use in almost everywhere
       # (https://docs.github.com/en/actions/learn-github-actions/contexts). This
-      # is so that we can reference the Docker image name in the `services` of
+      # is so that we can reference the same Docker image name in the `services` of
       # the next job.
       #
       # via https://github.community/t/how-to-use-env-with-container-image/17252/25
-      - name: Save Docker image name to a variable so we can re-use it in other jobs via `${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}`
+      - name: Save the Docker image name to a variable so we can share and re-use it in other jobs via `${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}`
         id: save_var
         run: echo "::set-output name=docker_image_name::${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
@@ -68,6 +69,7 @@ jobs:
         node-version: [16.x]
 
     services:
+      # We need two homeservers that federate with each other to test with
       hs1:
         image: ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
         credentials:
@@ -93,7 +95,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      # Install dependencies
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: npm run build
+
+      - name: Test!
+        run: npm test
