@@ -53,14 +53,20 @@ jobs:
 
     services:
       hs1:
-        image: ${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+        # Can't use env variables because they aren't available to the
+        # services.<service_id> context
+        # (https://docs.github.com/en/actions/learn-github-actions/contexts)
+        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.ref_name }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
         env:
           SERVER_NAME: hs1
       hs2:
-        image: ${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+        # Can't use env variables because they aren't available to the
+        # services.<service_id> context
+        # (https://docs.github.com/en/actions/learn-github-actions/contexts)
+        image: ghcr.io/matrix-org/matrix-public-archive/matrix-public-archive-test-homeserver:${{ github.ref_name }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
