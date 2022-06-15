@@ -77,6 +77,7 @@ jobs:
   test-image:
     needs: [build-image]
     runs-on: ubuntu-latest
+
     services:
       matrix-public-archive:
         image: ${{ needs.build-image.outputs.docker_image_name }}:sha-${{ github.sha }}
@@ -86,7 +87,8 @@ jobs:
         ports:
           - 3050:3050
         env:
-          SERVER_NAME: hs1
+          matrixServerUrl: http://FAKE_SERVER/
+          matrixAccessToken: FAKE_TOKEN
 
     steps:
       - name: See if the container will respond to a request

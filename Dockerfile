@@ -21,4 +21,6 @@ RUN npm run build
 # Copy the rest of the app
 COPY server /app/server/
 
-ENTRYPOINT ["npm" "start"]
+HEALTHCHECK CMD curl --fail http://localhost:3050/health-check || exit 1
+
+ENTRYPOINT ["/bin/bash", "-c", "npm start"]
