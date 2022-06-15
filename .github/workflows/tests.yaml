@@ -56,14 +56,14 @@ jobs:
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: ${{ steps.save_var.outputs.docker_image_name }}
+          # Defaults (as indicated by https://github.com/docker/metadata-action/tree/97c170d70b5f8bfc77e6b23e68381f217cb64ded#tags-input).
+          # Plus custom tags:
+          #  - Full length sha
           tags: |
-            # Defaults (as indicated by https://github.com/docker/metadata-action/tree/97c170d70b5f8bfc77e6b23e68381f217cb64ded#tags-input) 
             type=schedule
             type=ref,event=branch
             type=ref,event=tag
             type=ref,event=pr
-            # Custom tags:
-            #  - Full length sha
             type=sha,format=long
 
       - name: Build and push Docker image
