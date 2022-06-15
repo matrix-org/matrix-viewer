@@ -8,11 +8,28 @@ on:
 
 jobs:
   build:
+    needs: [deploy-test-synapse-image]
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [16.x]
+
+    services:
+      hs1:
+        image: ghcr.io/matrix-org/matrix-public-archive-test-homeserver
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          SERVER_NAME: hs1
+      hs2:
+        image: ghcr.io/matrix-org/matrix-public-archive-test-homeserver
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          SERVER_NAME: hs2
 
     steps:
       - uses: actions/checkout@v3
