@@ -6,12 +6,12 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
-  env:
-    REGISTRY: ghcr.io
-    GHCR_NAMESPACE: matrix-org/matrix-public-archive
-    IMAGE_NAME: matrix-public-archive-test-homeserver
+env:
+  REGISTRY: ghcr.io
+  GHCR_NAMESPACE: matrix-org/matrix-public-archive
+  IMAGE_NAME: matrix-public-archive-test-homeserver
 
+jobs:
   # Create and publish a Docker image for a Synapse test instance that can
   # federate with each other.
   #
