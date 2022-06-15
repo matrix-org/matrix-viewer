@@ -86,7 +86,7 @@ jobs:
     services:
       # We need two homeservers that federate with each other to test with
       hs1:
-        image: ${{ needs.build-test-synapse-image.outputs.docker_image_name }}:${{ github.sha }}
+        image: ${{ needs.build-test-synapse-image.outputs.docker_image_name }}:sha-${{ github.sha }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +95,7 @@ jobs:
         env:
           SERVER_NAME: hs1
       hs2:
-        image: ${{ needs.build-test-synapse-image.outputs.docker_image_name }}:${{ github.sha }}
+        image: ${{ needs.build-test-synapse-image.outputs.docker_image_name }}:sha-${{ github.sha }}
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
