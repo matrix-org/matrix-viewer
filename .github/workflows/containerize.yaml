@@ -93,4 +93,4 @@ jobs:
 
     steps:
       - name: See if the container will respond to a request
-        run: curl http://matrix-public-archive:3050/health-check
+        run: curl http://localhost:3050/health-check
