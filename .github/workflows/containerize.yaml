@@ -73,3 +73,24 @@ jobs:
           file: 'Dockerfile'
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # Just make sure the container can start-up and responds to the health check
+  test-image:
+    needs: [build-image]
+    runs-on: ubuntu-latest
+
+    services:
+      matrix-public-archive:
+        image: ${{ needs.build-image.outputs.docker_image_name }}:sha-${{ github.sha }}
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 3050:3050
+        env:
+          matrixServerUrl: http://FAKE_SERVER/
+          matrixAccessToken: FAKE_TOKEN
+
+    steps:
+      - name: See if the container will respond to a request
+        run: curl http://localhost:3050/health-check

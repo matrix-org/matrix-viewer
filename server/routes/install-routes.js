@@ -63,6 +63,10 @@ function parseArchiveRangeFromReq(req) {
 }
 
 function installRoutes(app) {
+  app.get('/health-check', async function (req, res) {
+    res.send('{ "ok": true }');
+  });
+
   // We have to disable no-missing-require lint because it doesn't take into
   // account `package.json`. `exports`, see
   // https://github.com/mysticatea/eslint-plugin-node/issues/255

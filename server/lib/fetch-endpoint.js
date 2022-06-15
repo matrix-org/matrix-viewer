@@ -48,15 +48,15 @@ async function fetchEndpointAsText(endpoint, options) {
 
 async function fetchEndpointAsJson(endpoint, options) {
   const opts = {
-    ...options,
+    ...(options || {}),
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      ...(options.headers || {}),
+      ...(options?.headers || {}),
     },
   };
 
-  if (options.body) {
+  if (options?.body) {
     opts.body = JSON.stringify(options.body);
   }
 
