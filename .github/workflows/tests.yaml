@@ -38,19 +38,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Trick to get env variables available in `needs` context which is
+      # available to use in almost everywhere
+      # (https://docs.github.com/en/actions/learn-github-actions/contexts).
+      #
+      # via https://github.community/t/how-to-use-env-with-container-image/17252/25
+      - name: Save Docker image name to a variable so we can re-use it in other jobs via ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
+        id: save_var
+        run: echo "::set-output name=docker_image_name::${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
           context: test/dockerfiles/
           file: 'test/dockerfiles/Synapse.Dockerfile'
-
-      # Via https://github.community/t/how-to-use-env-with-container-image/17252/25
-      - name: Save Docker image name to a variable so we can re-use it in other jobs via ${{ needs.deploy-test-synapse-image.outputs.docker_image_name }}
-        id: save_var
-        run: echo "::set-output name=docker_image_name::${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
   tests:
     needs: [deploy-test-synapse-image]
