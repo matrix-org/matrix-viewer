@@ -23,7 +23,7 @@ diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const exporter = new JaegerExporter({
   tags: [],
-  endpoint: `http://localhost:4317`,
+  endpoint: `http://localhost:14268/api/traces`,
 });
 
 const provider = new BasicTracerProvider({
@@ -34,10 +34,10 @@ const provider = new BasicTracerProvider({
 // export spans to console (useful for debugging)
 // provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
 // export spans to opentelemetry collector
-provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
+provider.addSpanProcessor(new BatchSpanProcessor(exporter));
 
-//provider.register({ propagator: new OTTracePropagator() });
-provider.register();
+provider.register({ propagator: new OTTracePropagator() });
+// provider.register();
 
 const sdk = new opentelemetry.NodeSDK({
   traceExporter: exporter,

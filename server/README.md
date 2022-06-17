@@ -2,6 +2,8 @@
 
 - Dashboard where users can see visualisations -> http://localhost:16686
 
+via https://www.jaegertracing.io/docs/1.35/getting-started/
+
 ```
 docker run -d --name jaeger \
   -e COLLECTOR_ZIPKIN_HOST_PORT=:9411 \
