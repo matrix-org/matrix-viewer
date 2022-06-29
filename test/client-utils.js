@@ -15,6 +15,22 @@ function getTxnId() {
   return `${new Date().getTime()}--${txnCount}`;
 }
 
+async function ensureUserRegistered({ matrixServerUrl, username }) {
+  const registerResponse = await fetchEndpointAsJson(
+    urlJoin(matrixServerUrl, '/_matrix/client/v3/register'),
+    {
+      method: 'POST',
+      body: {
+        type: 'm.login.dummy',
+        username,
+      },
+    }
+  );
+
+  const userId = registerResponse['user_id'];
+  assert(userId);
+}
+
 // Get client to act with for all of the client methods. This will use the
 // application service access token and client methods will append `?user_id`
 // for the specific user to act upon so we can use the `?ts` message timestamp
@@ -169,6 +185,9 @@ async function createMessagesInRoom({ client, roomId, numMessages, prefix, times
     eventIds.push(eventId);
   }
 
+  // Sanity check that we actually sent some messages
+  assert.strictEqual(eventIds.length, numMessages);
+
   return eventIds;
 }
 
@@ -248,6 +267,7 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
 }
 
 module.exports = {
+  ensureUserRegistered,
   getTestClientForHs,
   createTestRoom,
   joinRoom,
