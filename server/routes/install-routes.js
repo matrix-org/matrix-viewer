@@ -133,6 +133,8 @@ function installRoutes(app) {
       // TODO: Highlight tile that matches ?at=$xxx
       //const aroundId = req.query.at;
 
+      // Do these in parallel to avoid the extra time in sequential round-trips
+      // (we want to display the archive page faster)
       const [roomData, { events, stateEventMap }] = await Promise.all([
         fetchRoomData(matrixAccessToken, roomIdOrAlias),
         fetchEventsInRange(
