@@ -50,22 +50,21 @@ const sdk = new opentelemetry.NodeSDK({
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-http': {
         // Docs:
-        // https://github.com/open-telemetry/opentelemetry-js/tree/51afd54bd63e46d5d530266761144c7be2f6b3a7/experimental/packages/opentelemetry-instrumentation-http
+        // https://github.com/open-telemetry/opentelemetry-js/tree/51afd54bd63e46d5d530266761144c7be2f6b3a7/experimental/packages/opentelemetry-instrumentation-http#http-instrumentation-options
         //
         // This is the place to ignore root level spans for Express routes. My
         // first guess would be in `ignoreLayers` in
         // `@opentelemetry/instrumentation-express` but that's not the case, see
         // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/1034#issuecomment-1158435392
-        ignoreIncomingPaths: [
-          (url) => {
-            // Ignore spans from static assets. Ideally, all of the assets would
-            // all be served under `/static/` so we could ignore that way
-            // instead. In Hydrogen, this is tracked by
-            // https://github.com/vector-im/hydrogen-web/issues/757
-            const isStaticAsset = url.match(/\.(css|js|svg|woff2)$/);
-            return isStaticAsset;
-          },
-        ],
+        ignoreIncomingRequestHook: (req) => {
+          // Ignore spans from static assets.
+          //
+          // FIXME: Ideally, all of the assets would all be served under
+          // `/static/` so we could ignore that way instead. In Hydrogen, this
+          // is tracked by https://github.com/vector-im/hydrogen-web/issues/757
+          const isStaticAsset = !!req.url.match(/\.(css|js|svg|woff2)(\?.*?)?$/);
+          return isStaticAsset;
+        },
       },
     }),
   ],

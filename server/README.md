@@ -1,5 +1,11 @@
 ## Tracing
 
+Run the app with the tracing.
+
+```
+node --require './server/tracing.js' server/server.js
+```
+
 - Dashboard where users can see visualisations -> http://localhost:16686
 
 via https://www.jaegertracing.io/docs/1.35/getting-started/
