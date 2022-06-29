@@ -47,16 +47,28 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   assert(eventIdForTimestamp);
   //console.log('eventIdForTimestamp', eventIdForTimestamp);
 
+  // We only use this endpoint to get a pagination we can use with `/messages`.
+  // 
+  // We add `limit=0` here because we want to grab
+  //
+  // Add `filter={"lazy_load_members":true}` so that this endpoint responds
+  // without timing out. Otherwise, the homeserver returns all state in the room
+  // at that point in time which in big rooms, can be 100k member events that we
+  // don't care about anyway. Synapse seems to timeout at about the ~5k state
+  // event mark.
   const contextEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0`
+    `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0&filter={"lazy_load_members":true}`
   );
   const contextResData = await fetchEndpointAsJson(contextEndpoint, {
     accessToken,
   });
   //console.log('contextResData', contextResData);
 
-  // Add filter={"lazy_load_members":true,"include_redundant_members":true} to get member state events included
+  // TODO: Do we need `"include_redundant_members":true` here?
+  //
+  // Add `filter={"lazy_load_members":true,"include_redundant_members":true}` to
+  // get member state events included
   const messagesEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/messages?dir=b&from=${contextResData.end}&limit=${limit}&filter={"lazy_load_members":true,"include_redundant_members":true}`
