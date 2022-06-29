@@ -8,6 +8,8 @@ const { fetchEndpointAsJson, fetchEndpoint } = require('../server/lib/fetch-endp
 const config = require('../server/lib/config');
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
+const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
+assert(testMatrixServerUrl1);
 
 let txnCount = 0;
 function getTxnId() {
@@ -29,6 +31,14 @@ async function ensureUserRegistered({ matrixServerUrl, username }) {
 
   const userId = registerResponse['user_id'];
   assert(userId);
+}
+
+async function getTestClientForAs() {
+  return {
+    homeserverUrl: testMatrixServerUrl1,
+    accessToken: matrixAccessToken,
+    userId: '@archiver:hs1',
+  };
 }
 
 // Get client to act with for all of the client methods. This will use the
@@ -108,13 +118,15 @@ async function joinRoom({ client, roomId, viaServers }) {
     qs.append('user_id', client.applicationServiceUserIdOverride);
   }
 
-  const joinRoomResponse = await fetchEndpointAsJson(
-    urlJoin(client.homeserverUrl, `/_matrix/client/v3/join/${roomId}?${qs.toString()}`),
-    {
-      method: 'POST',
-      accessToken: client.accessToken,
-    }
+  const joinRoomUrl = urlJoin(
+    client.homeserverUrl,
+    `/_matrix/client/v3/join/${roomId}?${qs.toString()}`
   );
+  console.log('test client joinRoomUrl', joinRoomUrl);
+  const joinRoomResponse = await fetchEndpointAsJson(joinRoomUrl, {
+    method: 'POST',
+    accessToken: client.accessToken,
+  });
 
   const joinedRoomId = joinRoomResponse['room_id'];
   assert(joinedRoomId);
@@ -197,33 +209,39 @@ async function updateProfile({ client, displayName, avatarUrl }) {
     qs.append('user_id', client.applicationServiceUserIdOverride);
   }
 
-  const updateDisplayNamePromise = fetchEndpointAsJson(
-    urlJoin(
-      client.homeserverUrl,
-      `/_matrix/client/v3/profile/${client.userId}/displayname?${qs.toString()}`
-    ),
-    {
-      method: 'PUT',
-      body: {
-        displayname: displayName,
-      },
-      accessToken: client.accessToken,
-    }
-  );
+  let updateDisplayNamePromise = Promise.resolve();
+  if (displayName) {
+    updateDisplayNamePromise = fetchEndpointAsJson(
+      urlJoin(
+        client.homeserverUrl,
+        `/_matrix/client/v3/profile/${client.userId}/displayname?${qs.toString()}`
+      ),
+      {
+        method: 'PUT',
+        body: {
+          displayname: displayName,
+        },
+        accessToken: client.accessToken,
+      }
+    );
+  }
 
-  const updateAvatarUrlPromise = fetchEndpointAsJson(
-    urlJoin(
-      client.homeserverUrl,
-      `/_matrix/client/v3/profile/${client.userId}/avatar_url?${qs.toString()}`
-    ),
-    {
-      method: 'PUT',
-      body: {
-        avatar_url: avatarUrl,
-      },
-      accessToken: client.accessToken,
-    }
-  );
+  let updateAvatarUrlPromise = Promise.resolve();
+  if (avatarUrl) {
+    updateAvatarUrlPromise = fetchEndpointAsJson(
+      urlJoin(
+        client.homeserverUrl,
+        `/_matrix/client/v3/profile/${client.userId}/avatar_url?${qs.toString()}`
+      ),
+      {
+        method: 'PUT',
+        body: {
+          avatar_url: avatarUrl,
+        },
+        accessToken: client.accessToken,
+      }
+    );
+  }
 
   await Promise.all([updateDisplayNamePromise, updateAvatarUrlPromise]);
 
@@ -268,6 +286,7 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
 
 module.exports = {
   ensureUserRegistered,
+  getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
   joinRoom,

@@ -15,6 +15,7 @@ const config = require('../server/lib/config');
 
 const {
   ensureUserRegistered,
+  getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
   joinRoom,
@@ -108,19 +109,16 @@ describe('matrix-public-archive', () => {
 
   describe('Archive', () => {
     before(async () => {
-      // FIXME: This doesn't work because `400 Bad Request:
-      // {"errcode":"M_EXCLUSIVE","error":"This user ID is reserved by an
-      // application service."}` and we can't easily remove the AS registration,
-      // register the user, add the AS back, restart Synapse, and continue the
-      // tests.
+      // Make sure the application service archiver user itself has a profile
+      // set otherwise we run into 404, `Profile was not found` errors when
+      // joining a remote federated room from the archiver user, see
+      // https://github.com/matrix-org/synapse/issues/4778
       //
-      // Make sure the application service archiver user itself is also
-      // explicitly registered otherwise we run into 404, `Profile was not
-      // found` errors when joining a remote federated room from the archiver
-      // user, see https://github.com/matrix-org/synapse/issues/4778
-      await ensureUserRegistered({
-        matrixServerUrl: testMatrixServerUrl1,
-        username: 'archiver',
+      // FIXME: Remove after https://github.com/matrix-org/synapse/issues/4778 is resolved
+      const asClient = await getTestClientForAs();
+      await updateProfile({
+        client: asClient,
+        displayName: 'Archiver',
       });
     });
 
@@ -399,7 +397,6 @@ describe('matrix-public-archive', () => {
     });
 
     it(`can render day back in time from room on remote homeserver we haven't backfilled from`, async () => {
-      //const hs1Client = await getTestClientForHs(testMatrixServerUrl1);
       const hs2Client = await getTestClientForHs(testMatrixServerUrl2);
 
       // Create a room on hs2
