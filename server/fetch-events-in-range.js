@@ -47,13 +47,16 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   assert(eventIdForTimestamp);
   //console.log('eventIdForTimestamp', eventIdForTimestamp);
 
-  // We only use this endpoint to get a pagination we can use with `/messages`.
-  // 
-  // We add `limit=0` here because we want to grab
+  // We only use this endpoint to get a pagination token we can use with
+  // `/messages`.
+  //
+  // We add `limit=0` here because we want to grab the pagination token right
+  // (before/after) the event.
   //
   // Add `filter={"lazy_load_members":true}` so that this endpoint responds
-  // without timing out. Otherwise, the homeserver returns all state in the room
-  // at that point in time which in big rooms, can be 100k member events that we
+  // without timing out by returning just the state for the sender of the
+  // included event. Otherwise, the homeserver returns all state in the room at
+  // that point in time which in big rooms, can be 100k member events that we
   // don't care about anyway. Synapse seems to timeout at about the ~5k state
   // event mark.
   const contextEndpoint = urlJoin(
@@ -65,13 +68,11 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   });
   //console.log('contextResData', contextResData);
 
-  // TODO: Do we need `"include_redundant_members":true` here?
-  //
-  // Add `filter={"lazy_load_members":true,"include_redundant_members":true}` to
-  // get member state events included
+  // Add `filter={"lazy_load_members":true}` to only get member state events for
+  // the messages included in the response
   const messagesEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/r0/rooms/${roomId}/messages?dir=b&from=${contextResData.end}&limit=${limit}&filter={"lazy_load_members":true,"include_redundant_members":true}`
+    `_matrix/client/r0/rooms/${roomId}/messages?dir=b&from=${contextResData.end}&limit=${limit}&filter={"lazy_load_members":true}`
   );
   const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
     accessToken,
