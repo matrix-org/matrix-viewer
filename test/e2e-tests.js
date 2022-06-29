@@ -330,7 +330,8 @@ describe('matrix-public-archive', () => {
 
       // Make sure the user avatar is visible on the message
       const avatarImageElement = dom.document.querySelector(
-        // FIXME: Use more stable select here instead of `.avatar`
+        // FIXME: Use more stable select here instead of `.avatar`,
+        // see https://github.com/vector-im/hydrogen-web/pull/773
         `[data-event-id="${imageEventId}"] .avatar img`
       );
       assert(avatarImageElement);
@@ -338,7 +339,8 @@ describe('matrix-public-archive', () => {
 
       // Make sure the image message is visible
       const imageElement = dom.document.querySelector(
-        // FIXME: Use more stable select here instead of `.media`
+        // FIXME: Use more stable select here instead of `.media`,
+        // see https://github.com/vector-im/hydrogen-web/pull/773
         `[data-event-id="${imageEventId}"] .media img`
       );
       assert(imageElement);
