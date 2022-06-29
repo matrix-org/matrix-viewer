@@ -34,23 +34,24 @@ async function getTestClientForHs(testMatrixServerUrl) {
     }
   );
 
-  const userId = registerResponse['user_id'];
-  assert(userId);
+  const applicationServiceUserIdOverride = registerResponse['user_id'];
+  assert(applicationServiceUserIdOverride);
 
   return {
     homeserverUrl: testMatrixServerUrl,
     // We use the application service AS token because we need to be able to use
     // the `?ts` timestamp massaging when sending events
     accessToken: matrixAccessToken,
-    userId: userId,
+    userId: applicationServiceUserIdOverride,
+    applicationServiceUserIdOverride,
   };
 }
 
 // Create a public room to test in
 async function createTestRoom(client) {
   let qs = new URLSearchParams();
-  if (client.userId) {
-    qs.append('user_id', client.userId);
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
   }
 
   const createRoomResponse = await fetchEndpointAsJson(
@@ -87,8 +88,8 @@ async function joinRoom({ client, roomId, viaServers }) {
     });
   }
 
-  if (client.userId) {
-    qs.append('user_id', client.userId);
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
   }
 
   const joinRoomResponse = await fetchEndpointAsJson(
@@ -104,7 +105,7 @@ async function joinRoom({ client, roomId, viaServers }) {
   return joinedRoomId;
 }
 
-async function sendEvent({ client, roomId, eventType, content, timestamp }) {
+async function sendEvent({ client, roomId, eventType, stateKey, content, timestamp }) {
   assert(client);
   assert(roomId);
   assert(content);
@@ -112,29 +113,36 @@ async function sendEvent({ client, roomId, eventType, content, timestamp }) {
   let qs = new URLSearchParams();
   if (timestamp) {
     assert(
-      timestamp && client.userId,
+      timestamp && client.applicationServiceUserIdOverride,
       'We can only do `?ts` massaging from an application service access token. ' +
-        'Expected `client.userId` to be defined so we can act on behalf of that user'
+        'Expected `client.applicationServiceUserIdOverride` to be defined so we can act on behalf of that user'
     );
 
     qs.append('ts', timestamp);
   }
 
-  if (client.userId) {
-    qs.append('user_id', client.userId);
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
   }
 
-  const sendResponse = await fetchEndpointAsJson(
-    urlJoin(
+  let url;
+  if (stateKey) {
+    url = urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/rooms/${roomId}/state/${eventType}/${stateKey}?${qs.toString()}`
+    );
+  } else {
+    url = urlJoin(
       client.homeserverUrl,
       `/_matrix/client/v3/rooms/${roomId}/send/${eventType}/${getTxnId()}?${qs.toString()}`
-    ),
-    {
-      method: 'PUT',
-      body: content,
-      accessToken: client.accessToken,
-    }
-  );
+    );
+  }
+
+  const sendResponse = await fetchEndpointAsJson(url, {
+    method: 'PUT',
+    body: content,
+    accessToken: client.accessToken,
+  });
 
   const eventId = sendResponse['event_id'];
   assert(eventId);
@@ -164,6 +172,45 @@ async function createMessagesInRoom({ client, roomId, numMessages, prefix, times
   return eventIds;
 }
 
+async function updateProfile({ client, displayName, avatarUrl }) {
+  let qs = new URLSearchParams();
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
+  }
+
+  const updateDisplayNamePromise = fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/profile/${client.userId}/displayname?${qs.toString()}`
+    ),
+    {
+      method: 'PUT',
+      body: {
+        displayname: displayName,
+      },
+      accessToken: client.accessToken,
+    }
+  );
+
+  const updateAvatarUrlPromise = fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/profile/${client.userId}/avatar_url?${qs.toString()}`
+    ),
+    {
+      method: 'PUT',
+      body: {
+        avatar_url: avatarUrl,
+      },
+      accessToken: client.accessToken,
+    }
+  );
+
+  await Promise.all([updateDisplayNamePromise, updateAvatarUrlPromise]);
+
+  return null;
+}
+
 // Uploads the given data Buffer and returns the MXC URI of the uploaded content
 async function uploadContent({ client, roomId, data, fileName, contentType }) {
   assert(client);
@@ -171,8 +218,8 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
   assert(data);
 
   let qs = new URLSearchParams();
-  if (client.userId) {
-    qs.append('user_id', client.userId);
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
   }
 
   if (fileName) {
@@ -207,5 +254,6 @@ module.exports = {
   sendEvent,
   sendMessage,
   createMessagesInRoom,
+  updateProfile,
   uploadContent,
 };
