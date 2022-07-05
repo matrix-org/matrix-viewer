@@ -6,6 +6,9 @@
 
 const _renderHydrogenToStringUnsafe = require('./3-render-hydrogen-to-string-unsafe');
 
+// Only kick everything off once we receive the options. We pass in the options
+// this way instead of argv because we will run into `Error: spawn E2BIG` and
+// `Error: spawn ENAMETOOLONG` with argv.
 process.on('message', async (options) => {
   try {
     const resultantHtml = await _renderHydrogenToStringUnsafe(options);
