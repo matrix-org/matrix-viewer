@@ -38,7 +38,6 @@ class RethrownError extends ExtendedError {
     // number of `\n` and `+ 1` for the first line because it doesn't start with
     // new line.
     const messageLines = (this.message.match(/\n/g) || []).length + 1;
-    console.log('messageLines', messageLines);
 
     const indentedOriginalError = error.stack
       .split('\n')
