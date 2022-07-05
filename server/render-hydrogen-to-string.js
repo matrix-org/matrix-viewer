@@ -86,6 +86,7 @@ async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEv
     await vmResult;
 
     const documentString = dom.document.body.toString();
+    console.log('got documentString');
     return documentString;
   } catch (err) {
     console.log('throwing err');
