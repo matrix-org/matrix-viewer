@@ -6,7 +6,7 @@
 
 const assert = require('assert');
 
-const renderHydrogenToStringUnsafe = require('./render-hydrogen-to-string-unsafe');
+const _renderHydrogenToStringUnsafe = require('./3-render-hydrogen-to-string-unsafe');
 
 (async () => {
   try {
@@ -15,13 +15,13 @@ const renderHydrogenToStringUnsafe = require('./render-hydrogen-to-string-unsafe
       'No command-line arguments passed to `render-hydrogen-to-string-fork-script.js`. Make sure these are being passed in when we spawn the new process.'
     );
     const options = JSON.parse(process.argv[2]);
-    const resultantHtml = await renderHydrogenToStringUnsafe(options);
+    const resultantHtml = await _renderHydrogenToStringUnsafe(options);
 
     // Send back the data we need
     process.send({
       data: resultantHtml,
     });
-    // End the process gracefully. We got all the data we need
+    // End the process gracefully. We got all the data we need.
     process.exit(0);
   } catch (err) {
     // Serialize the error and send it back up to the parent process so we can

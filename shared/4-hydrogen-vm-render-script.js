@@ -333,16 +333,6 @@ async function mountHydrogen() {
   addSupportClasses();
 
   supressBlankAnchorsReloadingThePage();
-
-  // TODO: Remove me (mimics https://github.com/matrix-org/matrix-public-archive/issues/34)
-  setTimeout(() => {
-    throw new Error('aewffewaaewfafew');
-  }, 5000);
-
-  // TODO: Remove me (heartbeat to see it keep running)
-  setInterval(() => {
-    console.log('.');
-  }, 1000);
 }
 
 // N.B.: When we run this in a virtual machine (`vm`), it will return the last

@@ -5,10 +5,11 @@
 // place.
 //
 // Note: This is marked as unsafe because the render script is run in a VM which
-// doesn't exit after we get the result (it keeps running). There isn't a way to
-// stop, terminate, or kill a vm script run context so we need to run this
-// inside of a child_process which we can kill after (see
-// `render-hydrogen-to-string.js`) in order for us to do this cleanly.
+// doesn't exit after we get the result (Hydrogen keeps running). There isn't a
+// way to stop, terminate, or kill a vm script or vm context so in order to be
+// safe, we need to run this inside of a child_process which we can kill after.
+// This is why we have the `1-render-hydrogen-to-string.js` layer to handle
+// this.
 
 const assert = require('assert');
 const vm = require('vm');
@@ -19,7 +20,7 @@ const { parseHTML } = require('linkedom');
 
 const config = require('../lib/config');
 
-async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEventMap }) {
+async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
   assert(fromTimestamp);
   assert(roomData);
   assert(events);
@@ -80,20 +81,20 @@ async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEv
   vmContext.global.console = console;
 
   const hydrogenRenderScriptCode = await readFile(
-    path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
+    path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
     'utf8'
   );
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
-    filename: 'hydrogen-vm-render-script.js',
+    filename: '4-hydrogen-vm-render-script.js',
   });
   // Note: The VM does not exit after the result is returned here
   const vmResult = hydrogenRenderScript.runInContext(vmContext);
   // Wait for everything to render
-  // (waiting on the promise returned from `hydrogen-vm-render-script.js`)
+  // (waiting on the promise returned from `4-hydrogen-vm-render-script.js`)
   await vmResult;
 
   const documentString = dom.document.body.toString();
   return documentString;
 }
 
-module.exports = renderHydrogenToString;
+module.exports = _renderHydrogenToStringUnsafe;

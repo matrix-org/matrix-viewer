@@ -8,7 +8,9 @@ const fork = require('child_process').fork;
 
 const RethrownError = require('../lib/rethrown-error');
 
-const RENDER_TIMEOUT = 10000;
+// The render should be fast. If it's taking more than 5 seconds, something has
+// gone really wrong.
+const RENDER_TIMEOUT = 5000;
 
 async function renderHydrogenToString(options) {
   try {
@@ -20,7 +22,7 @@ async function renderHydrogenToString(options) {
     // We use a child_process because we want to be able to exit the process after
     // we receive the SSR results.
     const child = fork(
-      require.resolve('./render-hydrogen-to-string-fork-script'),
+      require.resolve('./2-render-hydrogen-to-string-fork-script'),
       [JSON.stringify(options)],
       {
         signal,
