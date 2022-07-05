@@ -1,5 +1,10 @@
 'use strict';
 
+// Isomorphic script that runs in the browser and on the server for SSR (needs
+// browser context) that renders Hydrogen to the `document.body`.
+//
+// Data is passed in via `window.matrixPublicArchiveContext`
+
 const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
@@ -328,6 +333,16 @@ async function mountHydrogen() {
   addSupportClasses();
 
   supressBlankAnchorsReloadingThePage();
+
+  // TODO: Remove me (mimics https://github.com/matrix-org/matrix-public-archive/issues/34)
+  setTimeout(() => {
+    throw new Error('aewffewaaewfafew');
+  }, 5000);
+
+  // TODO: Remove me (heartbeat to see it keep running)
+  setInterval(() => {
+    console.log('.');
+  }, 1000);
 }
 
 // N.B.: When we run this in a virtual machine (`vm`), it will return the last

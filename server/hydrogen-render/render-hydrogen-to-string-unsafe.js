@@ -1,0 +1,99 @@
+'use strict';
+
+// Server-side render Hydrogen to a string using a browser-like context thanks
+// to `linkedom`. We use a VM so we can put all of the browser-like globals in
+// place.
+//
+// Note: This is marked as unsafe because the render script is run in a VM which
+// doesn't exit after we get the result (it keeps running). There isn't a way to
+// stop, terminate, or kill a vm script run context so we need to run this
+// inside of a child_process which we can kill after (see
+// `render-hydrogen-to-string.js`) in order for us to do this cleanly.
+
+const assert = require('assert');
+const vm = require('vm');
+const path = require('path');
+const { readFile } = require('fs').promises;
+const crypto = require('crypto');
+const { parseHTML } = require('linkedom');
+
+const config = require('../lib/config');
+
+async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEventMap }) {
+  assert(fromTimestamp);
+  assert(roomData);
+  assert(events);
+  assert(stateEventMap);
+
+  const dom = parseHTML(`
+      <!doctype html>
+      <html>
+        <head></head>
+        <body>
+          <div id="app" class="hydrogen"></div>
+        </body>
+      </html>
+    `);
+
+  if (!dom.requestAnimationFrame) {
+    dom.requestAnimationFrame = function (cb) {
+      setTimeout(cb, 0);
+    };
+  }
+
+  // Define this for the SSR context
+  dom.window.matrixPublicArchiveContext = {
+    fromTimestamp,
+    roomData,
+    events,
+    stateEventMap,
+    config: {
+      basePort: config.get('basePort'),
+      basePath: config.get('basePath'),
+      matrixServerUrl: config.get('matrixServerUrl'),
+    },
+  };
+  // Serialize it for when we run this again client-side
+  dom.document.body.insertAdjacentHTML(
+    'beforeend',
+    `
+      <script type="text/javascript">
+        window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
+      </script>
+      `
+  );
+
+  const vmContext = vm.createContext(dom);
+  // Make the dom properties available in sub-`require(...)` calls
+  vmContext.global.window = dom.window;
+  vmContext.global.document = dom.document;
+  vmContext.global.Node = dom.Node;
+  vmContext.global.navigator = dom.navigator;
+  vmContext.global.DOMParser = dom.DOMParser;
+  // Make sure `webcrypto` exists since it was only introduced in Node.js v17
+  assert(crypto.webcrypto);
+  vmContext.global.crypto = crypto.webcrypto;
+
+  // So require(...) works in the vm
+  vmContext.global.require = require;
+  // So we can see logs from the underlying vm
+  vmContext.global.console = console;
+
+  const hydrogenRenderScriptCode = await readFile(
+    path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
+    'utf8'
+  );
+  const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
+    filename: 'hydrogen-vm-render-script.js',
+  });
+  // Note: The VM does not exit after the result is returned here
+  const vmResult = hydrogenRenderScript.runInContext(vmContext);
+  // Wait for everything to render
+  // (waiting on the promise returned from `hydrogen-vm-render-script.js`)
+  await vmResult;
+
+  const documentString = dom.document.body.toString();
+  return documentString;
+}
+
+module.exports = renderHydrogenToString;
