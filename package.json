@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "express": "^4.17.2",
-    "hydrogen-view-sdk": "npm:@mlm/hydrogen-view-sdk@^0.0.12",
+    "hydrogen-view-sdk": "npm:@mlm/hydrogen-view-sdk@^0.0.13-scratch",
     "linkedom": "^0.14.1",
     "matrix-public-archive-shared": "file:./shared/",
     "nconf": "^0.11.3",

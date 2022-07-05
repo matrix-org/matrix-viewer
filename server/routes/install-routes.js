@@ -10,7 +10,7 @@ const StatusError = require('../lib/status-error');
 const fetchRoomData = require('../fetch-room-data');
 const fetchEventsInRange = require('../fetch-events-in-range');
 const ensureRoomJoined = require('../ensure-room-joined');
-const renderHydrogenToString = require('../render-hydrogen-to-string');
+const renderHydrogenToString = require('../hydrogen-render/1-render-hydrogen-to-string');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
