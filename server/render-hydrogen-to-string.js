@@ -78,7 +78,9 @@ async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEv
     const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
       filename: 'hydrogen-vm-render-script.js',
     });
+    console.log('before runInContext');
     const vmResult = hydrogenRenderScript.runInContext(vmContext);
+    console.log('after runInContext');
     // Wait for everything to render
     // (waiting on the promise returned from `hydrogen-render-script.js`)
     await vmResult;
@@ -86,6 +88,8 @@ async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEv
     const documentString = dom.document.body.toString();
     return documentString;
   } catch (err) {
+    console.log('throwing err');
+    console.log('throwing err arguments', arguments);
     throw new RethrownError(
       `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderToString arguments: ${JSON.stringify(
         arguments[0]
@@ -93,6 +97,7 @@ async function renderHydrogenToString({ fromTimestamp, roomData, events, stateEv
       err
     );
   }
+  console.log('after catch');
 }
 
 module.exports = renderHydrogenToString;
