@@ -16,6 +16,17 @@ class ExtendedError extends Error {
   }
 }
 
+// A way to create a new error with a custom message but keep the stack trace of
+// the original error. Useful to give more context and why the action was tried
+// in the first place.
+//
+// For example, if you get a generic EACCES disk error of a certain file, you
+// want to know why and what context the disk was trying to be read. A
+// stack-trace is not human digestable and only gives the where in the code.
+// What I actually need to know is that I was trying to read the `ratelimit` key
+// from the config when this error occured.
+//
+// `new RethrownError('Failed to get the ratelimit key from the config', originalError)` (failed to read the disk)
 class RethrownError extends ExtendedError {
   constructor(message, error) {
     super(message);
