@@ -21,14 +21,15 @@ async function renderHydrogenToString(options) {
     const { signal } = controller;
     // We use a child_process because we want to be able to exit the process after
     // we receive the SSR results.
-    const child = fork(
-      require.resolve('./2-render-hydrogen-to-string-fork-script'),
-      [JSON.stringify(options)],
-      {
-        signal,
-        //cwd: process.cwd(),
-      }
-    );
+    const child = fork(require.resolve('./2-render-hydrogen-to-string-fork-script'), [], {
+      signal,
+      //cwd: process.cwd(),
+    });
+
+    // Pass the options to the child by sending instead of via argv because we
+    // will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG` with
+    // argv.
+    child.send(options);
 
     // Stops the child process if it takes too long
     setTimeout(() => {

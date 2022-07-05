@@ -4,17 +4,13 @@
 // get the data and exit the process cleanly. We don't want Hydrogen to keep
 // running after we get our initial rendered HTML.
 
-const assert = require('assert');
-
 const _renderHydrogenToStringUnsafe = require('./3-render-hydrogen-to-string-unsafe');
 
-(async () => {
+// Only kick everything off once we receive the options. We pass in the options
+// this way instead of argv because we will run into `Error: spawn E2BIG` and
+// `Error: spawn ENAMETOOLONG` with argv.
+process.on('message', async (options) => {
   try {
-    assert(
-      process.argv[2],
-      'No command-line arguments passed to `render-hydrogen-to-string-fork-script.js`. Make sure these are being passed in when we spawn the new process.'
-    );
-    const options = JSON.parse(process.argv[2]);
     const resultantHtml = await _renderHydrogenToStringUnsafe(options);
 
     // Send back the data we need
@@ -35,4 +31,4 @@ const _renderHydrogenToStringUnsafe = require('./3-render-hydrogen-to-string-uns
     // Throw the error so the process fails and exits
     throw err;
   }
-})();
+});
