@@ -1,5 +1,10 @@
 'use strict';
 
+// Isomorphic script that runs in the browser and on the server for SSR (needs
+// browser context) that renders Hydrogen to the `document.body`.
+//
+// Data is passed in via `window.matrixPublicArchiveContext`
+
 const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
