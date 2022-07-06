@@ -6,7 +6,7 @@
 
 const fork = require('child_process').fork;
 
-const { assert } = require('console');
+const assert = require('assert');
 const RethrownError = require('../lib/rethrown-error');
 
 // The render should be fast. If it's taking more than 5 seconds, something has
