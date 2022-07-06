@@ -94,6 +94,7 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
   await vmResult;
 
   const documentString = dom.document.body.toString();
+  assert(documentString, 'Document body should not be empty after we rendered Hydrogen');
   return documentString;
 }
 

@@ -6,6 +6,7 @@
 
 const fork = require('child_process').fork;
 
+const { assert } = require('console');
 const RethrownError = require('../lib/rethrown-error');
 
 // The render should be fast. If it's taking more than 5 seconds, something has
@@ -60,12 +61,16 @@ async function renderHydrogenToString(options) {
         } else {
           let extraErrorsMessage = '';
           if (childErrors.length > 1) {
-            extraErrorsMessage = ` (somehow we saw ${childErrors.length} errors but we really always expect 1 error)`;
+            extraErrorsMessage = ` (somehow we saw ${
+              childErrors.length
+            } errors but we really always expect 1 error)\n${childErrors
+              .map((childError, index) => ` ${index}. ${childError.message} ${childError.stack}`)
+              .join('\n')}`;
           }
 
           const error = new RethrownError(
             `Child process failed with exit code ${exitCode}${extraErrorsMessage}`,
-            childErrors[0]
+            childErrors[0] || new Error('No child errors')
           );
           reject(error);
         }
@@ -83,6 +88,11 @@ async function renderHydrogenToString(options) {
         reject(err);
       });
     });
+
+    assert(
+      data,
+      `No HTML sent from child process to render Hydrogen. Any child errors? (${childErrors.length})`
+    );
 
     return data;
   } catch (err) {
