@@ -392,7 +392,7 @@ describe('matrix-public-archive', () => {
       );
     });
 
-    it(`can render day back in time from room on remote homeserver we haven't backfilled from`, async () => {
+    it.only(`can render day back in time from room on remote homeserver we haven't backfilled from`, async () => {
       const hs2Client = await getTestClientForHs(testMatrixServerUrl2);
 
       // Create a room on hs2
@@ -404,6 +404,7 @@ describe('matrix-public-archive', () => {
         prefix: HOMESERVER_URL_TO_PRETTY_NAME_MAP[hs2Client.homeserverUrl],
         timestamp: archiveDate.getTime(),
       });
+      console.log('archiveDate.getTime()', archiveDate.getTime());
 
       archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(hs2RoomId, archiveDate, {
         // Since hs1 doesn't know about this room on hs2 yet, we have to provide
