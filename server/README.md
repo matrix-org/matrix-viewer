@@ -3,6 +3,14 @@
 Run the app with the tracing.
 
 ```
+npm run start -- --tracing
+# or
+npm run start-dev -- --tracing
+```
+
+Manually:
+
+```
 node --require './server/tracing.js' server/server.js
 ```
 

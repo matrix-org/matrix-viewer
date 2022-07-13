@@ -4,6 +4,7 @@ const assert = require('assert');
 const path = require('path');
 const urlJoin = require('url-join');
 const express = require('express');
+const opentelemetryApi = require('@opentelemetry/api');
 const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
@@ -63,6 +64,20 @@ function parseArchiveRangeFromReq(req) {
 }
 
 function installRoutes(app) {
+  // Add the OpenTelemetry trace ID to the `X-Trace-Id` response header. We can
+  // use this to lookup the request in Jaeger.
+  app.use(async function (req, res, next) {
+    const activeCtx = opentelemetryApi.context.active();
+    if (activeCtx) {
+      const span = opentelemetryApi.trace.getSpan(activeCtx);
+      if (span) {
+        const traceId = span.spanContext().traceId;
+        res.set('X-Trace-Id', traceId);
+      }
+    }
+    next();
+  });
+
   app.get('/health-check', async function (req, res) {
     res.send('{ "ok": true }');
   });
@@ -174,6 +189,28 @@ function installRoutes(app) {
 
       res.set('Content-Type', 'text/html');
       res.send(pageHtml);
+
+      // TODO:
+      // ----------------------------
+
+      // -  Tracing API: https://github.com/open-telemetry/opentelemetry-specification/blob/fd23112f04d1abc78c554b735307ebe1aab66998/specification/trace/api.md
+
+      // > A tree of related spans comprises a trace. A span is said to be a
+      // > root span if it does not have a parent. Each trace includes a single
+      // > root span, which is the shared ancestor of all other spans in the
+      // > trace. Implementations MUST provide an option to create a Span as a
+      // > root span, and MUST generate a new TraceId for each root span
+      // > created. For a Span with a parent, the TraceId MUST be the same as
+      // > the parent. Also, the child span MUST inherit all TraceState values
+      // > of its parent by default.
+      // >
+      // > -- https://github.com/open-telemetry/opentelemetry-specification/blob/fd23112f04d1abc78c554b735307ebe1aab66998/specification/trace/api.md?plain=1#L382-L389
+
+      //const rootCtx = opentelemetryApi.ROOT_CONTEXT;
+      const activeCtx = opentelemetryApi.context.active();
+      const span = opentelemetryApi.trace.getSpan(activeCtx);
+      console.log('opentelemetryApi', activeCtx, span);
+      console.log('awef', span.spanContext().traceId);
     })
   );
 }
