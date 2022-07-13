@@ -3,13 +3,13 @@
 const opentelemetry = require('@opentelemetry/sdk-node');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
 const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
+const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
 const {
   BasicTracerProvider,
   ConsoleSpanExporter,
   SimpleSpanProcessor,
-} = require('@opentelemetry/tracing');
-const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
-const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base');
+  BatchSpanProcessor,
+} = require('@opentelemetry/sdk-trace-base');
 const { OTTracePropagator } = require('@opentelemetry/propagator-ot-trace');
 const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
