@@ -2,7 +2,6 @@
 
 console.log('server process.env.NODE_ENV', process.env.NODE_ENV);
 
-console.log('process.argv', process.argv);
 if (process.argv.includes('--tracing')) {
   console.log('Tracing is running 🕵️');
   require('./tracing.js');

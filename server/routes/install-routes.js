@@ -209,8 +209,11 @@ function installRoutes(app) {
       //const rootCtx = opentelemetryApi.ROOT_CONTEXT;
       const activeCtx = opentelemetryApi.context.active();
       const span = opentelemetryApi.trace.getSpan(activeCtx);
+      const traceId = span.spanContext().traceId;
+      //const spans = getSpansFromTrace(traceId);
+
       console.log('opentelemetryApi', activeCtx, span);
-      console.log('awef', span.spanContext().traceId);
+      console.log('traceId', traceId);
     })
   );
 }

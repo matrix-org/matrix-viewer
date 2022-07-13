@@ -1,6 +1,7 @@
 'use strict';
 
-const opentelemetry = require('@opentelemetry/sdk-node');
+const assert = require('assert');
+const { registerInstrumentations } = require('@opentelemetry/instrumentation');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
 const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
 const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
@@ -10,14 +11,14 @@ const {
   SimpleSpanProcessor,
   BatchSpanProcessor,
 } = require('@opentelemetry/sdk-trace-base');
+const { AsyncLocalStorageContextManager } = require('@opentelemetry/context-async-hooks');
 const { OTTracePropagator } = require('@opentelemetry/propagator-ot-trace');
 const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 
-// This is from the official guide but when uncommenting, this throws:
-//  - `Error: @opentelemetry/api: Attempted duplicate registration of API: trace`.
-//  - `Error: @opentelemetry/api: Attempted duplicate registration of API: propagation`
-//
+const packageInfo = require('../package.json');
+assert(packageInfo.name);
+
 // (Diagnostics) For troubleshooting, set the log level to DiagLogLevel.DEBUG.
 //
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
@@ -29,7 +30,7 @@ const exporter = new JaegerExporter({
 
 const provider = new BasicTracerProvider({
   resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'matrix-public-archive',
+    [SemanticResourceAttributes.SERVICE_NAME]: packageInfo.name,
   }),
 });
 // Export spans to console (useful for debugging).
@@ -41,11 +42,13 @@ const provider = new BasicTracerProvider({
 // Otherwise, we should just use the more performant batched processor
 provider.addSpanProcessor(new BatchSpanProcessor(exporter));
 
-provider.register({ propagator: new OTTracePropagator() });
+provider.register({
+  contextManager: new AsyncLocalStorageContextManager(),
+  propagator: new OTTracePropagator(),
+});
 // provider.register();
 
-const sdk = new opentelemetry.NodeSDK({
-  traceExporter: exporter,
+registerInstrumentations({
   instrumentations: [
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-http': {
@@ -70,15 +73,8 @@ const sdk = new opentelemetry.NodeSDK({
   ],
 });
 
-sdk
-  .start()
-  .then(() => {
-    console.log('Tracing initialized');
-  })
-  .catch((error) => console.log('Error initializing tracing', error));
-
 process.on('SIGTERM', () => {
-  sdk
+  provider
     .shutdown()
     .then(() => console.log('Tracing terminated'))
     .catch((error) => console.log('Error terminating tracing', error))
