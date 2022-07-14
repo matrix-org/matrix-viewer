@@ -20,6 +20,7 @@ const {
   sendEvent,
   sendMessage,
   createMessagesInRoom,
+  updateProfile,
   uploadContent,
 } = require('./client-utils');
 
@@ -199,7 +200,23 @@ describe('matrix-public-archive', () => {
       const client = await getTestClientForHs(testMatrixServerUrl1);
       const roomId = await createTestRoom(client);
 
-      // TODO: Set avatar of user
+      const userAvatarBuffer = Buffer.from(
+        // Purple PNG pixel
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mPsD9j0HwAFmQKScbjOAwAAAABJRU5ErkJggg==',
+        'base64'
+      );
+      const userAvatarMxcUri = await uploadContent({
+        client,
+        roomId,
+        data: userAvatarBuffer,
+        fileName: 'client user avatar',
+      });
+      const displayName = `${client.userId}-some-display-name`;
+      await updateProfile({
+        client,
+        displayName,
+        avatarUrl: userAvatarMxcUri,
+      });
 
       // TODO: Set avatar of room
 
@@ -305,8 +322,23 @@ describe('matrix-public-archive', () => {
 
       const dom = parseHTML(archivePageHtml);
 
+      // Make sure the user display name is visible on the message
+      assert.match(
+        dom.document.querySelector(`[data-event-id="${imageEventId}"]`).outerHTML,
+        new RegExp(`.*${escapeStringRegexp(displayName)}.*`)
+      );
+
+      // Make sure the user avatar is visible on the message
+      const avatarImageElement = dom.document.querySelector(
+        `[data-event-id="${imageEventId}"] [data-testid="avatar"] img`
+      );
+      assert(avatarImageElement);
+      assert.match(avatarImageElement.getAttribute('src'), new RegExp(`^http://.*`));
+
       // Make sure the image message is visible
-      const imageElement = dom.document.querySelector(`[data-event-id="${imageEventId}"] img`);
+      const imageElement = dom.document.querySelector(
+        `[data-event-id="${imageEventId}"] [data-testid="media"] img`
+      );
       assert(imageElement);
       assert.match(imageElement.getAttribute('src'), new RegExp(`^http://.*`));
       assert.strictEqual(imageElement.getAttribute('alt'), imageFileName);

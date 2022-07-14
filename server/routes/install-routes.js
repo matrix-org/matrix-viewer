@@ -12,7 +12,7 @@ const timeoutMiddleware = require('./timeout-middleware');
 
 const fetchRoomData = require('../fetch-room-data');
 const fetchEventsInRange = require('../fetch-events-in-range');
-const renderHydrogenToString = require('../render-hydrogen-to-string');
+const renderHydrogenToString = require('../hydrogen-render/1-render-hydrogen-to-string');
 const sanitizeHtml = require('../lib/sanitize-html');
 const safeJson = require('../lib/safe-json');
 
@@ -153,6 +153,8 @@ function installRoutes(app) {
       // TODO: Highlight tile that matches ?at=$xxx
       //const aroundId = req.query.at;
 
+      // Do these in parallel to avoid the extra time in sequential round-trips
+      // (we want to display the archive page faster)
       const [roomData, { events, stateEventMap }] = await Promise.all([
         fetchRoomData(matrixAccessToken, roomIdOrAlias),
         fetchEventsInRange(

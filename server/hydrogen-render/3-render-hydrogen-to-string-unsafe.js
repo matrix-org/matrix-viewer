@@ -1,5 +1,16 @@
 'use strict';
 
+// Server-side render Hydrogen to a string using a browser-like context thanks
+// to `linkedom`. We use a VM so we can put all of the browser-like globals in
+// place.
+//
+// Note: This is marked as unsafe because the render script is run in a VM which
+// doesn't exit after we get the result (Hydrogen keeps running). There isn't a
+// way to stop, terminate, or kill a vm script or vm context so in order to be
+// safe, we need to run this inside of a child_process which we can kill after.
+// This is why we have the `1-render-hydrogen-to-string.js` layer to handle
+// this.
+
 const assert = require('assert');
 const vm = require('vm');
 const path = require('path');
@@ -7,23 +18,23 @@ const { readFile } = require('fs').promises;
 const crypto = require('crypto');
 const { parseHTML } = require('linkedom');
 
-const config = require('./lib/config');
+const config = require('../lib/config');
 
-async function renderToString({ fromTimestamp, roomData, events, stateEventMap }) {
+async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
   assert(fromTimestamp);
   assert(roomData);
   assert(events);
   assert(stateEventMap);
 
   const dom = parseHTML(`
-    <!doctype html>
-    <html>
-      <head></head>
-      <body>
-        <div id="app" class="hydrogen"></div>
-      </body>
-    </html>
-  `);
+      <!doctype html>
+      <html>
+        <head></head>
+        <body>
+          <div id="app" class="hydrogen"></div>
+        </body>
+      </html>
+    `);
 
   if (!dom.requestAnimationFrame) {
     dom.requestAnimationFrame = function (cb) {
@@ -47,10 +58,10 @@ async function renderToString({ fromTimestamp, roomData, events, stateEventMap }
   dom.document.body.insertAdjacentHTML(
     'beforeend',
     `
-    <script type="text/javascript">
-      window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
-    </script>
-    `
+      <script type="text/javascript">
+        window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
+      </script>
+      `
   );
 
   const vmContext = vm.createContext(dom);
@@ -70,19 +81,21 @@ async function renderToString({ fromTimestamp, roomData, events, stateEventMap }
   vmContext.global.console = console;
 
   const hydrogenRenderScriptCode = await readFile(
-    path.resolve(__dirname, '../shared/hydrogen-vm-render-script.js'),
+    path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
     'utf8'
   );
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
-    filename: 'hydrogen-vm-render-script.js',
+    filename: '4-hydrogen-vm-render-script.js',
   });
+  // Note: The VM does not exit after the result is returned here
   const vmResult = hydrogenRenderScript.runInContext(vmContext);
   // Wait for everything to render
-  // (waiting on the promise returned from `hydrogen-render-script.js`)
+  // (waiting on the promise returned from `4-hydrogen-vm-render-script.js`)
   await vmResult;
 
   const documentString = dom.document.body.toString();
+  assert(documentString, 'Document body should not be empty after we rendered Hydrogen');
   return documentString;
 }
 
-module.exports = renderToString;
+module.exports = _renderHydrogenToStringUnsafe;
