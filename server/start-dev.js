@@ -19,6 +19,11 @@ build(
   })
 );
 
+const args = [];
+if (process.argv.includes('--tracing')) {
+  args.push('--tracing');
+}
+
 // Listen for any changes to files and restart the Node.js server process
 //
 // For API docs, see
@@ -28,6 +33,7 @@ nodemon({
   ext: 'js json',
   ignoreRoot: ['.git'],
   ignore: [path.join(__dirname, '../dist/*')],
+  args,
 });
 
 nodemon

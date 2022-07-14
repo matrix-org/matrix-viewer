@@ -7,9 +7,14 @@ const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
+const { handleTracingMiddleware, getSerializableSpans } = require('../tracing/tracing-middleware');
+const timeoutMiddleware = require('./timeout-middleware');
+
 const fetchRoomData = require('../fetch-room-data');
 const fetchEventsInRange = require('../fetch-events-in-range');
 const renderHydrogenToString = require('../hydrogen-render/1-render-hydrogen-to-string');
+const sanitizeHtml = require('../lib/sanitize-html');
+const safeJson = require('../lib/safe-json');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -63,9 +68,14 @@ function parseArchiveRangeFromReq(req) {
 }
 
 function installRoutes(app) {
-  app.get('/health-check', async function (req, res) {
-    res.send('{ "ok": true }');
-  });
+  app.use(handleTracingMiddleware);
+
+  app.get(
+    '/health-check',
+    asyncHandler(async function (req, res) {
+      res.send('{ "ok": true }');
+    })
+  );
 
   // We have to disable no-missing-require lint because it doesn't take into
   // account `package.json`. `exports`, see
@@ -73,25 +83,34 @@ function installRoutes(app) {
   // eslint-disable-next-line node/no-missing-require
   app.use(express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/main.js'))));
 
-  app.get('/hydrogen-styles.css', async function (req, res) {
-    res.set('Content-Type', 'text/css');
-    // We have to disable no-missing-require lint because it doesn't take into
-    // account `package.json`. `exports`, see
-    // https://github.com/mysticatea/eslint-plugin-node/issues/255
-    // eslint-disable-next-line node/no-missing-require
-    res.sendFile(require.resolve('hydrogen-view-sdk/assets/theme-element-light.css'));
-  });
+  app.get(
+    '/hydrogen-styles.css',
+    asyncHandler(async function (req, res) {
+      res.set('Content-Type', 'text/css');
+      // We have to disable no-missing-require lint because it doesn't take into
+      // account `package.json`. `exports`, see
+      // https://github.com/mysticatea/eslint-plugin-node/issues/255
+      // eslint-disable-next-line node/no-missing-require
+      res.sendFile(require.resolve('hydrogen-view-sdk/assets/theme-element-light.css'));
+    })
+  );
 
   // Our own archive app styles
-  app.get('/styles.css', async function (req, res) {
-    res.set('Content-Type', 'text/css');
-    res.sendFile(path.join(__dirname, '../../public/styles/styles.css'));
-  });
+  app.get(
+    '/styles.css',
+    asyncHandler(async function (req, res) {
+      res.set('Content-Type', 'text/css');
+      res.sendFile(path.join(__dirname, '../../public/styles/styles.css'));
+    })
+  );
 
-  app.get('/matrix-public-archive.js', async function (req, res) {
-    res.set('Content-Type', 'text/css');
-    res.sendFile(path.join(__dirname, '../../dist/matrix-public-archive.es.js'));
-  });
+  app.get(
+    '/matrix-public-archive.js',
+    asyncHandler(async function (req, res) {
+      res.set('Content-Type', 'text/css');
+      res.sendFile(path.join(__dirname, '../../dist/matrix-public-archive.es.js'));
+    })
+  );
 
   app.get(
     '/:roomIdOrAlias/event/:eventId',
@@ -106,6 +125,7 @@ function installRoutes(app) {
   // https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
   app.get(
     '/:roomIdOrAlias/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
+    timeoutMiddleware,
     asyncHandler(async function (req, res) {
       const roomIdOrAlias = req.params.roomIdOrAlias;
       assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
@@ -157,6 +177,9 @@ function installRoutes(app) {
         stateEventMap,
       });
 
+      const serializableSpans = getSerializableSpans();
+      const serializedSpans = JSON.stringify(serializableSpans);
+
       const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
       const stylesUrl = urlJoin(basePath, 'styles.css');
       const jsBundleUrl = urlJoin(basePath, 'matrix-public-archive.js');
@@ -164,15 +187,19 @@ function installRoutes(app) {
       <!doctype html>
       <html lang="en">
         <head>
-        <link href="${hydrogenStylesUrl}" rel="stylesheet">
-        <link href="${stylesUrl}" rel="stylesheet">
+          ${sanitizeHtml(`<title>${roomData.name} - Matrix Public Archive</title>`)}
+          <link href="${hydrogenStylesUrl}" rel="stylesheet">
+          <link href="${stylesUrl}" rel="stylesheet">
         </head>
         <body>
           ${hydrogenHtmlOutput}
           <script type="text/javascript" src="${jsBundleUrl}"></script>
+          <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
+            serializedSpans
+          )};</script>
         </body>
       </html>
-    `;
+      `;
 
       res.set('Content-Type', 'text/html');
       res.send(pageHtml);

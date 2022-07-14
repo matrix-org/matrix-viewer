@@ -2,6 +2,12 @@
 
 console.log('server process.env.NODE_ENV', process.env.NODE_ENV);
 
+if (process.argv.includes('--tracing')) {
+  console.log('Tracing is active 🕵️');
+  const { startTracing } = require('./tracing/tracing.js');
+  startTracing();
+}
+
 const express = require('express');
 
 const installRoutes = require('./routes/install-routes');
