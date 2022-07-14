@@ -14,8 +14,8 @@ const dom = parseHTML(`
 const DOMPurify = createDOMPurify(dom.window);
 
 function sanitizeHtml(dirtyHtml) {
-  const clearHtml = DOMPurify.sanitize(dirtyHtml);
-  return clearHtml;
+  const cleanHtml = DOMPurify.sanitize(dirtyHtml);
+  return cleanHtml;
 }
 
 module.exports = sanitizeHtml;
