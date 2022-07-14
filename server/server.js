@@ -4,7 +4,8 @@ console.log('server process.env.NODE_ENV', process.env.NODE_ENV);
 
 if (process.argv.includes('--tracing')) {
   console.log('Tracing is active 🕵️');
-  require('./tracing/tracing.js');
+  const { startTracing } = require('./tracing/tracing.js');
+  startTracing();
 }
 
 const express = require('express');

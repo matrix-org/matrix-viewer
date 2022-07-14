@@ -19,21 +19,30 @@ async function timeoutMiddleware(req, res, next) {
     const serializableSpans = getSerializableSpans();
     const serializedSpans = JSON.stringify(serializableSpans);
 
-    const humanReadableSpans = serializableSpans.map((serializableSpan) => {
-      const method = serializableSpan.attributes['http.method'];
-      const url = serializableSpan.attributes['http.url'];
-      const statusCode = serializableSpan.attributes['http.status_code'];
+    let humanReadableSpans;
+    if (serializableSpans.length > 0) {
+      humanReadableSpans = serializableSpans.map((serializableSpan) => {
+        const method = serializableSpan.attributes['http.method'];
+        const url = serializableSpan.attributes['http.url'];
+        const statusCode = serializableSpan.attributes['http.status_code'];
 
-      let durationString = 'request is still running';
-      if (serializableSpan.durationInMs) {
-        durationString = `took ${serializableSpan.durationInMs}ms`;
-      }
+        let durationString = 'request is still running';
+        if (serializableSpan.durationInMs) {
+          durationString = `took ${serializableSpan.durationInMs}ms`;
+        }
 
-      return `<li class="tracing-span-list-item">
-        <div class="tracing-span-item-http-details">${statusCode ?? '🏃'}: ${method} ${url}</div>
-        <div class="tracing-span-item-sub-details">${durationString}</div>
+        return `<li class="tracing-span-list-item">
+          <div class="tracing-span-item-http-details">${statusCode ?? '🏃'}: ${method} ${url}</div>
+          <div class="tracing-span-item-sub-details">${durationString}</div>
+        </li>`;
+      });
+    } else {
+      const noTracingDataAvailableItem = `<li class="tracing-span-list-item">
+        <div class="tracing-span-item-http-details">No tracing data available</div>
       </li>`;
-    });
+
+      humanReadableSpans = [noTracingDataAvailableItem];
+    }
 
     const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, 'styles.css');
@@ -55,7 +64,11 @@ async function timeoutMiddleware(req, res, next) {
           ${humanReadableSpans.join('\n')}
         </ul>`)}
 
-        ${sanitizeHtml(`<h2>Trace ID: <span class="heading-sub-detail">${traceId}</span></h2>`)}
+        ${sanitizeHtml(
+          `<h2>Trace ID: <span class="heading-sub-detail">${
+            traceId ?? `none (tracing probably isn't enabled)`
+          }</span></h2>`
+        )}
 
         <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
           serializedSpans
