@@ -70,7 +70,7 @@ async function timeoutMiddleware(req, res, next) {
 
         ${sanitizeHtml(
           `<h2>Trace ID: <span class="heading-sub-detail">${
-            traceId ?? `none (tracing probably isn't enabled)`
+            traceId ?? `none (tracing is probably not enabled)`
           }</span></h2>`
         )}
 

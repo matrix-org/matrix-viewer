@@ -47,14 +47,21 @@ class CaptureSpanProcessor {
     return Promise.resolve();
   }
 
+  // Get all spans for a given trace.
   getSpansInTrace(traceId) {
     return this.traceMap[traceId];
   }
 
+  // Keeps track of all spans for a given trace after calling
+  // `trackSpansInTrace(traceId)` (call this in a middleware before any other
+  // routes).
   trackSpansInTrace(traceId) {
     this.traceMap[traceId] = [];
   }
 
+  // Don't forget to clean up with `dropSpansInTrace(traceId)` after you're done
+  // with the spans (should be done in the `res.on('finish', ...)` callback).
+  //
   // alias: Dispose
   dropSpansInTrace(traceId) {
     delete this.traceMap[traceId];
