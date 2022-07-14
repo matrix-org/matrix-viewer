@@ -2,12 +2,13 @@
 
 const opentelemetryApi = require('@opentelemetry/api');
 
-const { captureSpanProcessor } = require('../tracing/tracing');
-const serializeSpan = require('../tracing/serialize-span');
+const asyncHandler = require('../lib/express-async-handler');
+const { captureSpanProcessor } = require('./tracing');
+const serializeSpan = require('./serialize-span');
 
 // From the current active context, grab the `traceId`. The `traceId` will be
 // shared for the whole request because all spans live under the root span.
-function _getActiveTraceId() {
+function getActiveTraceId() {
   //const rootCtx = opentelemetryApi.ROOT_CONTEXT;
   const activeCtx = opentelemetryApi.context.active();
   if (activeCtx) {
@@ -20,8 +21,10 @@ function _getActiveTraceId() {
   }
 }
 
+// Handles keeping track of tracing spans for each request.
+// Also adds the traceId to the to the `X-Trace-Id` response header.
 async function handleTracingMiddleware(req, res, next) {
-  const traceId = _getActiveTraceId();
+  const traceId = getActiveTraceId();
   if (traceId) {
     // Add the OpenTelemetry trace ID to the `X-Trace-Id` response header so
     // we can cross-reference. We can use this to lookup the request in
@@ -45,7 +48,7 @@ async function handleTracingMiddleware(req, res, next) {
 // We only care about showing the external API HTTP requests to the user so they
 // can tell what part of the Matrix API is being so slow.
 function getSerializableSpans() {
-  const traceId = _getActiveTraceId();
+  const traceId = getActiveTraceId();
   if (traceId) {
     const spans = captureSpanProcessor.getSpansInTrace(traceId);
 
@@ -63,6 +66,7 @@ function getSerializableSpans() {
 }
 
 module.exports = {
-  handleTracingMiddleware,
+  handleTracingMiddleware: asyncHandler(handleTracingMiddleware),
   getSerializableSpans,
+  getActiveTraceId,
 };

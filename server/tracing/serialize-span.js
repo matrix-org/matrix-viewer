@@ -5,7 +5,7 @@ const {
   //hrTimeToMicroseconds
 } = require('@opentelemetry/core');
 
-const SAFE_ATTRIBUTES = ['http.method', 'http.url', 'http.status_code'];
+const SAFE_ATTRIBUTES = ['http.method', 'http.url', 'http.status_code', 'http.target'];
 
 // Convert a `Span` object to a plain old JavaScript object with only the info
 // we care about and that is safe to share. We want something we can JSON
@@ -18,6 +18,9 @@ function serializeSpan(span) {
     safeAttributes[safeAttribute] = span.attributes[safeAttribute];
   });
 
+  const startTimeInMs = hrTimeToMilliseconds(span.startTime);
+  const endTimeInMs = hrTimeToMilliseconds(span.endTime);
+
   return {
     name: span.name,
     spanContext: {
@@ -25,8 +28,9 @@ function serializeSpan(span) {
       spanId: spanContext.spanId,
     },
     //parentSpanId: span.parentSpanId,
-    startTimeInMs: hrTimeToMilliseconds(span.startTime),
-    endTimeInMs: hrTimeToMilliseconds(span.endTime),
+    startTimeInMs,
+    endTimeInMs,
+    durationInMs: endTimeInMs - startTimeInMs,
     attributes: safeAttributes,
     //span.links
   };
