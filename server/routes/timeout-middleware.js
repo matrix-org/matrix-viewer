@@ -13,8 +13,10 @@ assert(basePath);
 const requestTimeoutMs = config.get('requestTimeoutMs');
 assert(requestTimeoutMs);
 
+// Based off of the `connect-timeout` middleware,
+// https://github.com/expressjs/timeout/blob/f2f520f335f2f2ae255d4778e908e8d38e3a4e68/index.js
 async function timeoutMiddleware(req, res, next) {
-  setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     const traceId = getActiveTraceId();
     const serializableSpans = getSerializableSpans();
     const serializedSpans = JSON.stringify(serializableSpans);
@@ -26,7 +28,9 @@ async function timeoutMiddleware(req, res, next) {
         const url = serializableSpan.attributes['http.url'];
         const statusCode = serializableSpan.attributes['http.status_code'];
 
-        let durationString = 'request is still running';
+        let durationString = `request is still running (${
+          Date.now() - serializableSpan.startTimeInMs
+        }ms so far)`;
         if (serializableSpan.durationInMs) {
           durationString = `took ${serializableSpan.durationInMs}ms`;
         }
@@ -58,7 +62,7 @@ async function timeoutMiddleware(req, res, next) {
       ${/* We add the .hydrogen class here just to get normal body styles */ ''}
       <body class="hydrogen">
         <h1>504: Server timeout</h1>
-        <p>Server was unable to respond in time</p>
+        <p>Server was unable to respond in time (${requestTimeoutMs / 1000}s)</p>
         <h3>These are the external API requests that made it slow:</h3>
         ${sanitizeHtml(`<ul class="tracing-span-list">
           ${humanReadableSpans.join('\n')}
@@ -83,6 +87,10 @@ async function timeoutMiddleware(req, res, next) {
 
     res.send(pageHtml);
   }, requestTimeoutMs);
+
+  res.on('finish', function () {
+    clearTimeout(timeoutId);
+  });
 
   next();
 }

@@ -21,6 +21,11 @@ function serializeSpan(span) {
   const startTimeInMs = hrTimeToMilliseconds(span.startTime);
   const endTimeInMs = hrTimeToMilliseconds(span.endTime);
 
+  let durationInMs = null;
+  if (startTimeInMs && endTimeInMs) {
+    durationInMs = endTimeInMs - startTimeInMs;
+  }
+
   return {
     name: span.name,
     spanContext: {
@@ -30,7 +35,7 @@ function serializeSpan(span) {
     //parentSpanId: span.parentSpanId,
     startTimeInMs,
     endTimeInMs,
-    durationInMs: endTimeInMs - startTimeInMs,
+    durationInMs,
     attributes: safeAttributes,
     //span.links
   };

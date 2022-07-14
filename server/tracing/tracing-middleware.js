@@ -50,7 +50,7 @@ async function handleTracingMiddleware(req, res, next) {
 function getSerializableSpans() {
   const traceId = getActiveTraceId();
   if (traceId) {
-    const spans = captureSpanProcessor.getSpansInTrace(traceId);
+    const spans = captureSpanProcessor.getSpansInTrace(traceId) ?? [];
 
     // We only care about showing the external API HTTP requests to the user
     const filteredSpans = spans.filter((span) => {
