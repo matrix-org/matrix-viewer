@@ -7,8 +7,8 @@ const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
 const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
 const {
   BasicTracerProvider,
-  ConsoleSpanExporter,
-  SimpleSpanProcessor,
+  // ConsoleSpanExporter,
+  // SimpleSpanProcessor,
   BatchSpanProcessor,
 } = require('@opentelemetry/sdk-trace-base');
 const { AsyncLocalStorageContextManager } = require('@opentelemetry/context-async-hooks');
@@ -16,7 +16,9 @@ const { OTTracePropagator } = require('@opentelemetry/propagator-ot-trace');
 const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 
-const packageInfo = require('../package.json');
+const CaptureSpanProcessor = require('./capture-span-processor');
+
+const packageInfo = require('../../package.json');
 assert(packageInfo.name);
 
 // (Diagnostics) For troubleshooting, set the log level to DiagLogLevel.DEBUG.
@@ -42,11 +44,13 @@ const provider = new BasicTracerProvider({
 // Otherwise, we should just use the more performant batched processor
 provider.addSpanProcessor(new BatchSpanProcessor(exporter));
 
+const captureSpanProcessor = new CaptureSpanProcessor();
+provider.addSpanProcessor(captureSpanProcessor);
+
 provider.register({
   contextManager: new AsyncLocalStorageContextManager(),
   propagator: new OTTracePropagator(),
 });
-// provider.register();
 
 registerInstrumentations({
   instrumentations: [
@@ -80,3 +84,8 @@ process.on('SIGTERM', () => {
     .catch((error) => console.log('Error terminating tracing', error))
     .finally(() => process.exit(0));
 });
+
+module.exports = {
+  provider,
+  captureSpanProcessor,
+};

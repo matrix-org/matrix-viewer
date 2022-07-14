@@ -1,6 +1,6 @@
 ## Tracing
 
-Run the app with the tracing.
+Run the app with the OpenTelemetry tracing.
 
 ```
 npm run start -- --tracing
@@ -13,6 +13,12 @@ Manually:
 ```
 node --require './server/tracing.js' server/server.js
 ```
+
+---
+
+Traces are made up of many spans. Each span defines a `traceId` which it is associated with.
+
+## Viewing traces in Jaeger
 
 - Dashboard where users can see visualisations -> http://localhost:16686
 
