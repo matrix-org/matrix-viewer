@@ -12,7 +12,7 @@ There is already https://view.matrix.org/
 something with more Element-feeling polish and loading faster (avoid the slow
 502's errors that are frequent on `view.matrix.org`).
 
-![](todo.png)
+![](https://user-images.githubusercontent.com/558581/179576142-4474c327-002f-449d-8c81-f81f17a0f4c9.png)
 
 ## Plan summary
 
