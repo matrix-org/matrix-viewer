@@ -12,6 +12,8 @@ There is already https://view.matrix.org/
 something with more Element-feeling polish and loading faster (avoid the slow
 502's errors that are frequent on `view.matrix.org`).
 
+![](todo.png)
+
 ## Plan summary
 
 The plan is to server-side render (SSR) the
