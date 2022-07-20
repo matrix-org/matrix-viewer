@@ -24,7 +24,28 @@ async function renderHydrogenToString(options) {
     // we receive the SSR results.
     const child = fork(require.resolve('./2-render-hydrogen-to-string-fork-script'), [], {
       signal,
+      // Make `child.stderr` and `child.stdout` available
+      silent: true,
       //cwd: process.cwd(),
+    });
+
+    // Since we have to use the `silent` option for the `stderr` stuff below, we
+    // should also print out the `stdout` to our main console.
+    child.stdout.on('data', function (data) {
+      console.log('Child printed something to stdout:', String(data));
+    });
+
+    // It's possible for the child to exit and print an error to the `stderr`
+    // without it actually bubbling up to us in the parent. As far as I can
+    // tell, the `try`/`catch` in `2-render-hydrogen-to-string-fork-script.js`
+    // just isn't catching the error (doesn't make any sense).
+    child.stderr.on('data', function (data) {
+      const stubError = new Error();
+      stubError.name = 'PrintFromStdErr';
+      stubError.message = '';
+      stubError.stack = String(data);
+      const childError = new RethrownError(`Child process printed something to stderr`, stubError);
+      childErrors.push(childError);
     });
 
     // Pass the options to the child by sending instead of via argv because we
@@ -64,7 +85,7 @@ async function renderHydrogenToString(options) {
             extraErrorsMessage = ` (somehow we saw ${
               childErrors.length
             } errors but we really always expect 1 error)\n${childErrors
-              .map((childError, index) => ` ${index}. ${childError.message} ${childError.stack}`)
+              .map((childError, index) => `${index}. ${childError.message} ${childError.stack}`)
               .join('\n')}`;
           }
 
@@ -98,7 +119,8 @@ async function renderHydrogenToString(options) {
   } catch (err) {
     throw new RethrownError(
       `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderToString arguments: ${JSON.stringify(
-        arguments[0]
+        { todo: 'uncomment the real arguments' }
+        //arguments[0]
       )}`,
       err
     );

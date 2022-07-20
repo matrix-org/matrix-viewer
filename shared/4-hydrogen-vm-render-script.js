@@ -8,6 +8,7 @@
 const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
+  Storage,
   MediaRepository,
   createNavigation,
   createRouter,
@@ -147,12 +148,42 @@ async function mountHydrogen() {
   // page don't say `undefined`.
   urlRouter.attach();
 
+  // const storage = await platform.storageFactory.create('1234', platform.logger.log);
+  //const storage = new Storage(null, window.indexedDB, null, false, localStorage, platform.logger);
+  const storage = {
+    storeNames: {},
+    readTxn() {
+      return {
+        timelineEvents: {
+          getByEventId() {},
+        },
+      };
+    },
+    readWriteTxn() {},
+    close() {},
+  };
+
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
     roomId: roomData.id,
     fragmentIdComparer: fragmentIdComparer,
     clock: platform.clock,
     logger: platform.logger,
+    storage: storage,
+    hsApi: {
+      context() {
+        return {
+          response() {
+            return {
+              event: {
+                sender: 'fake_user',
+              },
+              state: [{ type: 'm.room.member', content: {}, user_id: 'fake_user' }],
+            };
+          },
+        };
+      },
+    },
   });
 
   const mediaRepository = new MediaRepository({

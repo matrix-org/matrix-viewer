@@ -43,13 +43,34 @@ process.on('message', async (options) => {
   } catch (err) {
     // Serialize the error and send it back up to the parent process so we can
     // interact with it and know what happened when the process exits.
-    process.send({
-      error: true,
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
+    //
+    // We also need to wait for the error to completely send to the parent
+    // process before we throw the error again and exit the process.
+    await new Promise((resolve) => {
+      process.send(
+        {
+          error: true,
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+        },
+        (sendErr) => {
+          if (sendErr) {
+            // We just log here instead of rejecting because it's more important
+            // to see the original error we are trying to send up. Let's just
+            // throw the original error below.
+            console.error('Failed to send error to the parent process', sendErr);
+          }
+
+          resolve();
+        }
+      );
     });
-    // Throw the error so the process fails and exits
-    throw err;
+
+    // We purposely don't `throw err;` to fail and exit the process because we
+    // don't want toadditionally print something to `stderr`. We try to use
+    // `stderr` as just the last line of defense for errors that won't be caught
+    // and serialized here for whatever reason.
+    process.exit(1);
   }
 });

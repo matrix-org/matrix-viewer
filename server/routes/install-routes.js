@@ -170,12 +170,17 @@ function installRoutes(app) {
         throw new Error('TODO: Redirect user to smaller hour range');
       }
 
-      const hydrogenHtmlOutput = await renderHydrogenToString({
-        fromTimestamp,
-        roomData,
-        events,
-        stateEventMap,
-      });
+      const renderData = require('../../test.json');
+      const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+      //const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(renderData);
+      const hydrogenHtmlOutput = await renderHydrogenToString(renderData);
+
+      // const hydrogenHtmlOutput = await renderHydrogenToString({
+      //   fromTimestamp,
+      //   roomData,
+      //   events,
+      //   stateEventMap,
+      // });
 
       const serializableSpans = getSerializableSpans();
       const serializedSpans = JSON.stringify(serializableSpans);
