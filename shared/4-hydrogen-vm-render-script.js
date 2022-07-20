@@ -8,8 +8,9 @@
 const assert = require('matrix-public-archive-shared/lib/assert');
 const {
   Platform,
-  Storage,
   MediaRepository,
+  HomeServerApi,
+  StorageFactory,
   createNavigation,
   createRouter,
 
@@ -148,20 +149,29 @@ async function mountHydrogen() {
   // page don't say `undefined`.
   urlRouter.attach();
 
-  // const storage = await platform.storageFactory.create('1234', platform.logger.log);
   //const storage = new Storage(null, window.indexedDB, null, false, localStorage, platform.logger);
-  const storage = {
-    storeNames: {},
-    readTxn() {
+  const storageFactory = new StorageFactory(
+    null,
+    window.indexedDB,
+    window.FDBKeyRange,
+    window.localStorage
+  );
+  const storage = await storageFactory.create('1', platform.logger);
+
+  const hsApi = new HomeServerApi({
+    request: (url, options) => {
       return {
-        timelineEvents: {
-          getByEventId() {},
+        abort() {},
+        async response() {
+          return {
+            status: 204,
+            body: {},
+          };
         },
       };
     },
-    readWriteTxn() {},
-    close() {},
-  };
+    homeserver: 'fakehomeserver',
+  });
 
   // We use the timeline to setup the relations between entries
   const timeline = new Timeline({
@@ -169,21 +179,8 @@ async function mountHydrogen() {
     fragmentIdComparer: fragmentIdComparer,
     clock: platform.clock,
     logger: platform.logger,
-    storage: storage,
-    hsApi: {
-      context() {
-        return {
-          response() {
-            return {
-              event: {
-                sender: 'fake_user',
-              },
-              state: [{ type: 'm.room.member', content: {}, user_id: 'fake_user' }],
-            };
-          },
-        };
-      },
-    },
+    storage,
+    hsApi,
   });
 
   const mediaRepository = new MediaRepository({

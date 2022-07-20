@@ -44,7 +44,7 @@ async function renderHydrogenToString(options) {
       stubError.name = 'PrintFromStdErr';
       stubError.message = '';
       stubError.stack = String(data);
-      const childError = new RethrownError(`Child process printed something to stderr`, stubError);
+      const childError = new RethrownError(`Child process printed something to stderr:`, stubError);
       childErrors.push(childError);
     });
 
@@ -58,23 +58,36 @@ async function renderHydrogenToString(options) {
       controller.abort();
     }, RENDER_TIMEOUT);
 
-    // Collect the data passed back by the child
-    child.on('message', function (result) {
-      if (result.error) {
-        // De-serialize the error
-        const childError = new Error();
-        childError.name = result.name;
-        childError.message = result.message;
-        childError.stack = result.stack;
-        // We shouldn't really run into a situation where there are multiple
-        // errors but since this is just a message bus, it's possible.
-        childErrors.push(childError);
-      } else {
-        data += result.data;
-      }
-    });
-
     await new Promise((resolve, reject) => {
+      // Collect the data passed back by the child
+      child.on('message', function (result) {
+        if (result.error) {
+          // De-serialize the error
+          const childError = new Error();
+          childError.name = result.name;
+          childError.message = result.message;
+          childError.stack = result.stack;
+          // We shouldn't really run into a situation where there are multiple
+          // errors but since this is just a message bus, it's possible.
+          childErrors.push(childError);
+        } else {
+          data += result.data;
+          // We only expect one chunk of data to be sent back so we can resolve
+          // now. This also avoids the problem where the child_process exits
+          // with status error code 1 but still Hydrogen still provided some
+          // HTML and ran into an error afterwards which bubbles weird.
+          //
+          // Originally, we would only resolve after the child_process exited
+          // with successfuly exit code 0. We could think of getting rid of this
+          // if we can work out all of the errors that can happen. Like
+          // something going wrong in `_loadContextEntryNotInTimeline` from
+          // Hydrogen.
+          //
+          // TODO: uncomment probably
+          //resolve(data);
+        }
+      });
+
       child.on('close', (exitCode) => {
         // Exited successfully
         if (exitCode === 0) {
@@ -89,9 +102,16 @@ async function renderHydrogenToString(options) {
               .join('\n')}`;
           }
 
+          let childErrorToDisplay = new Error('No child errors');
+          if (childErrors.length === 1) {
+            childErrorToDisplay = childErrors[0];
+          } else if (childErrors.length > 1) {
+            childErrorToDisplay = new Error('Multiple child errors listed above ^');
+          }
+
           const error = new RethrownError(
             `Child process failed with exit code ${exitCode}${extraErrorsMessage}`,
-            childErrors[0] || new Error('No child errors')
+            childErrorToDisplay
           );
           reject(error);
         }
