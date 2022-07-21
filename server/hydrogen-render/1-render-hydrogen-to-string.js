@@ -98,7 +98,7 @@ async function renderHydrogenToString(options) {
             extraErrorsMessage = ` (somehow we saw ${
               childErrors.length
             } errors but we really always expect 1 error)\n${childErrors
-              .map((childError, index) => `${index}. ${childError.message} ${childError.stack}`)
+              .map((childError, index) => `${index}. ${childError.stack}`)
               .join('\n')}`;
           }
 
