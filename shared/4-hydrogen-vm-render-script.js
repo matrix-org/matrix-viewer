@@ -156,13 +156,21 @@ async function mountHydrogen() {
     window.FDBKeyRange,
     window.localStorage
   );
-  const storage = await storageFactory.create('1', platform.logger);
+  const storage = await new Promise((resolve) => {
+    platform.logger.run('creating-storage', async (log) => {
+      const storage = await storageFactory.create('1', log);
+      resolve(storage);
+    });
+  });
 
   const hsApi = new HomeServerApi({
     request: (url, options) => {
       return {
         abort() {},
         async response() {
+          // Respond to the `/context` requests about missing event relations
+          // with empty content. We don't want more errors to be logged but
+          // we're ok with the missing events staying missing.
           return {
             status: 204,
             body: {},

@@ -13,7 +13,7 @@ const RethrownError = require('../lib/rethrown-error');
 // gone really wrong.
 const RENDER_TIMEOUT = 5000;
 
-async function renderHydrogenToString(options) {
+async function renderHydrogenToString(renderOptions) {
   try {
     let data = '';
     let childErrors = [];
@@ -24,7 +24,10 @@ async function renderHydrogenToString(options) {
     // we receive the SSR results.
     const child = fork(require.resolve('./2-render-hydrogen-to-string-fork-script'), [], {
       signal,
-      // Make `child.stderr` and `child.stdout` available
+      // Default to silencing logs from the child process. We already have
+      // proper instrumentation of any errors that might occur.
+      //
+      // This also makes `child.stderr` and `child.stdout` available
       silent: true,
       //cwd: process.cwd(),
     });
@@ -35,23 +38,14 @@ async function renderHydrogenToString(options) {
       console.log('Child printed something to stdout:', String(data));
     });
 
-    // It's possible for the child to exit and print an error to the `stderr`
-    // without it actually bubbling up to us in the parent. As far as I can
-    // tell, the `try`/`catch` in `2-render-hydrogen-to-string-fork-script.js`
-    // just isn't catching the error (doesn't make any sense).
     child.stderr.on('data', function (data) {
-      const stubError = new Error();
-      stubError.name = 'PrintFromStdErr';
-      stubError.message = '';
-      stubError.stack = String(data);
-      const childError = new RethrownError(`Child process printed something to stderr:`, stubError);
-      childErrors.push(childError);
+      console.log('Child printed something to stderr:', String(data));
     });
 
-    // Pass the options to the child by sending instead of via argv because we
+    // Pass the renderOptions to the child by sending instead of via argv because we
     // will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG` with
     // argv.
-    child.send(options);
+    child.send(renderOptions);
 
     // Stops the child process if it takes too long
     setTimeout(() => {
@@ -73,17 +67,14 @@ async function renderHydrogenToString(options) {
         } else {
           data += result.data;
           // We only expect one chunk of data to be sent back so we can resolve
-          // now. This also avoids the problem where the child_process exits
-          // with status error code 1 but still Hydrogen still provided some
-          // HTML and ran into an error afterwards which bubbles weird.
+          // now. This also avoids the problem where the `child_process` exits
+          // with status code 1 (error) because of an async error but Hydrogen
+          // still rendered something and returned some HTML.
           //
-          // Originally, we would only resolve after the child_process exited
-          // with successfuly exit code 0. We could think of getting rid of this
-          // if we can work out all of the errors that can happen. Like
-          // something going wrong in `_loadContextEntryNotInTimeline` from
-          // Hydrogen.
+          // Originally, we would only resolve after the `child_process` exited
+          // with successfuly exit code 0.
           //
-          // TODO: uncomment probably
+          // TODO: Do we uncomment this?
           //resolve(data);
         }
       });
@@ -139,8 +130,8 @@ async function renderHydrogenToString(options) {
   } catch (err) {
     throw new RethrownError(
       `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderToString arguments: ${JSON.stringify(
-        { todo: 'uncomment the real arguments' }
-        //arguments[0]
+        //{ todo: 'placeholder' }
+        renderOptions
       )}`,
       err
     );

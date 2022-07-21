@@ -171,15 +171,22 @@ function installRoutes(app) {
       }
 
       const renderData = require('../../test.json');
-      const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+      //const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
       //const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(renderData);
       const hydrogenHtmlOutput = await renderHydrogenToString(renderData);
 
+      // In development, if you're running into a hard to track down error with
+      // the render hydrogen stack and fighting against the multiple layers of
+      // complexity with `child_process `and `vm`; you can get away with removing
+      // the `child_process` part of it by using
+      // `3-render-hydrogen-to-string-unsafe` directly.
+      // ```js
+      // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+      // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe({ /* renderData */ });
+      // ```
+      //
       // const hydrogenHtmlOutput = await renderHydrogenToString({
-      //   fromTimestamp,
-      //   roomData,
-      //   events,
-      //   stateEventMap,
+      //   fromTimestamp, roomData, events, stateEventMap,
       // });
 
       const serializableSpans = getSerializableSpans();

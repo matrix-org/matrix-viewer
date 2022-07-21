@@ -22,12 +22,7 @@ const { IDBFactory, IDBKeyRange } = require('fake-indexeddb');
 
 const config = require('../lib/config');
 
-async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
-  assert(fromTimestamp);
-  assert(roomData);
-  assert(events);
-  assert(stateEventMap);
-
+function createDomAndVmContext() {
   const dom = parseHTML(`
       <!doctype html>
       <html>
@@ -43,28 +38,6 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
       setTimeout(cb, 0);
     };
   }
-
-  // Define this for the SSR context
-  dom.window.matrixPublicArchiveContext = {
-    fromTimestamp,
-    roomData,
-    events,
-    stateEventMap,
-    config: {
-      basePort: config.get('basePort'),
-      basePath: config.get('basePath'),
-      matrixServerUrl: config.get('matrixServerUrl'),
-    },
-  };
-  // Serialize it for when we run this again client-side
-  dom.document.body.insertAdjacentHTML(
-    'beforeend',
-    `
-      <script type="text/javascript">
-        window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
-      </script>
-      `
-  );
 
   const vmContext = vm.createContext(dom);
   // Make the dom properties available in sub-`require(...)` calls
@@ -87,6 +60,42 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
   vmContext.global.require = require;
   // So we can see logs from the underlying vm
   vmContext.global.console = console;
+
+  return {
+    dom,
+    vmContext,
+  };
+}
+
+async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
+  assert(fromTimestamp);
+  assert(roomData);
+  assert(events);
+  assert(stateEventMap);
+
+  const { dom, vmContext } = createDomAndVmContext();
+
+  // Define this for the SSR context
+  dom.window.matrixPublicArchiveContext = {
+    fromTimestamp,
+    roomData,
+    events,
+    stateEventMap,
+    config: {
+      basePort: config.get('basePort'),
+      basePath: config.get('basePath'),
+      matrixServerUrl: config.get('matrixServerUrl'),
+    },
+  };
+  // Serialize it for when we run this again client-side
+  dom.document.body.insertAdjacentHTML(
+    'beforeend',
+    `
+      <script type="text/javascript">
+        window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
+      </script>
+      `
+  );
 
   const hydrogenRenderScriptCode = await readFile(
     path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
