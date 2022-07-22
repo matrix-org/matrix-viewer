@@ -72,8 +72,11 @@ async function renderHydrogenToString(renderOptions) {
           childError.name = result.name;
           childError.message = result.message;
           childError.stack = result.stack;
-          // We shouldn't really run into a situation where there are multiple
-          // errors but since this is just a message bus, it's possible.
+          // When an error happens while rendering Hydrogen, we only expect one
+          // error to come through here from the main line to render Hydrogen.
+          // But it's possible to get multiple errors from async out of context
+          // places since we also listen to `uncaughtException` and
+          // `unhandledRejection`.
           childErrors.push(childError);
         } else {
           data += result.data;

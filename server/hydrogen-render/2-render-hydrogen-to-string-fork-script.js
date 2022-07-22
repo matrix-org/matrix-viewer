@@ -43,6 +43,9 @@ async function serializeError(err) {
 
 // We don't exit the process after encountering one of these because maybe it
 // doesn't matter to the main render process in Hydrogen.
+//
+// If we don't listen for these events, the child will exit with status code 1
+// (error) when they occur.
 process.on('uncaughtException', async (err /*, origin*/) => {
   await serializeError(new RethrownError('uncaughtException in child process', err));
 });
