@@ -88,6 +88,7 @@ process.on('message', async (renderOptions) => {
     // process before we throw the error again and exit the process.
     await serializeError(err);
 
+    // Throw the error so the process fails and exits
     throw err;
   }
 });

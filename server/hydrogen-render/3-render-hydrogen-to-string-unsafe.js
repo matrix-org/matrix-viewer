@@ -22,6 +22,8 @@ const { IDBFactory, IDBKeyRange } = require('fake-indexeddb');
 
 const config = require('../lib/config');
 
+// Setup the DOM context with any necessary shims/polyfills and ensure the VM
+// global has everything that a normal document does so Hydrogen can render.
 function createDomAndVmContext() {
   const dom = parseHTML(`
       <!doctype html>
@@ -104,7 +106,8 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
     filename: '4-hydrogen-vm-render-script.js',
   });
-  // Note: The VM does not exit after the result is returned here
+  // Note: The VM does not exit after the result is returned here and is why
+  // this should be run in a `child_process` that we can exit.
   const vmResult = hydrogenRenderScript.runInContext(vmContext);
   // Wait for everything to render
   // (waiting on the promise returned from `4-hydrogen-vm-render-script.js`)

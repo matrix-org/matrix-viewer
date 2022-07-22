@@ -77,16 +77,6 @@ async function renderHydrogenToString(renderOptions) {
           childErrors.push(childError);
         } else {
           data += result.data;
-          // We only expect one chunk of data to be sent back so we can resolve
-          // now. This also avoids the problem where the `child_process` exits
-          // with status code 1 (error) because of an async error but Hydrogen
-          // still rendered something and returned some HTML.
-          //
-          // Originally, we would only resolve after the `child_process` exited
-          // with successfuly exit code 0.
-          //
-          // TODO: Do we uncomment this?
-          //resolve(data);
         }
       });
 
