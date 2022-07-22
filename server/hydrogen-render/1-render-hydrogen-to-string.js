@@ -9,9 +9,18 @@ const fork = require('child_process').fork;
 const assert = require('assert');
 const RethrownError = require('../lib/rethrown-error');
 
+const config = require('../lib/config');
+const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
+
 // The render should be fast. If it's taking more than 5 seconds, something has
 // gone really wrong.
 const RENDER_TIMEOUT = 5000;
+
+if (!logOutputFromChildProcesses) {
+  console.warn(
+    `Silencing logs from child processes (config.logOutputFromChildProcesses = ${logOutputFromChildProcesses})`
+  );
+}
 
 async function renderHydrogenToString(renderOptions) {
   try {
@@ -34,13 +43,15 @@ async function renderHydrogenToString(renderOptions) {
 
     // Since we have to use the `silent` option for the `stderr` stuff below, we
     // should also print out the `stdout` to our main console.
-    child.stdout.on('data', function (data) {
-      console.log('Child printed something to stdout:', String(data));
-    });
+    if (logOutputFromChildProcesses) {
+      child.stdout.on('data', function (data) {
+        console.log('Child printed something to stdout:', String(data));
+      });
 
-    child.stderr.on('data', function (data) {
-      console.log('Child printed something to stderr:', String(data));
-    });
+      child.stderr.on('data', function (data) {
+        console.log('Child printed something to stderr:', String(data));
+      });
+    }
 
     // Pass the renderOptions to the child by sending instead of via argv because we
     // will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG` with
