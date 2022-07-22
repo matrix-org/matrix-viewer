@@ -14,7 +14,8 @@ const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
 
 // The render should be fast. If it's taking more than 5 seconds, something has
 // gone really wrong.
-const RENDER_TIMEOUT = 5000;
+// TODO: Set this back to 5000
+const RENDER_TIMEOUT = 15000;
 
 if (!logOutputFromChildProcesses) {
   console.warn(
@@ -134,7 +135,7 @@ async function renderHydrogenToString(renderOptions) {
   } catch (err) {
     throw new RethrownError(
       `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderToString arguments: ${JSON.stringify(
-        //{ todo: 'placeholder' }
+        //{ foo: 'bar' }
         renderOptions
       )}`,
       err
