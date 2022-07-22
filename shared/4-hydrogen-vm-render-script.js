@@ -149,7 +149,6 @@ async function mountHydrogen() {
   // page don't say `undefined`.
   urlRouter.attach();
 
-  //const storage = new Storage(null, window.indexedDB, null, false, localStorage, platform.logger);
   const storageFactory = new StorageFactory(
     null,
     window.indexedDB,
@@ -164,7 +163,7 @@ async function mountHydrogen() {
   });
 
   const hsApi = new HomeServerApi({
-    request: (url, options) => {
+    request: (/*url, options*/) => {
       return {
         abort() {},
         async response() {
@@ -172,6 +171,7 @@ async function mountHydrogen() {
           // with empty content. We don't want more errors to be logged but
           // we're ok with the missing events staying missing.
           return {
+            // 204: No content
             status: 204,
             body: {},
           };
