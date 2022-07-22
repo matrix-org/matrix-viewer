@@ -23,8 +23,9 @@ const { IDBFactory, IDBKeyRange } = require('fake-indexeddb');
 const config = require('../lib/config');
 
 // Setup the DOM context with any necessary shims/polyfills and ensure the VM
-// global has everything that a normal document does so Hydrogen can render.
-function createDomAndVmContext() {
+// context global has everything that a normal document does so Hydrogen can
+// render.
+function createDomAndSetupVmContext() {
   const dom = parseHTML(`
       <!doctype html>
       <html>
@@ -75,7 +76,7 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
   assert(events);
   assert(stateEventMap);
 
-  const { dom, vmContext } = createDomAndVmContext();
+  const { dom, vmContext } = createDomAndSetupVmContext();
 
   // Define this for the SSR context
   dom.window.matrixPublicArchiveContext = {
