@@ -14,7 +14,6 @@ const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetc
 const config = require('../server/lib/config');
 
 const {
-  ensureUserRegistered,
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
@@ -416,13 +415,14 @@ describe('matrix-public-archive', () => {
       const dom = parseHTML(archivePageHtml);
 
       // Make sure the messages are visible
-      for (let i = 0; i < room2EventIds.length; i++) {
-        const eventId = room2EventIds[i];
-        assert.strictEqual(
-          dom.document.querySelectorAll(`[data-event-id="${eventId}"]`).length,
-          room2EventIds.length
-        );
-      }
+      assert.deepStrictEqual(
+        room2EventIds.map((eventId) => {
+          return dom.document
+            .querySelector(`[data-event-id="${eventId}"]`)
+            ?.getAttribute('data-event-id');
+        }),
+        room2EventIds
+      );
     });
 
     it(`will redirect to hour pagination when there are too many messages`);
