@@ -191,7 +191,10 @@ async function createMessagesInRoom({ client, roomId, numMessages, prefix, times
         msgtype: 'm.text',
         body: `${prefix} - message${i}`,
       },
-      timestamp,
+      // We can't use the exact same timestamp for every message in the tests
+      // otherwise it's a toss up which event will be returned as the closest
+      // for `/timestamp_to_event`.
+      timestamp: timestamp + i,
     });
     eventIds.push(eventId);
   }
