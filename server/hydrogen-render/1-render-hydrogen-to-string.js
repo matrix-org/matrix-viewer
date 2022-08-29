@@ -8,6 +8,7 @@ const fork = require('child_process').fork;
 
 const assert = require('assert');
 const RethrownError = require('../lib/rethrown-error');
+const { traceFunction } = require('../tracing/trace-utilities');
 
 const config = require('../lib/config');
 const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
@@ -142,4 +143,4 @@ async function renderHydrogenToString(renderOptions) {
   }
 }
 
-module.exports = renderHydrogenToString;
+module.exports = traceFunction(renderHydrogenToString);

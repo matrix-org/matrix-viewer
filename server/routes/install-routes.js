@@ -12,6 +12,7 @@ const timeoutMiddleware = require('./timeout-middleware');
 
 const fetchRoomData = require('../fetch-room-data');
 const fetchEventsInRange = require('../fetch-events-in-range');
+const ensureRoomJoined = require('../ensure-room-joined');
 const renderHydrogenToString = require('../hydrogen-render/1-render-hydrogen-to-string');
 const sanitizeHtml = require('../lib/sanitize-html');
 const safeJson = require('../lib/safe-json');
@@ -136,8 +137,15 @@ function installRoutes(app) {
       // If the hourRange is defined, we force the range to always be 1 hour. If
       // the format isn't correct, redirect to the correct hour range
       if (hourRange && toHour !== fromHour + 1) {
+        // Pass through the query parameters
+        let queryParamterUrlPiece = '';
+        if (req.query) {
+          queryParamterUrlPiece = `?${new URLSearchParams(req.query).toString()}`;
+        }
+
         res.redirect(
-          urlJoin(
+          // FIXME: Can we use the matrixPublicArchiveURLCreator here?
+          `${urlJoin(
             basePath,
             roomIdOrAlias,
             'date',
@@ -145,13 +153,17 @@ function installRoutes(app) {
             req.params.mm,
             req.params.dd,
             `${fromHour}-${fromHour + 1}`
-          )
+          )}${queryParamterUrlPiece}`
         );
         return;
       }
 
       // TODO: Highlight tile that matches ?at=$xxx
       //const aroundId = req.query.at;
+
+      // We have to wait for the room join to happen first before we can fetch
+      // any of the additional room info or messages.
+      await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
       // Do these in parallel to avoid the extra time in sequential round-trips
       // (we want to display the archive page faster)

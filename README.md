@@ -12,6 +12,8 @@ There is already https://view.matrix.org/
 something with more Element-feeling polish and loading faster (avoid the slow
 502's errors that are frequent on `view.matrix.org`).
 
+![](https://user-images.githubusercontent.com/558581/179578263-e224ed59-dbba-464e-8b34-89a72ee0ae71.png)
+
 ## Plan summary
 
 The plan is to server-side render (SSR) the
