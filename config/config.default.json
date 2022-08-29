@@ -3,6 +3,8 @@
   "basePath": "http://localhost:3050",
   "matrixServerUrl": "http://localhost:8008/",
   "archiveMessageLimit": 500,
+  "requestTimeoutMs": 25000,
+  "UNCOMMENT_jaegerTracesEndpoint": "http://localhost:14268/api/traces",
   "testMatrixServerUrl1": "http://localhost:11008/",
   "testMatrixServerUrl2": "http://localhost:12008/",
 

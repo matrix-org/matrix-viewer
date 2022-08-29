@@ -153,3 +153,26 @@ body {
 .CalendarView_dayLink_disabled {
   opacity: 0.5;
 }
+
+
+/* Error pages */
+
+.heading-sub-detail {
+  font-weight: normal;
+}
+
+.tracing-span-list {
+
+}
+
+.tracing-span-list-item {
+  margin-bottom: 8px;
+}
+
+.tracing-span-item-http-details {
+
+}
+
+.tracing-span-item-sub-details {
+  margin-left: 4ch;
+}
