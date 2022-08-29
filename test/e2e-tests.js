@@ -391,7 +391,7 @@ describe('matrix-public-archive', () => {
       );
     });
 
-    it.only(`can render day back in time from room on remote homeserver we haven't backfilled from`, async () => {
+    it(`can render day back in time from room on remote homeserver we haven't backfilled from`, async () => {
       const hs2Client = await getTestClientForHs(testMatrixServerUrl2);
 
       // Create a room on hs2
