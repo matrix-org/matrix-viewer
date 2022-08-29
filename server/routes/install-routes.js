@@ -137,6 +137,12 @@ function installRoutes(app) {
       // If the hourRange is defined, we force the range to always be 1 hour. If
       // the format isn't correct, redirect to the correct hour range
       if (hourRange && toHour !== fromHour + 1) {
+        // Pass through the query parameters
+        let queryParamterUrlPiece = '';
+        if (req.query) {
+          queryParamterUrlPiece = `?${new URLSearchParams(req.query).toString()}`;
+        }
+
         res.redirect(
           // FIXME: Can we use the matrixPublicArchiveURLCreator here?
           `${urlJoin(
@@ -147,7 +153,7 @@ function installRoutes(app) {
             req.params.mm,
             req.params.dd,
             `${fromHour}-${fromHour + 1}`
-          )}?${new URLSearchParams(req.query).toString()}`
+          )}${queryParamterUrlPiece}`
         );
         return;
       }
