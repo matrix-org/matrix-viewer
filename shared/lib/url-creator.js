@@ -1,7 +1,6 @@
 'use strict';
 
 const urlJoin = require('url-join');
-const { URLSearchParams } = require('url');
 
 class URLCreator {
   constructor(basePath) {

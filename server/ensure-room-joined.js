@@ -1,7 +1,6 @@
 'use strict';
 
 const assert = require('assert');
-const { URLSearchParams } = require('url');
 const urlJoin = require('url-join');
 
 const { fetchEndpointAsJson } = require('./lib/fetch-endpoint');
@@ -24,7 +23,6 @@ async function ensureRoomJoined(accessToken, roomId, viaServers = []) {
     matrixServerUrl,
     `_matrix/client/r0/join/${roomId}?${qs.toString()}`
   );
-  console.log('joinEndpoint', joinEndpoint);
   await fetchEndpointAsJson(joinEndpoint, {
     method: 'POST',
     accessToken,

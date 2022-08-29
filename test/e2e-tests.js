@@ -404,7 +404,6 @@ describe('matrix-public-archive', () => {
         prefix: HOMESERVER_URL_TO_PRETTY_NAME_MAP[hs2Client.homeserverUrl],
         timestamp: archiveDate.getTime(),
       });
-      console.log('archiveDate.getTime()', archiveDate.getTime());
 
       archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(hs2RoomId, archiveDate, {
         // Since hs1 doesn't know about this room on hs2 yet, we have to provide
