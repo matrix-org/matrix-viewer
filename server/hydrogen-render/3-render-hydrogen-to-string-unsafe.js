@@ -87,7 +87,8 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
     filename: '4-hydrogen-vm-render-script.js',
   });
-  // Note: The VM does not exit after the result is returned here
+  // Note: The VM does not exit after the result is returned here and is why
+  // this should be run in a `child_process` that we can exit.
   const vmResult = hydrogenRenderScript.runInContext(vmContext);
   // Wait for everything to render
   // (waiting on the promise returned from `4-hydrogen-vm-render-script.js`)
