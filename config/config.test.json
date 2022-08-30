@@ -5,6 +5,6 @@
   "testMatrixServerUrl1": "http://localhost:11008/",
   "testMatrixServerUrl2": "http://localhost:12008/",
 
-  "Secrets": "xxx",
+  // Secrets
   "matrixAccessToken": "as_token_8664700429a911bbbecf7d91b9e1a74716d669f40cf32259630e38439726e29d"
 }
