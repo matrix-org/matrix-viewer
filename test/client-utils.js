@@ -121,7 +121,6 @@ async function joinRoom({ client, roomId, viaServers }) {
     client.homeserverUrl,
     `/_matrix/client/v3/join/${roomId}?${qs.toString()}`
   );
-  console.log('test client joinRoomUrl', joinRoomUrl);
   const joinRoomResponse = await fetchEndpointAsJson(joinRoomUrl, {
     method: 'POST',
     accessToken: client.accessToken,

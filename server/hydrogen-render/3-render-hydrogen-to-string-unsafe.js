@@ -20,12 +20,10 @@ const { parseHTML } = require('linkedom');
 
 const config = require('../lib/config');
 
-async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
-  assert(fromTimestamp);
-  assert(roomData);
-  assert(events);
-  assert(stateEventMap);
-
+// Setup the DOM context with any necessary shims/polyfills and ensure the VM
+// context global has everything that a normal document does so Hydrogen can
+// render.
+function createDomAndSetupVmContext() {
   const dom = parseHTML(`
       <!doctype html>
       <html>
@@ -41,6 +39,36 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
       setTimeout(cb, 0);
     };
   }
+
+  const vmContext = vm.createContext(dom);
+  // Make the dom properties available in sub-`require(...)` calls
+  vmContext.global.window = dom.window;
+  vmContext.global.document = dom.document;
+  vmContext.global.Node = dom.Node;
+  vmContext.global.navigator = dom.navigator;
+  vmContext.global.DOMParser = dom.DOMParser;
+  // Make sure `webcrypto` exists since it was only introduced in Node.js v17
+  assert(crypto.webcrypto);
+  vmContext.global.crypto = crypto.webcrypto;
+
+  // So require(...) works in the vm
+  vmContext.global.require = require;
+  // So we can see logs from the underlying vm
+  vmContext.global.console = console;
+
+  return {
+    dom,
+    vmContext,
+  };
+}
+
+async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
+  assert(fromTimestamp);
+  assert(roomData);
+  assert(events);
+  assert(stateEventMap);
+
+  const { dom, vmContext } = createDomAndSetupVmContext();
 
   // Define this for the SSR context
   dom.window.matrixPublicArchiveContext = {
@@ -63,22 +91,6 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
       </script>
       `
   );
-
-  const vmContext = vm.createContext(dom);
-  // Make the dom properties available in sub-`require(...)` calls
-  vmContext.global.window = dom.window;
-  vmContext.global.document = dom.document;
-  vmContext.global.Node = dom.Node;
-  vmContext.global.navigator = dom.navigator;
-  vmContext.global.DOMParser = dom.DOMParser;
-  // Make sure `webcrypto` exists since it was only introduced in Node.js v17
-  assert(crypto.webcrypto);
-  vmContext.global.crypto = crypto.webcrypto;
-
-  // So require(...) works in the vm
-  vmContext.global.require = require;
-  // So we can see logs from the underlying vm
-  vmContext.global.console = console;
 
   const hydrogenRenderScriptCode = await readFile(
     path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
