@@ -29,18 +29,30 @@ body {
   min-width: 0;
 }
 
+/* No need to open the right-panel when it's always visible at desktop widths */
+.room-header-change-dates-button {
+  display: none;
+  color: var(--icon-color--darker-20);
+}
+/* No need to close the right-panel when it's always visible at desktop widths */
+.RightPanelView_buttons .close {
+  display: none;
+}
+
 @media screen and (max-width: 800px) {
+  /* Only the middle needs to be visible mobile by default */
   .ArchiveView {
     grid-template:
       'status' auto
       'middle' 1fr /
       1fr;
   }
-
+  /* Which also means hiding the right-panel by default on mobile */
   .ArchiveView:not(.right-shown) .RightPanelView {
     display: none;
   }
 
+  /* When the user opens the right-panel, show it */
   .ArchiveView.right-shown {
     grid-template:
       'status' auto
@@ -50,10 +62,14 @@ body {
   .ArchiveView.right-shown .middle {
     display: none;
   }
-}
-
-.room-header-change-dates-button {
-  color: var(--icon-color--darker-20);
+  /* And show the button to open the right-panel on mobile */
+  .room-header-change-dates-button {
+    display: block;
+  }
+  /* And show the button to close the right-panel on mobile */
+  .RightPanelView_buttons .close {
+    display: block;
+  }
 }
 
 .CalendarView {
