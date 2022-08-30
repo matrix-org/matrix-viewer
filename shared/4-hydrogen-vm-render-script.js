@@ -11,6 +11,7 @@ const {
   MediaRepository,
   createNavigation,
   createRouter,
+  tag,
 
   TilesCollection,
   FragmentIdComparer,
@@ -20,14 +21,14 @@ const {
   encodeEventIdKey,
   Timeline,
   RoomViewModel,
-  ViewModel,
-  setupLightboxNavigation,
 } = require('hydrogen-view-sdk');
 
-const ArchiveView = require('matrix-public-archive-shared/ArchiveView');
-const RightPanelContentView = require('matrix-public-archive-shared/RightPanelContentView');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+
+const ArchiveView = require('matrix-public-archive-shared/views/ArchiveView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
+
+const ArchiveViewModel = require('matrix-public-archive-shared/view-models/ArchiveViewModel');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -228,7 +229,8 @@ async function mountHydrogen() {
 
   const roomViewModel = new RoomViewModel({
     room,
-    ownUserId: 'xxx',
+    // This is an arbitrary string (doesn't need to match anything and it shouldn't)
+    ownUserId: 'xxx-ownUserId',
     platform,
     urlCreator: urlRouter,
     navigation,
@@ -236,94 +238,35 @@ async function mountHydrogen() {
 
   // FIXME: We shouldn't have to dive into the internal fields to make this work
   roomViewModel._timelineVM = timelineViewModel;
+  const fromDate = new Date(fromTimestamp);
+  const dateString = fromDate.toISOString().split('T')[0];
   roomViewModel._composerVM = {
-    kind: 'none',
+    kind: 'disabled',
+    description: [
+      `You're viewing an archive of events from ${dateString}. Use a `,
+      tag.a(
+        {
+          href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
+          rel: 'noopener',
+          target: '_blank',
+        },
+        ['Matrix client']
+      ),
+      ` to start chatting in this room.`,
+    ],
   };
 
-  class CalendarViewModel extends ViewModel {
-    constructor(options) {
-      super(options);
-      const { activeDate, calendarDate } = options;
-      this._activeDate = activeDate;
-      this._calendarDate = calendarDate;
-    }
-
-    get activeDate() {
-      return this._activeDate;
-    }
-
-    get calendarDate() {
-      return this._calendarDate;
-    }
-
-    archiveUrlForDate(date) {
-      return matrixPublicArchiveURLCreator.archiveUrlForDate(room.id, date);
-    }
-
-    prevMonth() {
-      const prevMonthDate = new Date(this._calendarDate);
-      prevMonthDate.setUTCMonth(this._calendarDate.getUTCMonth() - 1);
-      this._calendarDate = prevMonthDate;
-      this.emitChange('calendarDate');
-    }
-
-    nextMonth() {
-      const nextMonthDate = new Date(this._calendarDate);
-      nextMonthDate.setUTCMonth(this._calendarDate.getUTCMonth() + 1);
-      console.log('nextMonthDate', nextMonthDate);
-      this._calendarDate = nextMonthDate;
-      this.emitChange('calendarDate');
-    }
-
-    onMonthInputChange(e) {
-      this._calendarDate = e.target.valueAsDate;
-      this.emitChange('calendarDate');
-    }
-
-    onYearFallbackSelectChange(e) {
-      const selectedDate = new Date(this._calendarDate);
-      selectedDate.setUTCFullYear(e.target.value);
-      this._calendarDate = selectedDate;
-      this.emitChange('calendarDate');
-    }
-  }
-
-  const fromDate = new Date(fromTimestamp);
-  class ArchiveViewModel extends ViewModel {
-    roomViewModel = roomViewModel;
-    rightPanelModel = {
-      activeViewModel: {
-        type: 'custom',
-        customView: RightPanelContentView,
-        calendarViewModel: new CalendarViewModel({
-          // The day being shown in the archive
-          activeDate: fromDate,
-          // The month displayed in the calendar
-          calendarDate: fromDate,
-        }),
-      },
-    };
-
-    constructor(options) {
-      super(options);
-
-      this.#setupNavigation();
-    }
-
-    #setupNavigation() {
-      setupLightboxNavigation(this, 'lightboxViewModel', (eventId) => {
-        return {
-          room,
-          eventEntry: eventEntriesByEventId[eventId],
-        };
-      });
-    }
-  }
-
   const archiveViewModel = new ArchiveViewModel({
+    // Hydrogen options
     navigation: navigation,
     urlCreator: urlRouter,
     history: archiveHistory,
+    // Our options
+    roomViewModel,
+    room,
+    fromDate,
+    eventEntriesByEventId,
+    basePath: config.basePath,
   });
 
   const view = new ArchiveView(archiveViewModel);

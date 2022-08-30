@@ -7,6 +7,10 @@ class URLCreator {
     this._basePath = basePath;
   }
 
+  permalinkForRoomId(roomId) {
+    return `https://matrix.to/#/${roomId}`;
+  }
+
   archiveUrlForDate(roomId, date, { viaServers = [] } = {}) {
     let qs = new URLSearchParams();
     [].concat(viaServers).forEach((viaServer) => {
