@@ -341,7 +341,6 @@ async function mountHydrogen() {
 
     _updateRightPanel() {
       this._shouldShowRightPanel = !!this.navigation.path.get('right-panel')?.value;
-      console.log('_updateRightPanel', this._shouldShowRightPanel);
       this.emitChange('shouldShowRightPanel');
     }
   }
