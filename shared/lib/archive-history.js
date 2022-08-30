@@ -27,8 +27,22 @@ class ArchiveHistory extends History {
     // downstream call of `urlRouter.attach()` which we do when bootstraping
     // everything.
     if (window.history) {
-      super.replaceUrlSilently(url);
+      let replacingUrl = url;
+      // This is a way to make sure the hash gets cleared out
+      if (url === '') {
+        replacingUrl = window.location.pathname;
+      }
+      super.replaceUrlSilently(replacingUrl);
     }
+  }
+
+  pushUrlSilently(url) {
+    let replacingUrl = url;
+    // This is a way to make sure the hash gets cleared out
+    if (url === '') {
+      replacingUrl = window.location.pathname;
+    }
+    super.pushUrlSilently(replacingUrl);
   }
 
   // Make the URLs we use in the UI of the app relative to the room:
