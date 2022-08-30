@@ -4,7 +4,7 @@ const { ViewModel, setupLightboxNavigation } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
-const CalendarViewModel = require('matrix-public-archive-shared/view-models/CalendarViewModel');
+const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
 
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 

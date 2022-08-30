@@ -28,7 +28,7 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const ArchiveView = require('matrix-public-archive-shared/views/ArchiveView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 
-const ArchiveViewModel = require('matrix-public-archive-shared/view-models/ArchiveViewModel');
+const ArchiveViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveViewModel');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
