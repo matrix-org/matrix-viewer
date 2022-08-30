@@ -17,8 +17,6 @@ const path = require('path');
 const { readFile } = require('fs').promises;
 const crypto = require('crypto');
 const { parseHTML } = require('linkedom');
-const MockLocalStorage = require('./mock-local-storage');
-const { IDBFactory, IDBKeyRange } = require('fake-indexeddb');
 
 const config = require('../lib/config');
 
@@ -52,12 +50,6 @@ function createDomAndSetupVmContext() {
   // Make sure `webcrypto` exists since it was only introduced in Node.js v17
   assert(crypto.webcrypto);
   vmContext.global.crypto = crypto.webcrypto;
-  // LocalStorage stuff
-  vmContext.global.localStorage = new MockLocalStorage();
-  // IndexDB stuff
-  vmContext.global.indexedDB = new IDBFactory();
-  vmContext.global.IDBFactory = IDBFactory;
-  vmContext.global.IDBKeyRange = IDBKeyRange;
 
   // So require(...) works in the vm
   vmContext.global.require = require;
