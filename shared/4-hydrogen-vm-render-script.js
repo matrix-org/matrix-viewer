@@ -234,6 +234,13 @@ async function mountHydrogen() {
     navigation,
   });
 
+  roomViewModel.openRightPanel = function () {
+    let path = this.navigation.path.until('room');
+    path = path.with(this.navigation.segment('right-panel', true));
+    path = path.with(this.navigation.segment('change-dates', true));
+    this.navigation.applyPath(path);
+  };
+
   // FIXME: We shouldn't have to dive into the internal fields to make this work
   roomViewModel._timelineVM = timelineViewModel;
   roomViewModel._composerVM = {
@@ -292,6 +299,7 @@ async function mountHydrogen() {
   class ArchiveViewModel extends ViewModel {
     roomViewModel = roomViewModel;
     rightPanelModel = {
+      navigation,
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
@@ -302,21 +310,39 @@ async function mountHydrogen() {
           calendarDate: fromDate,
         }),
       },
+      closePanel() {
+        const path = this.navigation.path.until('room');
+        this.navigation.applyPath(path);
+      },
     };
+
+    get shouldShowRightPanel() {
+      return this._shouldShowRightPanel;
+    }
 
     constructor(options) {
       super(options);
 
       this.#setupNavigation();
+      this._updateRightPanel();
     }
 
     #setupNavigation() {
+      const rightpanel = this.navigation.observe('right-panel');
+      this.track(rightpanel.subscribe(() => this._updateRightPanel()));
+
       setupLightboxNavigation(this, 'lightboxViewModel', (eventId) => {
         return {
           room,
           eventEntry: eventEntriesByEventId[eventId],
         };
       });
+    }
+
+    _updateRightPanel() {
+      this._shouldShowRightPanel = !!this.navigation.path.get('right-panel')?.value;
+      console.log('_updateRightPanel', this._shouldShowRightPanel);
+      this.emitChange('shouldShowRightPanel');
     }
   }
 

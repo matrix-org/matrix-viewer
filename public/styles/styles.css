@@ -52,6 +52,10 @@ body {
   }
 }
 
+.room-header-change-dates-button {
+  color: var(--icon-color--darker-20);
+}
+
 .CalendarView {
 }
 

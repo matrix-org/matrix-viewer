@@ -66,6 +66,7 @@ class CalendarView extends TemplateView {
                   month: 'long',
                   timeZone: 'UTC',
                 }),
+                // Drowndown arrow
                 t.svg(
                   {
                     xmlns: 'http://www.w3.org/2000/svg',
