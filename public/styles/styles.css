@@ -29,9 +29,30 @@ body {
   min-width: 0;
 }
 
+@media screen and (max-width: 800px) {
+  .ArchiveView {
+    grid-template:
+      'status' auto
+      'middle' 1fr /
+      1fr;
+  }
+
+  .ArchiveView:not(.right-shown) .RightPanelView {
+    display: none;
+  }
+
+  .ArchiveView.right-shown {
+    grid-template:
+      'status' auto
+      'right' 1fr /
+      1fr;
+  }
+  .ArchiveView.right-shown .middle {
+    display: none;
+  }
+}
+
 .CalendarView {
-  max-width: 280px;
-  font: 100% system-ui;
 }
 
 .CalendarView_header {
@@ -132,7 +153,8 @@ body {
 .CalendarView_dayLink {
   display: inline-block;
   width: 100%;
-  padding: 2px 5px;
+  padding-top: 18%;
+  padding-bottom: 18%;
 
   text-decoration: none;
 }
@@ -154,7 +176,6 @@ body {
   opacity: 0.5;
 }
 
-
 /* Error pages */
 
 .heading-sub-detail {
@@ -162,7 +183,6 @@ body {
 }
 
 .tracing-span-list {
-
 }
 
 .tracing-span-list-item {
@@ -170,7 +190,6 @@ body {
 }
 
 .tracing-span-item-http-details {
-
 }
 
 .tracing-span-item-sub-details {

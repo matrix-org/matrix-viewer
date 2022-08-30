@@ -209,6 +209,7 @@ function installRoutes(app) {
       <!doctype html>
       <html lang="en">
         <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
           ${sanitizeHtml(`<title>${roomData.name} - Matrix Public Archive</title>`)}
           <link href="${hydrogenStylesUrl}" rel="stylesheet">
           <link href="${stylesUrl}" rel="stylesheet">
