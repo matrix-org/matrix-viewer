@@ -23,6 +23,7 @@ class ArchiveViewModel extends ViewModel {
     this.roomViewModel = roomViewModel;
     // FIXME: Do we have to fake this?
     this.rightPanelModel = {
+      navigation: this.navigation,
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
@@ -35,18 +36,35 @@ class ArchiveViewModel extends ViewModel {
           basePath,
         }),
       },
+      closePanel() {
+        const path = this.navigation.path.until('room');
+        this.navigation.applyPath(path);
+      },
     };
 
     this.#setupNavigation();
+    this._updateRightPanel();
   }
 
   #setupNavigation() {
+    const rightpanel = this.navigation.observe('right-panel');
+    this.track(rightpanel.subscribe(() => this._updateRightPanel()));
+
     setupLightboxNavigation(this, 'lightboxViewModel', (eventId) => {
       return {
         room: this._room,
         eventEntry: this._eventEntriesByEventId[eventId],
       };
     });
+  }
+
+  get shouldShowRightPanel() {
+    return this._shouldShowRightPanel;
+  }
+
+  _updateRightPanel() {
+    this._shouldShowRightPanel = !!this.navigation.path.get('right-panel')?.value;
+    this.emitChange('shouldShowRightPanel');
   }
 }
 

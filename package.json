@@ -1,6 +1,11 @@
 {
   "name": "matrix-public-archive",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matrix-org/matrix-public-archive"
+  },
   "scripts": {
     "lint": "eslint **/*.js",
     "build": "vite build",

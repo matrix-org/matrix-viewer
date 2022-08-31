@@ -3,7 +3,7 @@
 function assert(value, message) {
   console.assert(value, message);
   if (!value) {
-    throw new Error(`Assertion Error: ${value} == true`);
+    throw new Error(`AssertionError: expected ${value} to be truthy`);
   }
 }
 

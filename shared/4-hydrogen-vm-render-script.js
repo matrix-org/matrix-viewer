@@ -236,6 +236,13 @@ async function mountHydrogen() {
     navigation,
   });
 
+  roomViewModel.openRightPanel = function () {
+    let path = this.navigation.path.until('room');
+    path = path.with(this.navigation.segment('right-panel', true));
+    path = path.with(this.navigation.segment('change-dates', true));
+    this.navigation.applyPath(path);
+  };
+
   // FIXME: We shouldn't have to dive into the internal fields to make this work
   roomViewModel._timelineVM = timelineViewModel;
   const fromDate = new Date(fromTimestamp);

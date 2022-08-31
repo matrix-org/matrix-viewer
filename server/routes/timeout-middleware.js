@@ -55,6 +55,7 @@ async function timeoutMiddleware(req, res, next) {
     <!doctype html>
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Server timeout - Matrix Public Archive</title>
         <link href="${hydrogenStylesUrl}" rel="stylesheet">
         <link href="${stylesUrl}" rel="stylesheet">
