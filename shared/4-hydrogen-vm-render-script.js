@@ -262,25 +262,32 @@ async function mountHydrogen() {
     this.navigation.applyPath(path);
   };
 
-  // FIXME: We shouldn't have to dive into the internal fields to make this work
-  roomViewModel._timelineVM = timelineViewModel;
+  Object.defineProperty(roomViewModel, 'timelineViewModel', {
+    get() {
+      return timelineViewModel;
+    },
+  });
   const fromDate = new Date(fromTimestamp);
   const dateString = fromDate.toISOString().split('T')[0];
-  roomViewModel._composerVM = {
-    kind: 'disabled',
-    description: [
-      `You're viewing an archive of events from ${dateString}. Use a `,
-      tag.a(
-        {
-          href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
-          rel: 'noopener',
-          target: '_blank',
-        },
-        ['Matrix client']
-      ),
-      ` to start chatting in this room.`,
-    ],
-  };
+  Object.defineProperty(roomViewModel, 'composerViewModel', {
+    get() {
+      return {
+        kind: 'disabled',
+        description: [
+          `You're viewing an archive of events from ${dateString}. Use a `,
+          tag.a(
+            {
+              href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
+              rel: 'noopener',
+              target: '_blank',
+            },
+            ['Matrix client']
+          ),
+          ` to start chatting in this room.`,
+        ],
+      };
+    },
+  });
 
   const archiveViewModel = new ArchiveViewModel({
     // Hydrogen options
