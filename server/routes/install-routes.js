@@ -199,6 +199,14 @@ function installRoutes(app) {
         stateEventMap,
       });
 
+      // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+      // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe({
+      //   fromTimestamp,
+      //   roomData,
+      //   events,
+      //   stateEventMap,
+      // });
+
       const serializableSpans = getSerializableSpans();
       const serializedSpans = JSON.stringify(serializableSpans);
 
