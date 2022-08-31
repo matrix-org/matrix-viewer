@@ -13,6 +13,9 @@ const {
   createRouter,
   tag,
 
+  RetainedObservableValue,
+  PowerLevels,
+
   TilesCollection,
   FragmentIdComparer,
   tileClassForEntry,
@@ -166,6 +169,22 @@ async function mountHydrogen() {
     avatarUrl: roomData.avatarUrl,
     avatarColorId: roomData.id,
     mediaRepository: mediaRepository,
+    // Based on https://github.com/vector-im/hydrogen-web/blob/5f9cfffa3b547991b665f57a8bf715270a1b2ef1/src/matrix/room/BaseRoom.js#L480
+    observePowerLevels: async function () {
+      let powerLevelsObservable = this._powerLevelsObservable;
+      if (!powerLevelsObservable) {
+        const powerLevels = new PowerLevels({
+          powerLevelEvent: {},
+          ownUserId: 'xxx-ownUserId',
+          membership: null,
+        });
+        powerLevelsObservable = new RetainedObservableValue(powerLevels, () => {
+          this._powerLevels = null;
+        });
+        this._powerLevelsObservable = powerLevelsObservable;
+      }
+      return powerLevelsObservable;
+    },
   };
 
   // Something we can modify with new state updates as we see them
