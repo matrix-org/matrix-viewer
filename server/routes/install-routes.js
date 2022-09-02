@@ -87,6 +87,15 @@ async function renderVmRenderScriptToPageHtml(vmRenderScriptFilePath, pageOption
   // ```
   //
   const hydrogenHtmlOutput = await renderHydrogenToString(vmRenderScriptFilePath, renderOptions);
+  // try {
+  //   const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+  //   const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(
+  //     vmRenderScriptFilePath,
+  //     renderOptions
+  //   );
+  // } catch (err) {
+  //   console.log('renderVmRenderScriptToPageHtml caught err', err);
+  // }
 
   const serializableSpans = getSerializableSpans();
   const serializedSpans = JSON.stringify(serializableSpans);
