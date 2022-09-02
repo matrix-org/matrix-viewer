@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "eslint **/*.js",
-    "build": "vite build",
+    "build": "node ./build/do-client-script-build.js",
     "start": "node server/server.js",
     "start-dev": "node server/start-dev.js",
     "test": "npm run mocha -- test/e2e-tests.js --timeout 15000",

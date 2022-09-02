@@ -23,7 +23,7 @@ if (!logOutputFromChildProcesses) {
   );
 }
 
-async function renderHydrogenToString(renderOptions) {
+async function renderHydrogenToString(vmRenderScriptFilePath, renderOptions) {
   try {
     let data = '';
     let childErrors = [];
@@ -57,7 +57,7 @@ async function renderHydrogenToString(renderOptions) {
     // Pass the renderOptions to the child by sending instead of via argv because we
     // will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG` with
     // argv.
-    child.send(renderOptions);
+    child.send({ vmRenderScriptFilePath, renderOptions });
 
     // Stops the child process if it takes too long
     setTimeout(() => {

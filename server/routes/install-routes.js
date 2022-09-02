@@ -68,6 +68,54 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
+async function renderVmRenderScriptToPageHtml(vmRenderScriptFilePath, pageOptions, renderOptions) {
+  assert(vmRenderScriptFilePath);
+  assert(pageOptions);
+  assert(pageOptions.title);
+  assert(pageOptions.styles);
+  assert(pageOptions.scripts);
+  assert(renderOptions);
+
+  // In development, if you're running into a hard to track down error with
+  // the render hydrogen stack and fighting against the multiple layers of
+  // complexity with `child_process `and `vm`; you can get away with removing
+  // the `child_process` part of it by using
+  // `3-render-hydrogen-to-string-unsafe` directly.
+  // ```js
+  // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+  // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(vmRenderScriptFilePath, renderOptions);
+  // ```
+  //
+  const hydrogenHtmlOutput = await renderHydrogenToString(vmRenderScriptFilePath, renderOptions);
+
+  const serializableSpans = getSerializableSpans();
+  const serializedSpans = JSON.stringify(serializableSpans);
+
+  const pageHtml = `
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
+          ${pageOptions.styles
+            .map((styleUrl) => `<link href="${styleUrl}" rel="stylesheet">`)
+            .join('\n')}
+        </head>
+        <body>
+          ${hydrogenHtmlOutput}
+          ${pageOptions.scripts
+            .map((scriptUrl) => `<script type="text/javascript" src="${scriptUrl}"></script>`)
+            .join('\n')}
+          <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
+            serializedSpans
+          )};</script>
+        </body>
+      </html>
+      `;
+
+  return pageHtml;
+}
+
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
 
@@ -106,10 +154,45 @@ function installRoutes(app) {
   );
 
   app.get(
-    '/matrix-public-archive.js',
+    '/hydrogen-view.js',
     asyncHandler(async function (req, res) {
       res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../dist/matrix-public-archive.es.js'));
+      res.sendFile(path.join(__dirname, '../../dist/entry-client-hydrogen.es.js'));
+    })
+  );
+
+  app.get(
+    '/room-directory.js',
+    asyncHandler(async function (req, res) {
+      res.set('Content-Type', 'text/css');
+      res.sendFile(path.join(__dirname, '../../dist/entry-client-room-directory.es.js'));
+    })
+  );
+
+  app.get(
+    '/',
+    asyncHandler(async function (req, res) {
+      const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
+      const stylesUrl = urlJoin(basePath, 'styles.css');
+      const jsBundleUrl = urlJoin(basePath, 'room-directory.js');
+
+      const pageHtml = await renderVmRenderScriptToPageHtml(
+        path.resolve(__dirname, '../../shared/4-room-directory-vm-render-script.js'),
+        {
+          title: `Matrix Public Archive`,
+          styles: [hydrogenStylesUrl, stylesUrl],
+          scripts: [jsBundleUrl],
+        },
+        {
+          searchTerm: 'foobar',
+          config: {
+            basePath: config.get('basePath'),
+          },
+        }
+      );
+
+      res.set('Content-Type', 'text/html');
+      res.send(pageHtml);
     })
   );
 
@@ -182,47 +265,28 @@ function installRoutes(app) {
         throw new Error('TODO: Redirect user to smaller hour range');
       }
 
-      // In development, if you're running into a hard to track down error with
-      // the render hydrogen stack and fighting against the multiple layers of
-      // complexity with `child_process `and `vm`; you can get away with removing
-      // the `child_process` part of it by using
-      // `3-render-hydrogen-to-string-unsafe` directly.
-      // ```js
-      // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
-      // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe({ /* renderData */ });
-      // ```
-      //
-      const hydrogenHtmlOutput = await renderHydrogenToString({
-        fromTimestamp,
-        roomData,
-        events,
-        stateEventMap,
-      });
-
-      const serializableSpans = getSerializableSpans();
-      const serializedSpans = JSON.stringify(serializableSpans);
-
       const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
       const stylesUrl = urlJoin(basePath, 'styles.css');
-      const jsBundleUrl = urlJoin(basePath, 'matrix-public-archive.js');
-      const pageHtml = `
-      <!doctype html>
-      <html lang="en">
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          ${sanitizeHtml(`<title>${roomData.name} - Matrix Public Archive</title>`)}
-          <link href="${hydrogenStylesUrl}" rel="stylesheet">
-          <link href="${stylesUrl}" rel="stylesheet">
-        </head>
-        <body>
-          ${hydrogenHtmlOutput}
-          <script type="text/javascript" src="${jsBundleUrl}"></script>
-          <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
-            serializedSpans
-          )};</script>
-        </body>
-      </html>
-      `;
+      const jsBundleUrl = urlJoin(basePath, 'hydrogen-view.js');
+
+      const pageHtml = await renderVmRenderScriptToPageHtml(
+        path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
+        {
+          title: `${roomData.name} - Matrix Public Archive`,
+          styles: [hydrogenStylesUrl, stylesUrl],
+          scripts: [jsBundleUrl],
+        },
+        {
+          fromTimestamp,
+          roomData,
+          events,
+          stateEventMap,
+          config: {
+            basePath: config.get('basePath'),
+            matrixServerUrl: config.get('matrixServerUrl'),
+          },
+        }
+      );
 
       res.set('Content-Type', 'text/html');
       res.send(pageHtml);

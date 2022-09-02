@@ -123,12 +123,12 @@ function supressBlankAnchorsReloadingThePage() {
 
 // eslint-disable-next-line max-statements
 async function mountHydrogen() {
-  const app = document.querySelector('#app');
+  const appElement = document.querySelector('#app');
 
   const platformConfig = {};
   const assetPaths = {};
   const platform = new Platform({
-    container: app,
+    container: appElement,
     assetPaths,
     config: platformConfig,
     options: { development: true },
@@ -304,7 +304,7 @@ async function mountHydrogen() {
 
   const view = new ArchiveView(archiveViewModel);
 
-  app.replaceChildren(view.mount());
+  appElement.replaceChildren(view.mount());
 
   addSupportClasses();
 
