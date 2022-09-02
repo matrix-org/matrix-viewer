@@ -88,10 +88,10 @@ process.on('message', async (renderOptions) => {
     });
   } catch (err) {
     // We need to wait for the error to completely send to the parent
-    // process before we throw the error again and exit the process.
+    // process before we exit the process.
     await serializeError(err);
 
-    // Throw the error so the process fails and exits
-    throw err;
+    // Fail the process and exit
+    process.exit(1);
   }
 });

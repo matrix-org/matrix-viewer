@@ -23,10 +23,48 @@ if (!logOutputFromChildProcesses) {
   );
 }
 
+function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors) {
+  assert(childErrors);
+
+  let extraErrorsMessage = '';
+  if (childErrors.length > 1) {
+    extraErrorsMessage = ` (somehow we saw ${
+      childErrors.length
+    } errors but we really always expect 1 error)\n${childErrors
+      .map((childError, index) => `${index}. ${childError.stack}`)
+      .join('\n')}`;
+  }
+
+  let childErrorToDisplay;
+  if (childErrors.length === 0) {
+    childErrorToDisplay = new Error('No child errors');
+    // Clear the stack trace part of the stack string out because this is just a
+    // note about the lack of errors, not an actual error and is just noisy with
+    // that extra fluff.
+    childErrorToDisplay.stack = childErrorToDisplay.message;
+  } else if (childErrors.length === 1) {
+    childErrorToDisplay = childErrors[0];
+  } else {
+    childErrorToDisplay = new Error('Multiple child errors listed above ^');
+    // Clear the stack trace part of the stack string out because this is just a
+    // note about the other errors, not an actual error and is just noisy with
+    // that extra fluff.
+    childErrorToDisplay.stack = childErrorToDisplay.message;
+  }
+
+  const childErrorSummary = new RethrownError(
+    `Child process exited with code ${exitCode}${extraErrorsMessage}`,
+    childErrorToDisplay
+  );
+
+  return childErrorSummary;
+}
+
 async function renderHydrogenToString(renderOptions) {
+  let abortTimeoutId;
   try {
-    let data = '';
     let childErrors = [];
+    let childExitCode = '(not set yet)';
 
     const controller = new AbortController();
     const { signal } = controller;
@@ -60,11 +98,12 @@ async function renderHydrogenToString(renderOptions) {
     child.send(renderOptions);
 
     // Stops the child process if it takes too long
-    setTimeout(() => {
+    abortTimeoutId = setTimeout(() => {
       controller.abort();
     }, RENDER_TIMEOUT);
 
-    await new Promise((resolve, reject) => {
+    const returnedData = await new Promise((resolve, reject) => {
+      let data = '';
       // Collect the data passed back by the child
       child.on('message', function (result) {
         if (result.error) {
@@ -85,53 +124,47 @@ async function renderHydrogenToString(renderOptions) {
       });
 
       child.on('close', (exitCode) => {
+        childExitCode = exitCode;
         // Exited successfully
         if (exitCode === 0) {
           resolve(data);
         } else {
-          let extraErrorsMessage = '';
-          if (childErrors.length > 1) {
-            extraErrorsMessage = ` (somehow we saw ${
-              childErrors.length
-            } errors but we really always expect 1 error)\n${childErrors
-              .map((childError, index) => `${index}. ${childError.stack}`)
-              .join('\n')}`;
-          }
-
-          let childErrorToDisplay = new Error('No child errors');
-          if (childErrors.length === 1) {
-            childErrorToDisplay = childErrors[0];
-          } else if (childErrors.length > 1) {
-            childErrorToDisplay = new Error('Multiple child errors listed above ^');
-          }
-
-          const error = new RethrownError(
-            `Child process failed with exit code ${exitCode}${extraErrorsMessage}`,
-            childErrorToDisplay
+          const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
+            childExitCode,
+            childErrors
           );
-          reject(error);
+          reject(childErrorSummary);
         }
       });
 
       // When a problem occurs when spawning the process or gets aborted
       child.on('error', (err) => {
         if (err.name === 'AbortError') {
-          throw new RethrownError(
-            `Timed out while rendering Hydrogen to string so we aborted the child process after ${RENDER_TIMEOUT}ms`,
-            err
+          const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
+            childExitCode,
+            childErrors
           );
+          reject(
+            new RethrownError(
+              `Timed out while rendering Hydrogen to string so we aborted the child process after ${RENDER_TIMEOUT}ms. Any child errors? (${childErrors.length})`,
+              childErrorSummary
+            )
+          );
+        } else {
+          reject(err);
         }
-
-        reject(err);
       });
     });
 
-    assert(
-      data,
-      `No HTML sent from child process to render Hydrogen. Any child errors? (${childErrors.length})`
-    );
+    if (!returnedData) {
+      const childErrorSummary = assembleErrorAfterChildExitsWithErrors(childExitCode, childErrors);
+      throw new RethrownError(
+        `No HTML sent from child process to render Hydrogen. Any child errors? (${childErrors.length})`,
+        childErrorSummary
+      );
+    }
 
-    return data;
+    return returnedData;
   } catch (err) {
     throw new RethrownError(
       `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderToString arguments: ${JSON.stringify(
@@ -139,6 +172,10 @@ async function renderHydrogenToString(renderOptions) {
       )}`,
       err
     );
+  } finally {
+    // We don't have to add a undefined/null check here because `clearTimeout`
+    // works with any value you give it and doesn't throw an error.
+    clearTimeout(abortTimeoutId);
   }
 }
 
