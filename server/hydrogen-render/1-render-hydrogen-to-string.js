@@ -38,11 +38,18 @@ function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors) {
   let childErrorToDisplay;
   if (childErrors.length === 0) {
     childErrorToDisplay = new Error('No child errors');
-    childErrorToDisplay.stack = 'No child errors';
+    // Clear the stack trace part of the stack string out because this is just a
+    // note about the lack of errors, not an actual error and is just noisy with
+    // that extra fluff.
+    childErrorToDisplay.stack = childErrorToDisplay.message;
   } else if (childErrors.length === 1) {
     childErrorToDisplay = childErrors[0];
   } else {
     childErrorToDisplay = new Error('Multiple child errors listed above ^');
+    // Clear the stack trace part of the stack string out because this is just a
+    // note about the other errors, not an actual error and is just noisy with
+    // that extra fluff.
+    childErrorToDisplay.stack = childErrorToDisplay.message;
   }
 
   const childErrorSummary = new RethrownError(
