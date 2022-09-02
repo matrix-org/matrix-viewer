@@ -47,7 +47,6 @@ async function serializeError(err) {
 // If we don't listen for these events, the child will exit with status code 1
 // (error) when they occur.
 process.on('uncaughtException', async (err /*, origin*/) => {
-  console.log('2 uncaughtException', err);
   await serializeError(new RethrownError('uncaughtException in child process', err));
 });
 
