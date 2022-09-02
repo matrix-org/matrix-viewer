@@ -32,7 +32,7 @@ class RethrownError extends ExtendedError {
     super(message);
     if (!error) throw new Error('RethrownError requires a message and error');
     this.original = error;
-    this.newStack = this.stack;
+    this.originalStack = this.stack;
 
     // The number of lines that make up the message itself. We count this by the
     // number of `\n` and `+ 1` for the first line because it doesn't start with
