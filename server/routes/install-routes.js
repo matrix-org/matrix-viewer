@@ -149,6 +149,13 @@ function installRoutes(app) {
       res.sendFile(path.join(__dirname, '../../public/styles/styles.css'));
     })
   );
+  app.get(
+    '/room-directory.css',
+    asyncHandler(async function (req, res) {
+      res.set('Content-Type', 'text/css');
+      res.sendFile(path.join(__dirname, '../../public/styles/room-directory.css'));
+    })
+  );
 
   app.get(
     '/hydrogen-view.js',
@@ -171,6 +178,7 @@ function installRoutes(app) {
     asyncHandler(async function (req, res) {
       const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
       const stylesUrl = urlJoin(basePath, 'styles.css');
+      const roomDirectoryStylesUrl = urlJoin(basePath, 'room-directory.css');
       const jsBundleUrl = urlJoin(basePath, 'room-directory.js');
 
       const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
@@ -183,7 +191,7 @@ function installRoutes(app) {
         },
         {
           title: `Matrix Public Archive`,
-          styles: [hydrogenStylesUrl, stylesUrl],
+          styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
           scripts: [jsBundleUrl],
         }
       );

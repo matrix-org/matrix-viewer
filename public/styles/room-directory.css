@@ -1,0 +1,61 @@
+.room-directory-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 80px;
+  padding-bottom: 80px;
+
+  background-color: #fafafa;
+}
+
+.room-directory-matrix-logo {
+  width: 148px;
+
+  color: #000000;
+}
+
+.room-directory-sub-heading {
+  margin-top: 18px;
+  margin-bottom: 26px;
+
+  font-weight: normal;
+  font-size: 16px;
+}
+
+.room-directory-search {
+  position: relative;
+  width: 30%;
+  max-width: 370px;
+}
+
+.room-directory-search-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  color: #737d8c;
+  margin-left: 9px;
+  margin-right: 9px;
+}
+
+.room-directory-search-input {
+  display: block;
+  width: 100%;
+  height: 32px;
+  padding-left: 32px;
+
+  background: rgba(141, 151, 165, 0.15);
+  border-radius: 8px;
+  border: none;
+
+  font-size: 14px;
+}
+
+.room-directory-homeserver-select-section {
+  display: flex;
+  margin-top: 16px;
+}
+
+.room-directory-homeserver-selector {
+  margin-left: 1ch;
+}
