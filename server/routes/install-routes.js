@@ -174,7 +174,7 @@ function installRoutes(app) {
       const jsBundleUrl = urlJoin(basePath, 'room-directory.js');
 
       const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
-        path.resolve(__dirname, '../../shared/4-room-directory-vm-render-script.js'),
+        path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
         {
           searchTerm: 'foobar',
           config: {
@@ -267,7 +267,7 @@ function installRoutes(app) {
       const jsBundleUrl = urlJoin(basePath, 'hydrogen-view.js');
 
       const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
-        path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
+        path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
         {
           fromTimestamp,
           roomData,

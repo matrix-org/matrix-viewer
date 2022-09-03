@@ -1,5 +1,14 @@
 'use strict';
 
+// Generic `child_process` runner that handles running the given module with the
+// given `runArguments` and returning the async result. Handles the complexity
+// error handling, passing large argument objects, and timeouts.
+//
+// Error handling includes main-line errors seen while waiting the async result,
+// as well as keeping track of out of band `uncaughtException` and
+// `unhandledRejection` to give more context if the process exits with code 1
+// (error) or timesout.
+
 const assert = require('assert');
 const fork = require('child_process').fork;
 
@@ -63,7 +72,7 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     // We use a child_process because we want to be able to exit the process
     // after we receive the results. We use `fork` instead of `exec`/`spawn` so
     // that we can pass a module instead of running a command.
-    const child = fork(require.resolve('./2-child-fork-script'), [modulePath], {
+    const child = fork(require.resolve('./child-fork-script'), [modulePath], {
       signal,
       // Default to silencing logs from the child process. We already have
       // proper instrumentation of any errors that might occur.
@@ -107,8 +116,8 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
           childError.name = result.name;
           childError.message = result.message;
           childError.stack = result.stack;
-          // When an error happens while rendering Hydrogen, we only expect one
-          // error to come through here from the main line to render Hydrogen.
+          // When an error happens while running the module, we only expect one
+          // error to come through here from the main-line to run the module.
           // But it's possible to get multiple errors from async out of context
           // places since we also listen to `uncaughtException` and
           // `unhandledRejection`.
@@ -154,7 +163,7 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     if (!returnedData) {
       const childErrorSummary = assembleErrorAfterChildExitsWithErrors(childExitCode, childErrors);
       throw new RethrownError(
-        `No HTML sent from child process to render Hydrogen. Any child errors? (${childErrors.length})`,
+        `No \`returnedData\` sent from child process while running the module (${modulePath}). Any child errors? (${childErrors.length})`,
         childErrorSummary
       );
     }

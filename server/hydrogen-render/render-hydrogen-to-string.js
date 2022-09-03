@@ -1,8 +1,14 @@
 'use strict';
 
+// Server-side render Hydrogen to a string.
+//
+// We use a `child_process` because we want to be able to exit the process after
+// we receive the SSR results. We don't want Hydrogen to keep running after we
+// get our initial rendered HTML.
+
 const assert = require('assert');
 const RethrownError = require('../lib/rethrown-error');
-const runInChildProcess = require('../child-process-runner/1-run-in-child-process');
+const runInChildProcess = require('../child-process-runner/run-in-child-process');
 
 // The render should be fast. If it's taking more than 5 seconds, something has
 // gone really wrong.
@@ -17,9 +23,9 @@ async function renderHydrogenToString(renderOptions) {
     // the render hydrogen stack and fighting against the multiple layers of
     // complexity with `child_process `and `vm`; you can get away with removing
     // the `child_process` part of it by using
-    // `3-render-hydrogen-to-string-unsafe` directly.
+    // `render-hydrogen-to-string-unsafe` directly.
     // ```js
-    // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
+    // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/render-hydrogen-to-string-unsafe');
     // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(renderOptions);
     // ```
     //
@@ -27,7 +33,7 @@ async function renderHydrogenToString(renderOptions) {
     // we receive the SSR results. We don't want Hydrogen to keep running after we
     // get our initial rendered HTML.
     const hydrogenHtmlOutput = await runInChildProcess(
-      require.resolve('./3-render-hydrogen-to-string-unsafe'),
+      require.resolve('./render-hydrogen-to-string-unsafe'),
       renderOptions,
       {
         timeout: RENDER_TIMEOUT,

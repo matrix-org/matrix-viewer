@@ -1,8 +1,7 @@
 'use strict';
 
-// Called by `child_process` `fork` in `render-hydrogen-to-string.js` so we can
-// get the data and exit the process cleanly. We don't want Hydrogen to keep
-// running after we get our initial rendered HTML.
+// Called by `child_process` `fork` in `run-in-child-process.js` so we can
+// get the data and exit the process cleanly.
 
 const assert = require('assert');
 
@@ -42,7 +41,7 @@ async function serializeError(err) {
 }
 
 // We don't exit the process after encountering one of these because maybe it
-// doesn't matter to the main render process in Hydrogen.
+// doesn't matter to the main-line process in the module.
 //
 // If we don't listen for these events, the child will exit with status code 1
 // (error) when they occur.
