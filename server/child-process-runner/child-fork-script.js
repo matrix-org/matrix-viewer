@@ -10,7 +10,6 @@ const RethrownError = require('../lib/rethrown-error');
 // Serialize the error and send it back up to the parent process so we can
 // interact with it and know what happened when the process exits.
 async function serializeError(err) {
-  console.log('serializeError', err.message);
   await new Promise((resolve) => {
     process.send(
       {
@@ -61,6 +60,7 @@ process.on('message', async (runArguments) => {
   try {
     assert(runArguments);
 
+    // Require the module that we're supposed to run
     const modulePath = process.argv[2];
     assert(
       modulePath,
@@ -68,6 +68,7 @@ process.on('message', async (runArguments) => {
     );
     const moduleToRun = require(modulePath);
 
+    // Run the module
     const result = await moduleToRun(runArguments);
 
     assert(result, `No result returned from module we ran (${modulePath}).`);
