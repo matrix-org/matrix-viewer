@@ -13,7 +13,7 @@ const timeoutMiddleware = require('./timeout-middleware');
 const fetchRoomData = require('../fetch-room-data');
 const fetchEventsInRange = require('../fetch-events-in-range');
 const ensureRoomJoined = require('../ensure-room-joined');
-const renderHydrogenToString = require('../hydrogen-render/1-render-hydrogen-to-string');
+const renderHydrogenToString = require('../hydrogen-render/render-hydrogen-to-string');
 const sanitizeHtml = require('../lib/sanitize-html');
 const safeJson = require('../lib/safe-json');
 
@@ -68,34 +68,22 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
-async function renderVmRenderScriptToPageHtml(vmRenderScriptFilePath, pageOptions, renderOptions) {
+async function renderHydrogenVmRenderScriptToPageHtml(
+  vmRenderScriptFilePath,
+  vmRenderContext,
+  pageOptions
+) {
   assert(vmRenderScriptFilePath);
+  assert(vmRenderContext);
   assert(pageOptions);
   assert(pageOptions.title);
   assert(pageOptions.styles);
   assert(pageOptions.scripts);
-  assert(renderOptions);
 
-  // In development, if you're running into a hard to track down error with
-  // the render hydrogen stack and fighting against the multiple layers of
-  // complexity with `child_process `and `vm`; you can get away with removing
-  // the `child_process` part of it by using
-  // `3-render-hydrogen-to-string-unsafe` directly.
-  // ```js
-  // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
-  // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(vmRenderScriptFilePath, renderOptions);
-  // ```
-  //
-  const hydrogenHtmlOutput = await renderHydrogenToString(vmRenderScriptFilePath, renderOptions);
-  // try {
-  //   const _renderHydrogenToStringUnsafe = require('../hydrogen-render/3-render-hydrogen-to-string-unsafe');
-  //   const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(
-  //     vmRenderScriptFilePath,
-  //     renderOptions
-  //   );
-  // } catch (err) {
-  //   console.log('renderVmRenderScriptToPageHtml caught err', err);
-  // }
+  const hydrogenHtmlOutput = await renderHydrogenToString({
+    vmRenderScriptFilePath,
+    vmRenderContext,
+  });
 
   const serializableSpans = getSerializableSpans();
   const serializedSpans = JSON.stringify(serializableSpans);
@@ -185,18 +173,18 @@ function installRoutes(app) {
       const stylesUrl = urlJoin(basePath, 'styles.css');
       const jsBundleUrl = urlJoin(basePath, 'room-directory.js');
 
-      const pageHtml = await renderVmRenderScriptToPageHtml(
+      const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
         path.resolve(__dirname, '../../shared/4-room-directory-vm-render-script.js'),
-        {
-          title: `Matrix Public Archive`,
-          styles: [hydrogenStylesUrl, stylesUrl],
-          scripts: [jsBundleUrl],
-        },
         {
           searchTerm: 'foobar',
           config: {
             basePath: config.get('basePath'),
           },
+        },
+        {
+          title: `Matrix Public Archive`,
+          styles: [hydrogenStylesUrl, stylesUrl],
+          scripts: [jsBundleUrl],
         }
       );
 
@@ -278,13 +266,8 @@ function installRoutes(app) {
       const stylesUrl = urlJoin(basePath, 'styles.css');
       const jsBundleUrl = urlJoin(basePath, 'hydrogen-view.js');
 
-      const pageHtml = await renderVmRenderScriptToPageHtml(
+      const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
         path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
-        {
-          title: `${roomData.name} - Matrix Public Archive`,
-          styles: [hydrogenStylesUrl, stylesUrl],
-          scripts: [jsBundleUrl],
-        },
         {
           fromTimestamp,
           roomData,
@@ -294,6 +277,11 @@ function installRoutes(app) {
             basePath: config.get('basePath'),
             matrixServerUrl: config.get('matrixServerUrl'),
           },
+        },
+        {
+          title: `${roomData.name} - Matrix Public Archive`,
+          styles: [hydrogenStylesUrl, stylesUrl],
+          scripts: [jsBundleUrl],
         }
       );
 

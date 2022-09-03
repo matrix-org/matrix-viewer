@@ -60,15 +60,16 @@ function createDomAndSetupVmContext() {
   };
 }
 
-async function _renderHydrogenToStringUnsafe(vmRenderScriptFilePath, renderOptions) {
-  assert(vmRenderScriptFilePath);
+async function _renderHydrogenToStringUnsafe(renderOptions) {
   assert(renderOptions);
+  assert(renderOptions.vmRenderScriptFilePath);
+  assert(renderOptions.vmRenderContext);
 
   const { dom, vmContext } = createDomAndSetupVmContext();
 
   // Define this for the SSR context
   dom.window.matrixPublicArchiveContext = {
-    ...renderOptions,
+    ...renderOptions.vmRenderContext,
   };
   // Serialize it for when we run this again client-side
   dom.document.body.insertAdjacentHTML(
@@ -80,6 +81,7 @@ async function _renderHydrogenToStringUnsafe(vmRenderScriptFilePath, renderOptio
       `
   );
 
+  const vmRenderScriptFilePath = renderOptions.vmRenderScriptFilePath;
   const hydrogenRenderScriptCode = await readFile(vmRenderScriptFilePath, 'utf8');
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
     filename: path.basename(vmRenderScriptFilePath),
