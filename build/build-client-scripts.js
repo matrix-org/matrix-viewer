@@ -24,8 +24,12 @@ const entryPoints = [
 async function buildClientScripts(extraConfig = {}) {
   for (const entryPoint of entryPoints) {
     // Build the client-side JavaScript bundle when we see any changes
-    const viteConfig = mergeOptions(generateViteConfigForEntryPoint(entryPoint), extraConfig);
-    console.log('viteConfig', viteConfig);
+    const viteConfig = mergeOptions(
+      generateViteConfigForEntryPoint(entryPoint),
+      // Since we're building multiple entryPoints, we don't want it to clear out for each one
+      { build: { emptyOutDir: false } },
+      extraConfig
+    );
     await vite.build(viteConfig);
   }
 }
