@@ -1,7 +1,10 @@
 'use strict';
 
-// We can remove this once https://github.com/vitejs/vite/pull/7047 lands
-// and migrate back to a normal `vite.config.js` and what we had before.
+// A way to build multiple Vite entrypoints
+
+// We can remove this once Vite supports multiple entrypoints and
+// https://github.com/vitejs/vite/pull/7047 lands. We can migrate back to a
+// normal `vite.config.js` and what we had before.
 //
 // Related issues:
 //  - https://github.com/vitejs/vite/issues/4530
