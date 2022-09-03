@@ -18,8 +18,6 @@ const { readFile } = require('fs').promises;
 const crypto = require('crypto');
 const { parseHTML } = require('linkedom');
 
-const config = require('../lib/config');
-
 // Setup the DOM context with any necessary shims/polyfills and ensure the VM
 // context global has everything that a normal document does so Hydrogen can
 // render.
@@ -62,25 +60,16 @@ function createDomAndSetupVmContext() {
   };
 }
 
-async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, stateEventMap }) {
-  assert(fromTimestamp);
-  assert(roomData);
-  assert(events);
-  assert(stateEventMap);
+async function _renderHydrogenToStringUnsafe(renderOptions) {
+  assert(renderOptions);
+  assert(renderOptions.vmRenderScriptFilePath);
+  assert(renderOptions.vmRenderContext);
 
   const { dom, vmContext } = createDomAndSetupVmContext();
 
   // Define this for the SSR context
   dom.window.matrixPublicArchiveContext = {
-    fromTimestamp,
-    roomData,
-    events,
-    stateEventMap,
-    config: {
-      basePort: config.get('basePort'),
-      basePath: config.get('basePath'),
-      matrixServerUrl: config.get('matrixServerUrl'),
-    },
+    ...renderOptions.vmRenderContext,
   };
   // Serialize it for when we run this again client-side
   dom.document.body.insertAdjacentHTML(
@@ -92,18 +81,16 @@ async function _renderHydrogenToStringUnsafe({ fromTimestamp, roomData, events, 
       `
   );
 
-  const hydrogenRenderScriptCode = await readFile(
-    path.resolve(__dirname, '../../shared/4-hydrogen-vm-render-script.js'),
-    'utf8'
-  );
+  const vmRenderScriptFilePath = renderOptions.vmRenderScriptFilePath;
+  const hydrogenRenderScriptCode = await readFile(vmRenderScriptFilePath, 'utf8');
   const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
-    filename: '4-hydrogen-vm-render-script.js',
+    filename: path.basename(vmRenderScriptFilePath),
   });
   // Note: The VM does not exit after the result is returned here and is why
   // this should be run in a `child_process` that we can exit.
   const vmResult = hydrogenRenderScript.runInContext(vmContext);
   // Wait for everything to render
-  // (waiting on the promise returned from `4-hydrogen-vm-render-script.js`)
+  // (waiting on the promise returned from the VM render script)
   await vmResult;
 
   const documentString = dom.document.body.toString();

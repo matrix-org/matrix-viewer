@@ -1,13 +1,11 @@
 'use strict';
 
-// Called by `child_process` `fork` in `render-hydrogen-to-string.js` so we can
-// get the data and exit the process cleanly. We don't want Hydrogen to keep
-// running after we get our initial rendered HTML.
+// Called by `child_process` `fork` in `run-in-child-process.js` so we can
+// get the data and exit the process cleanly.
 
 const assert = require('assert');
 
 const RethrownError = require('../lib/rethrown-error');
-const _renderHydrogenToStringUnsafe = require('./3-render-hydrogen-to-string-unsafe');
 
 // Serialize the error and send it back up to the parent process so we can
 // interact with it and know what happened when the process exits.
@@ -42,11 +40,12 @@ async function serializeError(err) {
 }
 
 // We don't exit the process after encountering one of these because maybe it
-// doesn't matter to the main render process in Hydrogen.
+// doesn't matter to the main-line process in the module.
 //
 // If we don't listen for these events, the child will exit with status code 1
 // (error) when they occur.
 process.on('uncaughtException', async (err /*, origin*/) => {
+  console.log('2 uncaughtException', err);
   await serializeError(new RethrownError('uncaughtException in child process', err));
 });
 
@@ -57,17 +56,28 @@ process.on('unhandledRejection', async (reason /*, promise*/) => {
 // Only kick everything off once we receive the options. We pass in the options
 // this way instead of argv because we will run into `Error: spawn E2BIG` and
 // `Error: spawn ENAMETOOLONG` with argv.
-process.on('message', async (renderOptions) => {
+process.on('message', async (runArguments) => {
   try {
-    const resultantHtml = await _renderHydrogenToStringUnsafe(renderOptions);
+    assert(runArguments);
 
-    assert(resultantHtml, `No HTML returned from _renderHydrogenToStringUnsafe.`);
+    // Require the module that we're supposed to run
+    const modulePath = process.argv[2];
+    assert(
+      modulePath,
+      'Expected `modulePath` to be passed into `child-fork-script.js` via argv[2]'
+    );
+    const moduleToRun = require(modulePath);
+
+    // Run the module
+    const result = await moduleToRun(runArguments);
+
+    assert(result, `No result returned from module we ran (${modulePath}).`);
 
     // Send back the data we need to the parent.
     await new Promise((resolve, reject) => {
       process.send(
         {
-          data: resultantHtml,
+          data: result,
         },
         (err) => {
           if (err) {

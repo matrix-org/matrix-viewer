@@ -19,6 +19,7 @@ build(
   })
 );
 
+// Pass through some args
 const args = [];
 if (process.argv.includes('--tracing')) {
   args.push('--tracing');

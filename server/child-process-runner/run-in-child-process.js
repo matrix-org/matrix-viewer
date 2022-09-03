@@ -1,21 +1,22 @@
 'use strict';
 
-// We use a child_process because we want to be able to exit the process after
-// we receive the SSR results. We don't want Hydrogen to keep running after we
-// get our initial rendered HTML.
-
-const fork = require('child_process').fork;
+// Generic `child_process` runner that handles running the given module with the
+// given `runArguments` and returning the async result. Handles the complexity
+// error handling, passing large argument objects, and timeouts.
+//
+// Error handling includes main-line errors seen while waiting the async result,
+// as well as keeping track of out of band `uncaughtException` and
+// `unhandledRejection` to give more context if the process exits with code 1
+// (error) or timesout.
 
 const assert = require('assert');
+const fork = require('child_process').fork;
+
 const RethrownError = require('../lib/rethrown-error');
 const { traceFunction } = require('../tracing/trace-utilities');
 
 const config = require('../lib/config');
 const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
-
-// The render should be fast. If it's taking more than 5 seconds, something has
-// gone really wrong.
-const RENDER_TIMEOUT = 5000;
 
 if (!logOutputFromChildProcesses) {
   console.warn(
@@ -60,7 +61,7 @@ function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors) {
   return childErrorSummary;
 }
 
-async function renderHydrogenToString(renderOptions) {
+async function runInChildProcess(modulePath, runArguments, { timeout }) {
   let abortTimeoutId;
   try {
     let childErrors = [];
@@ -68,9 +69,10 @@ async function renderHydrogenToString(renderOptions) {
 
     const controller = new AbortController();
     const { signal } = controller;
-    // We use a child_process because we want to be able to exit the process after
-    // we receive the SSR results.
-    const child = fork(require.resolve('./2-render-hydrogen-to-string-fork-script'), [], {
+    // We use a child_process because we want to be able to exit the process
+    // after we receive the results. We use `fork` instead of `exec`/`spawn` so
+    // that we can pass a module instead of running a command.
+    const child = fork(require.resolve('./child-fork-script'), [modulePath], {
       signal,
       // Default to silencing logs from the child process. We already have
       // proper instrumentation of any errors that might occur.
@@ -92,15 +94,17 @@ async function renderHydrogenToString(renderOptions) {
       });
     }
 
-    // Pass the renderOptions to the child by sending instead of via argv because we
-    // will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG` with
-    // argv.
-    child.send(renderOptions);
+    // Pass the runArguments to the child by sending instead of via argv because
+    // we will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG`
+    // with argv.
+    child.send(runArguments);
 
     // Stops the child process if it takes too long
-    abortTimeoutId = setTimeout(() => {
-      controller.abort();
-    }, RENDER_TIMEOUT);
+    if (timeout) {
+      abortTimeoutId = setTimeout(() => {
+        controller.abort();
+      }, timeout);
+    }
 
     const returnedData = await new Promise((resolve, reject) => {
       let data = '';
@@ -112,8 +116,8 @@ async function renderHydrogenToString(renderOptions) {
           childError.name = result.name;
           childError.message = result.message;
           childError.stack = result.stack;
-          // When an error happens while rendering Hydrogen, we only expect one
-          // error to come through here from the main line to render Hydrogen.
+          // When an error happens while running the module, we only expect one
+          // error to come through here from the main-line to run the module.
           // But it's possible to get multiple errors from async out of context
           // places since we also listen to `uncaughtException` and
           // `unhandledRejection`.
@@ -146,7 +150,7 @@ async function renderHydrogenToString(renderOptions) {
           );
           reject(
             new RethrownError(
-              `Timed out while rendering Hydrogen to string so we aborted the child process after ${RENDER_TIMEOUT}ms. Any child errors? (${childErrors.length})`,
+              `Timed out while running ${modulePath} so we aborted the child process after ${timeout}ms. Any child errors? (${childErrors.length})`,
               childErrorSummary
             )
           );
@@ -159,19 +163,12 @@ async function renderHydrogenToString(renderOptions) {
     if (!returnedData) {
       const childErrorSummary = assembleErrorAfterChildExitsWithErrors(childExitCode, childErrors);
       throw new RethrownError(
-        `No HTML sent from child process to render Hydrogen. Any child errors? (${childErrors.length})`,
+        `No \`returnedData\` sent from child process while running the module (${modulePath}). Any child errors? (${childErrors.length})`,
         childErrorSummary
       );
     }
 
     return returnedData;
-  } catch (err) {
-    throw new RethrownError(
-      `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderToString arguments: ${JSON.stringify(
-        renderOptions
-      )}`,
-      err
-    );
   } finally {
     // We don't have to add a undefined/null check here because `clearTimeout`
     // works with any value you give it and doesn't throw an error.
@@ -179,4 +176,4 @@ async function renderHydrogenToString(renderOptions) {
   }
 }
 
-module.exports = traceFunction(renderHydrogenToString);
+module.exports = traceFunction(runInChildProcess);
