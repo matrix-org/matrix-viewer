@@ -68,51 +68,6 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
-async function renderHydrogenVmRenderScriptToPageHtml(
-  vmRenderScriptFilePath,
-  vmRenderContext,
-  pageOptions
-) {
-  assert(vmRenderScriptFilePath);
-  assert(vmRenderContext);
-  assert(pageOptions);
-  assert(pageOptions.title);
-  assert(pageOptions.styles);
-  assert(pageOptions.scripts);
-
-  const hydrogenHtmlOutput = await renderHydrogenToString({
-    vmRenderScriptFilePath,
-    vmRenderContext,
-  });
-
-  const serializableSpans = getSerializableSpans();
-  const serializedSpans = JSON.stringify(serializableSpans);
-
-  const pageHtml = `
-      <!doctype html>
-      <html lang="en">
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
-          ${pageOptions.styles
-            .map((styleUrl) => `<link href="${styleUrl}" rel="stylesheet">`)
-            .join('\n')}
-        </head>
-        <body>
-          ${hydrogenHtmlOutput}
-          ${pageOptions.scripts
-            .map((scriptUrl) => `<script type="text/javascript" src="${scriptUrl}"></script>`)
-            .join('\n')}
-          <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
-            serializedSpans
-          )};</script>
-        </body>
-      </html>
-      `;
-
-  return pageHtml;
-}
-
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
 
@@ -151,45 +106,10 @@ function installRoutes(app) {
   );
 
   app.get(
-    '/hydrogen-view.js',
+    '/matrix-public-archive.js',
     asyncHandler(async function (req, res) {
       res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../dist/entry-client-hydrogen.es.js'));
-    })
-  );
-
-  app.get(
-    '/room-directory.js',
-    asyncHandler(async function (req, res) {
-      res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../dist/entry-client-room-directory.es.js'));
-    })
-  );
-
-  app.get(
-    '/',
-    asyncHandler(async function (req, res) {
-      const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
-      const stylesUrl = urlJoin(basePath, 'styles.css');
-      const jsBundleUrl = urlJoin(basePath, 'room-directory.js');
-
-      const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
-        path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
-        {
-          searchTerm: 'foobar',
-          config: {
-            basePath: config.get('basePath'),
-          },
-        },
-        {
-          title: `Matrix Public Archive`,
-          styles: [hydrogenStylesUrl, stylesUrl],
-          scripts: [jsBundleUrl],
-        }
-      );
-
-      res.set('Content-Type', 'text/html');
-      res.send(pageHtml);
+      res.sendFile(path.join(__dirname, '../../dist/matrix-public-archive.es.js'));
     })
   );
 
@@ -262,13 +182,12 @@ function installRoutes(app) {
         throw new Error('TODO: Redirect user to smaller hour range');
       }
 
-      const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
-      const stylesUrl = urlJoin(basePath, 'styles.css');
-      const jsBundleUrl = urlJoin(basePath, 'hydrogen-view.js');
-
-      const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
-        path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
-        {
+      const hydrogenHtmlOutput = await renderHydrogenToString({
+        vmRenderScriptFilePath: path.resolve(
+          __dirname,
+          '../../shared/hydrogen-vm-render-script.js'
+        ),
+        vmRenderContext: {
           fromTimestamp,
           roomData,
           events,
@@ -278,12 +197,32 @@ function installRoutes(app) {
             matrixServerUrl: config.get('matrixServerUrl'),
           },
         },
-        {
-          title: `${roomData.name} - Matrix Public Archive`,
-          styles: [hydrogenStylesUrl, stylesUrl],
-          scripts: [jsBundleUrl],
-        }
-      );
+      });
+
+      const serializableSpans = getSerializableSpans();
+      const serializedSpans = JSON.stringify(serializableSpans);
+
+      const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
+      const stylesUrl = urlJoin(basePath, 'styles.css');
+      const jsBundleUrl = urlJoin(basePath, 'matrix-public-archive.js');
+      const pageHtml = `
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          ${sanitizeHtml(`<title>${roomData.name} - Matrix Public Archive</title>`)}
+          <link href="${hydrogenStylesUrl}" rel="stylesheet">
+          <link href="${stylesUrl}" rel="stylesheet">
+        </head>
+        <body>
+          ${hydrogenHtmlOutput}
+          <script type="text/javascript" src="${jsBundleUrl}"></script>
+          <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
+            serializedSpans
+          )};</script>
+        </body>
+      </html>
+      `;
 
       res.set('Content-Type', 'text/html');
       res.send(pageHtml);
