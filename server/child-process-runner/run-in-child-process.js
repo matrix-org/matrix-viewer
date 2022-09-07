@@ -10,7 +10,7 @@
 // (error) or timesout.
 
 const assert = require('assert');
-const fork = require('child_process').fork;
+const { fork } = require('child_process');
 
 const RethrownError = require('../lib/rethrown-error');
 const { traceFunction } = require('../tracing/trace-utilities');

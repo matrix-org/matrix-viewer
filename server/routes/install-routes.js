@@ -128,7 +128,7 @@ async function getVersionTags() {
       readFile(path.join(__dirname, '../../dist/VERSION_DATE'), 'utf8'),
     ]);
   } catch (err) {
-    console.warn('Unable to read version tags');
+    console.warn('Unable to read version tags', err);
     commit = 'Not specified';
     version = 'Not specified';
     versionDate = 'Not specified';
