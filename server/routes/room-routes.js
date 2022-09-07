@@ -9,9 +9,9 @@ const StatusError = require('../lib/status-error');
 
 const timeoutMiddleware = require('./timeout-middleware');
 
-const fetchRoomData = require('../fetch-room-data');
-const fetchEventsInRange = require('../fetch-events-in-range');
-const ensureRoomJoined = require('../ensure-room-joined');
+const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
+const fetchEventsInRange = require('../lib/matrix-utils/fetch-events-in-range');
+const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 
 const config = require('../lib/config');
