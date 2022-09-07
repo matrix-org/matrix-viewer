@@ -130,7 +130,7 @@ function installRoutes(app) {
   app.use(express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/main.js'))));
 
   app.get(
-    '/hydrogen-styles.css',
+    '/css/hydrogen-styles.css',
     asyncHandler(async function (req, res) {
       res.set('Content-Type', 'text/css');
       // We have to disable no-missing-require lint because it doesn't take into
@@ -142,44 +142,17 @@ function installRoutes(app) {
   );
 
   // Our own archive app styles
-  app.get(
-    '/styles.css',
-    asyncHandler(async function (req, res) {
-      res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../public/styles/styles.css'));
-    })
-  );
-  app.get(
-    '/room-directory.css',
-    asyncHandler(async function (req, res) {
-      res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../public/styles/room-directory.css'));
-    })
-  );
+  app.use('/css', express.static(path.join(__dirname, '../../public/css')));
 
-  app.get(
-    '/hydrogen-view.js',
-    asyncHandler(async function (req, res) {
-      res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../dist/entry-client-hydrogen.es.js'));
-    })
-  );
-
-  app.get(
-    '/room-directory.js',
-    asyncHandler(async function (req, res) {
-      res.set('Content-Type', 'text/css');
-      res.sendFile(path.join(__dirname, '../../dist/entry-client-room-directory.es.js'));
-    })
-  );
+  app.use('/js', express.static(path.join(__dirname, '../../public/*.js')));
 
   app.get(
     '/',
     asyncHandler(async function (req, res) {
-      const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
-      const stylesUrl = urlJoin(basePath, 'styles.css');
-      const roomDirectoryStylesUrl = urlJoin(basePath, 'room-directory.css');
-      const jsBundleUrl = urlJoin(basePath, 'room-directory.js');
+      const hydrogenStylesUrl = urlJoin(basePath, '/css/hydrogen-styles.css');
+      const stylesUrl = urlJoin(basePath, '/css/styles.css');
+      const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
+      const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-directory.es.js');
 
       const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
         path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
@@ -270,9 +243,9 @@ function installRoutes(app) {
         throw new Error('TODO: Redirect user to smaller hour range');
       }
 
-      const hydrogenStylesUrl = urlJoin(basePath, 'hydrogen-styles.css');
-      const stylesUrl = urlJoin(basePath, 'styles.css');
-      const jsBundleUrl = urlJoin(basePath, 'hydrogen-view.js');
+      const hydrogenStylesUrl = urlJoin(basePath, '/css/hydrogen-styles.css');
+      const stylesUrl = urlJoin(basePath, '/css/styles.css');
+      const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
 
       const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
         path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),

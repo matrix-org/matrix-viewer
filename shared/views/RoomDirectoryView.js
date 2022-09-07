@@ -47,7 +47,7 @@ class RoomDirectoryView extends TemplateView {
             ]),
           ]),
         ]),
-        'RoomDirectoryView',
+        t.main({}, ['RoomDirectoryView']),
       ]
     );
   }
