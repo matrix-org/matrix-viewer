@@ -15,6 +15,7 @@ const vite = require('vite');
 const mergeOptions = require('merge-options');
 
 const generateViteConfigForEntryPoint = require('./generate-vite-config-for-entry-point');
+const writeVersionFiles = require('./write-version-files');
 
 const entryPoints = [
   path.resolve(__dirname, '../public/js/entry-client-hydrogen.js'),
@@ -34,4 +35,9 @@ async function buildClientScripts(extraConfig = {}) {
   }
 }
 
-module.exports = buildClientScripts;
+async function build(extraConfig) {
+  await writeVersionFiles();
+  await buildClientScripts(extraConfig);
+}
+
+module.exports = build;

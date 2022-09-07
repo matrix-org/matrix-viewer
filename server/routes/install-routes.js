@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const path = require('path');
+const { readFile } = require('fs').promises;
 const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
@@ -17,6 +18,8 @@ const renderHydrogenToString = require('../hydrogen-render/render-hydrogen-to-st
 const sanitizeHtml = require('../lib/sanitize-html');
 const safeJson = require('../lib/safe-json');
 
+const packageInfo = require('../../package.json');
+assert(packageInfo.version);
 const config = require('../lib/config');
 const basePath = config.get('basePath');
 assert(basePath);
@@ -113,13 +116,50 @@ async function renderHydrogenVmRenderScriptToPageHtml(
   return pageHtml;
 }
 
+async function getVersionTags() {
+  let commit;
+  let version;
+  let versionDate;
+  let packageVersion = packageInfo.version;
+  try {
+    [commit, version, versionDate] = await Promise.all([
+      readFile(path.join(__dirname, '../../dist/GIT_COMMIT'), 'utf8'),
+      readFile(path.join(__dirname, '../../dist/VERSION'), 'utf8'),
+      readFile(path.join(__dirname, '../../dist/VERSION_DATE'), 'utf8'),
+    ]);
+  } catch (err) {
+    console.warn('Unable to read version tags');
+    commit = 'Not specified';
+    version = 'Not specified';
+    versionDate = 'Not specified';
+  }
+
+  return {
+    commit: commit.trim(),
+    version: version.trim(),
+    versionDate: versionDate.trim(),
+    packageVersion,
+  };
+}
+
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
 
+  let healthCheckResponse;
   app.get(
     '/health-check',
     asyncHandler(async function (req, res) {
-      res.send('{ "ok": true }');
+      if (!healthCheckResponse) {
+        const versionTags = await getVersionTags();
+        const responseObject = {
+          ok: true,
+          ...versionTags,
+        };
+        healthCheckResponse = JSON.stringify(responseObject, null, 2);
+      }
+
+      res.set('Content-Type', 'application/json');
+      res.send(healthCheckResponse);
     })
   );
 
