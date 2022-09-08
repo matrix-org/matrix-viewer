@@ -14,6 +14,8 @@ const basePath = config.get('basePath');
 assert(basePath);
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
+const matrixServerName = config.get('matrixServerName');
+assert(matrixServerName);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 
@@ -52,10 +54,11 @@ router.get(
         rooms,
         nextPaginationToken,
         prevPaginationToken,
-        searchTerm: 'foobar',
+        searchTerm: 'foobar (TODO)',
         config: {
           basePath,
           matrixServerUrl,
+          matrixServerName,
         },
       },
       {

@@ -18,6 +18,10 @@ class RoomDirectoryView extends TemplateView {
       }
     );
 
+    const availableHomeserverOptionElements = vm.availableHomeserverList.map((homeserverName) => {
+      return t.option({}, homeserverName);
+    });
+
     return t.div(
       {
         className: {
@@ -62,10 +66,10 @@ class RoomDirectoryView extends TemplateView {
           ]),
           t.div({ className: 'RoomDirectoryView_homeserverSelectSection' }, [
             t.div({}, 'Show: Matrix rooms on'),
-            t.select({ className: 'RoomDirectoryView_homeserverSelector' }, [
-              t.option({}, 'matrix.org'),
-              t.option({}, 'gitter.im'),
-            ]),
+            t.select(
+              { className: 'RoomDirectoryView_homeserverSelector' },
+              availableHomeserverOptionElements
+            ),
           ]),
         ]),
         t.main({ className: 'RoomDirectoryView_mainContent' }, [

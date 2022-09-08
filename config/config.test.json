@@ -2,6 +2,7 @@
   "basePort": "3051",
   "basePath": "http://localhost:3051",
   "matrixServerUrl": "http://localhost:11008/",
+  "matrixServerName": "hs1",
   "testMatrixServerUrl1": "http://localhost:11008/",
   "testMatrixServerUrl2": "http://localhost:12008/",
 

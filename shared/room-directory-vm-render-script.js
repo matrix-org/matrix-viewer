@@ -21,6 +21,7 @@ assert(searchTerm);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
+assert(config.matrixServerName);
 assert(config.basePath);
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
@@ -30,6 +31,7 @@ async function mountHydrogen() {
 
   const roomDirectoryViewModel = new RoomDirectoryViewModel({
     homeserverUrl: config.matrixServerUrl,
+    homeserverName: config.matrixServerName,
     matrixPublicArchiveURLCreator,
     rooms,
     nextPaginationToken,

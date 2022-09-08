@@ -4,21 +4,26 @@ const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
+const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
+
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const {
       homeserverUrl,
+      homeserverName,
       matrixPublicArchiveURLCreator,
       rooms,
       nextPaginationToken,
       prevPaginationToken,
     } = options;
     assert(homeserverUrl);
+    assert(homeserverName);
     assert(matrixPublicArchiveURLCreator);
     assert(rooms);
 
     this._homeserverUrl = homeserverUrl;
+    this._homeserverName = homeserverName;
     this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
     this._rooms = new ObservableArray(
       rooms.map((room) => {
@@ -64,6 +69,20 @@ class RoomDirectoryViewModel extends ViewModel {
     }
 
     return null;
+  }
+
+  get availableHomeserverList() {
+    // Append the default homeserver to the front
+    const rawList = [this._homeserverName, ...DEFAULT_SERVER_LIST];
+
+    // Then deduplicate the list
+    const deduplicatedHomeserverMap = {};
+    rawList.forEach((homeserverName) => {
+      deduplicatedHomeserverMap[homeserverName] = true;
+    });
+    const deduplicatedHomeserverList = Object.keys(deduplicatedHomeserverMap);
+
+    return deduplicatedHomeserverList;
   }
 
   get rooms() {
