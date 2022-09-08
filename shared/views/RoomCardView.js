@@ -49,8 +49,10 @@ class RoomCardView extends TemplateView {
         t.a({ className: 'RoomCardView_alias', href: 'TODO' }, [vm.canonicalAlias || vm.roomId]),
         t.p({ className: 'RoomCardView_topic' }, [vm.topic || '']),
         t.div({ className: 'RoomCardView_footer' }, [
-          t.div({}, [memberDisplay]),
-          t.a({ className: 'RoomCardView_viewButton', href: 'TODO' }, 'View'),
+          t.div({ className: 'RoomCardView_footerInner' }, [
+            t.div({}, [memberDisplay]),
+            t.a({ className: 'RoomCardView_viewButton', href: 'TODO' }, 'View'),
+          ]),
         ]),
       ]
     );

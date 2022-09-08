@@ -98,6 +98,8 @@
 
 .RoomCardView {
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 20px;
 
@@ -155,9 +157,21 @@
 
 .RoomCardView_footer {
   display: flex;
+  /**
+   * In order to keep the footer items at the bottom, fill the remaining card
+   * space and align the footerInner to the bottom
+   */
+  flex-grow: 1;
+  align-items: flex-end;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.RoomCardView_footerInner {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
+  width: 100%;
 }
 
 .RoomCardView_viewButton {
