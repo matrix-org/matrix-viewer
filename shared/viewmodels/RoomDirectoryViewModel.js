@@ -7,8 +7,9 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { homeserverUrl, rooms } = options;
+    const { homeserverUrl, matrixPublicArchiveURLCreator, rooms } = options;
     assert(homeserverUrl);
+    assert(matrixPublicArchiveURLCreator);
     assert(rooms);
 
     this._homeserverUrl = homeserverUrl;
@@ -22,6 +23,7 @@ class RoomDirectoryViewModel extends ViewModel {
           homeserverUrlToPullMediaFrom: homeserverUrl,
           numJoinedMembers: room.num_joined_members,
           topic: room.topic,
+          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(room.room_id),
         };
       })
     );

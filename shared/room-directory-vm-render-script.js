@@ -21,11 +21,14 @@ assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
 
+const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
+
 async function mountHydrogen() {
   const appElement = document.querySelector('#app');
 
   const roomDirectoryViewModel = new RoomDirectoryViewModel({
     homeserverUrl: config.matrixServerUrl,
+    matrixPublicArchiveURLCreator,
     rooms,
   });
 

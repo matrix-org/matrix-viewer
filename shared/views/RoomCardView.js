@@ -24,6 +24,9 @@ class RoomCardView extends TemplateView {
       memberDisplay = `${vm.numJoinedMembers} members`;
     }
 
+    const aliasOrRoomId = vm.canonicalAlias || vm.roomId;
+    const displayName = vm.name || aliasOrRoomId;
+
     return t.li(
       {
         className: {
@@ -31,27 +34,57 @@ class RoomCardView extends TemplateView {
         },
       },
       [
-        t.div({ className: 'RoomCardView_header' }, [
-          t.view(new AvatarView(avatarViewModel, 24)),
-          t.if(
-            (vm) => vm.name,
-            (t, vm) =>
-              t.h4(
-                {
-                  className: 'RoomCardView_headerTitle',
-                  // We add a title so a tooltip shows the full name on hover
-                  title: vm.name,
-                },
-                vm.name
-              )
-          ),
-        ]),
-        t.a({ className: 'RoomCardView_alias', href: 'TODO' }, [vm.canonicalAlias || vm.roomId]),
+        t.a(
+          {
+            className: 'RoomCardView_header',
+            href: vm.archiveRoomUrl,
+            // Since this is the same button as the "View" link, just tab to
+            // that instead
+            tabindex: -1,
+          },
+          [
+            t.view(new AvatarView(avatarViewModel, 24)),
+            t.if(
+              (vm) => vm.name,
+              (t, vm) =>
+                t.h4(
+                  {
+                    className: 'RoomCardView_headerTitle',
+                    // We add a title so a tooltip shows the full name on hover
+                    title: displayName,
+                  },
+                  displayName
+                )
+            ),
+          ]
+        ),
+        t.a(
+          {
+            className: 'RoomCardView_alias',
+            href: vm.archiveRoomUrl,
+            // Since this is the same button as the "View" link, just tab to
+            // that instead
+            tabindex: -1,
+          },
+          [aliasOrRoomId]
+        ),
         t.p({ className: 'RoomCardView_topic' }, [vm.topic || '']),
         t.div({ className: 'RoomCardView_footer' }, [
           t.div({ className: 'RoomCardView_footerInner' }, [
             t.div({}, [memberDisplay]),
-            t.a({ className: 'RoomCardView_viewButton', href: 'TODO' }, 'View'),
+            t.a(
+              {
+                className: 'RoomCardView_viewButtonWrapperLink',
+                href: vm.archiveRoomUrl,
+                title: `View the ${displayName} room`,
+              },
+              t.span(
+                {
+                  className: 'RoomCardView_viewButton',
+                },
+                ['View']
+              )
+            ),
           ]),
         ]),
       ]

@@ -111,6 +111,8 @@
 .RoomCardView_header {
   display: flex;
   align-items: top;
+
+  text-decoration: none;
 }
 
 .RoomCardView_headerTitle {
@@ -174,7 +176,21 @@
   width: 100%;
 }
 
+.RoomCardView_viewButtonWrapperLink {
+  /**
+   * Add some extra hitbox padding to the link so you don't have to be so
+   * accurate
+   */
+  padding: 16px;
+  margin: -16px;
+}
+
+.RoomCardView_viewButtonWrapperLink:focus {
+  outline: none;
+}
+
 .RoomCardView_viewButton {
+  display: inline-block;
   padding: 4px 16px;
 
   background-color: #17191c;
@@ -184,4 +200,9 @@
   color: #ffffff;
   line-height: 24px;
   text-decoration: none;
+}
+
+.RoomCardView_viewButtonWrapperLink:hover > .RoomCardView_viewButton,
+.RoomCardView_viewButtonWrapperLink:focus > .RoomCardView_viewButton {
+  background-color: #0098d4;
 }
