@@ -1,7 +1,39 @@
 'use strict';
 
-const { ViewModel } = require('hydrogen-view-sdk');
+const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
 
-class RoomDirectoryViewModel extends ViewModel {}
+const assert = require('matrix-public-archive-shared/lib/assert');
+
+class RoomDirectoryViewModel extends ViewModel {
+  constructor(options) {
+    super(options);
+    const { homeserverUrl, rooms } = options;
+    assert(homeserverUrl);
+    assert(rooms);
+
+    this._homeserverUrl = homeserverUrl;
+    this._rooms = new ObservableArray(
+      rooms.map((room) => {
+        return {
+          roomId: room.room_id,
+          canonicalAlias: room.canonical_alias,
+          name: room.name,
+          mxcAvatarUrl: room.avatar_url,
+          homeserverUrlToPullMediaFrom: homeserverUrl,
+          numJoinedMembers: room.num_joined_members,
+          topic: room.topic,
+        };
+      })
+    );
+  }
+
+  get homeserverUrl() {
+    return this._homeserverUrl;
+  }
+
+  get rooms() {
+    return this._rooms;
+  }
+}
 
 module.exports = RoomDirectoryViewModel;

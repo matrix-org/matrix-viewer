@@ -1,11 +1,23 @@
 'use strict';
 
-const { TemplateView } = require('hydrogen-view-sdk');
+const { TemplateView, ListView } = require('hydrogen-view-sdk');
 
 const MatrixLogoView = require('./MatrixLogoView');
+const RoomCardView = require('./RoomCardView');
 
 class RoomDirectoryView extends TemplateView {
   render(t, vm) {
+    const roomList = new ListView(
+      {
+        className: 'room-directory-list',
+        list: vm.rooms,
+        parentProvidesUpdates: false,
+      },
+      (room) => {
+        return new RoomCardView(room);
+      }
+    );
+
     return t.div(
       {
         className: {
@@ -47,7 +59,7 @@ class RoomDirectoryView extends TemplateView {
             ]),
           ]),
         ]),
-        t.main({}, ['RoomDirectoryView']),
+        t.main({}, [t.view(roomList)]),
       ]
     );
   }

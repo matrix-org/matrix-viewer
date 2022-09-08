@@ -35,7 +35,8 @@ function installRoutes(app) {
   app.use(express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/main.js'))));
 
   app.get(
-    '/css/hydrogen-styles.css',
+    // This has to be at the root so that the font URL references resolve correctly
+    '/hydrogen-styles.css',
     asyncHandler(async function (req, res) {
       res.set('Content-Type', 'text/css');
       // We have to disable no-missing-require lint because it doesn't take into
@@ -47,8 +48,8 @@ function installRoutes(app) {
   );
 
   // Our own archive app styles and scripts
-  app.use('/css', express.static(path.join(__dirname, '../../public/css')));
-  app.use('/js', express.static(path.join(__dirname, '../../public/*.js')));
+  app.use('/css', express.static(path.join(__dirname, '../../dist/css')));
+  app.use('/js', express.static(path.join(__dirname, '../../dist/')));
 
   app.use('/', require('./room-directory-routes'));
 

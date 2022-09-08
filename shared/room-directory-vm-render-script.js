@@ -12,16 +12,22 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const RoomDirectoryView = require('matrix-public-archive-shared/views/RoomDirectoryView');
 const RoomDirectoryViewModel = require('matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel');
 
+const rooms = window.matrixPublicArchiveContext.rooms;
+assert(rooms);
 const searchTerm = window.matrixPublicArchiveContext.searchTerm;
 assert(searchTerm);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
+assert(config.matrixServerUrl);
 assert(config.basePath);
 
 async function mountHydrogen() {
   const appElement = document.querySelector('#app');
 
-  const roomDirectoryViewModel = new RoomDirectoryViewModel({});
+  const roomDirectoryViewModel = new RoomDirectoryViewModel({
+    homeserverUrl: config.matrixServerUrl,
+    rooms,
+  });
 
   const view = new RoomDirectoryView(roomDirectoryViewModel);
 

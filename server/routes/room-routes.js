@@ -17,6 +17,8 @@ const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/rende
 const config = require('../lib/config');
 const basePath = config.get('basePath');
 assert(basePath);
+const matrixServerUrl = config.get('matrixServerUrl');
+assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 const archiveMessageLimit = config.get('archiveMessageLimit');
@@ -140,7 +142,7 @@ router.get(
       throw new Error('TODO: Redirect user to smaller hour range');
     }
 
-    const hydrogenStylesUrl = urlJoin(basePath, '/css/hydrogen-styles.css');
+    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
 
@@ -152,8 +154,8 @@ router.get(
         events,
         stateEventMap,
         config: {
-          basePath: config.get('basePath'),
-          matrixServerUrl: config.get('matrixServerUrl'),
+          basePath: basePath,
+          matrixServerUrl: matrixServerUrl,
         },
       },
       {

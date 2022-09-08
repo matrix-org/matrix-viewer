@@ -6,11 +6,16 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
+const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
 assert(basePath);
+const matrixServerUrl = config.get('matrixServerUrl');
+assert(matrixServerUrl);
+const matrixAccessToken = config.get('matrixAccessToken');
+assert(matrixAccessToken);
 
 const router = express.Router({
   caseSensitive: true,
@@ -21,7 +26,20 @@ const router = express.Router({
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    const hydrogenStylesUrl = urlJoin(basePath, '/css/hydrogen-styles.css');
+    const { rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
+      matrixAccessToken,
+      {
+        //server: TODO,
+
+        // It would be good to grab more rooms than we display in case we need
+        // to filter any out but then the pagination tokens with the homeserver
+        // will be out of sync. XXX: It would be better if we could just filter
+        // `/publicRooms` directly via the API (needs MSC).
+        limit: 9,
+      }
+    );
+
+    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-directory.es.js');
@@ -29,9 +47,13 @@ router.get(
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
       path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
       {
+        rooms,
+        nextPaginationToken,
+        prevPaginationToken,
         searchTerm: 'foobar',
         config: {
-          basePath: config.get('basePath'),
+          basePath,
+          matrixServerUrl,
         },
       },
       {
