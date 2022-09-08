@@ -5,7 +5,9 @@
 FROM node:16.14.2-buster-slim
 
 # Pass through some GitHub CI variables which we use in the build
+ARG GITHUB_SHA
 ENV GITHUB_SHA=$GITHUB_SHA
+ARG GITHUB_REF
 ENV GITHUB_REF=$GITHUB_REF
 
 RUN mkdir -p /app

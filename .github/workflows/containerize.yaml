@@ -73,6 +73,9 @@ jobs:
           file: 'Dockerfile'
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GITHUB_SHA=${{ env.GITHUB_SHA }}
+            GITHUB_REF=${{ env.GITHUB_REF }}
 
   # Just make sure the container can start-up and responds to the health check
   test-image:
