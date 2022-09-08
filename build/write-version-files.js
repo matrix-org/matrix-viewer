@@ -15,8 +15,22 @@ async function mkdirp(path) {
 }
 
 async function writeVersionFiles() {
-  const commit = (await exec(`git rev-parse HEAD`)).stdout;
-  const branch = (await exec(`git rev-parse --abbrev-ref HEAD`)).stdout;
+  let commit;
+  let branch;
+  try {
+    commit = (await exec(`git rev-parse HEAD`)).stdout;
+    branch = (await exec(`git rev-parse --abbrev-ref HEAD`)).stdout;
+  } catch (err) {
+    console.log(
+      'Unable to use `git` to find the commit and branch.' +
+        "Falling back to using environment variables assuming we're running in GitHub CI. The error encountered:",
+      err
+    );
+
+    // Pull these values from environment variables provided by GitHub CI
+    commit = process.env.GITHUB_SHA;
+    branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
+  }
 
   await mkdirp(path.join(__dirname, '../dist/'));
   await writeFile(path.join(__dirname, '../dist/GIT_COMMIT'), commit);
