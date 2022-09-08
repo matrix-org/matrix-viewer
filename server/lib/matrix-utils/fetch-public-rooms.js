@@ -28,7 +28,6 @@ async function fetchPublicRooms(accessToken, { server, paginationToken, limit } 
     matrixServerUrl,
     `_matrix/client/v3/publicRooms?${qs.toString()}`
   );
-  console.log('publicRoomsEndpoint', publicRoomsEndpoint);
 
   const publicRoomsRes = await fetchEndpointAsJson(publicRoomsEndpoint, {
     accessToken,
