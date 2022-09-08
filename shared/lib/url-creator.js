@@ -17,8 +17,13 @@ class URLCreator {
     this._basePath = basePath;
   }
 
-  roomDirectoryUrl() {
-    return this._basePath;
+  roomDirectoryUrl({ paginationToken } = {}) {
+    let qs = new URLSearchParams();
+    if (paginationToken) {
+      qs.append('page', paginationToken);
+    }
+
+    return `${this._basePath}${qsToUrlPiece(qs)}`;
   }
 
   permalinkForRoomId(roomId) {

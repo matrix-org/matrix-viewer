@@ -26,11 +26,13 @@ const router = express.Router({
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    const paginationToken = req.query.page;
+
     const { rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
       matrixAccessToken,
       {
         //server: TODO,
-
+        paginationToken,
         // It would be good to grab more rooms than we display in case we need
         // to filter any out but then the pagination tokens with the homeserver
         // will be out of sync. XXX: It would be better if we could just filter

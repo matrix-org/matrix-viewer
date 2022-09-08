@@ -7,7 +7,13 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { homeserverUrl, matrixPublicArchiveURLCreator, rooms } = options;
+    const {
+      homeserverUrl,
+      matrixPublicArchiveURLCreator,
+      rooms,
+      nextPaginationToken,
+      prevPaginationToken,
+    } = options;
     assert(homeserverUrl);
     assert(matrixPublicArchiveURLCreator);
     assert(rooms);
@@ -28,6 +34,8 @@ class RoomDirectoryViewModel extends ViewModel {
         };
       })
     );
+    this._nextPaginationToken = nextPaginationToken;
+    this._prevPaginationToken = prevPaginationToken;
   }
 
   get homeserverUrl() {
@@ -36,6 +44,26 @@ class RoomDirectoryViewModel extends ViewModel {
 
   get roomDirectoryUrl() {
     return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
+  }
+
+  get nextPageUrl() {
+    if (this._nextPaginationToken) {
+      return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        paginationToken: this._nextPaginationToken,
+      });
+    }
+
+    return null;
+  }
+
+  get prevPageUrl() {
+    if (this._prevPaginationToken) {
+      return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        paginationToken: this._prevPaginationToken,
+      });
+    }
+
+    return null;
   }
 
   get rooms() {

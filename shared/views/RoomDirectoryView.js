@@ -68,7 +68,16 @@ class RoomDirectoryView extends TemplateView {
             ]),
           ]),
         ]),
-        t.main({ className: 'RoomDirectoryView_mainContent' }, [t.view(roomList)]),
+        t.main({ className: 'RoomDirectoryView_mainContent' }, [
+          t.view(roomList),
+          t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
+            t.a(
+              { className: 'RoomDirectoryView_paginationButton', href: vm.prevPageUrl },
+              'Previous'
+            ),
+            t.a({ className: 'RoomDirectoryView_paginationButton', href: vm.nextPageUrl }, 'Next'),
+          ]),
+        ]),
       ]
     );
   }
