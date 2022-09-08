@@ -48,7 +48,7 @@ function installRoutes(app) {
   );
 
   // Our own archive app styles and scripts
-  app.use('/css', express.static(path.join(__dirname, '../../dist/css')));
+  app.use('/css', express.static(path.join(__dirname, '../../public/css')));
   app.use('/js', express.static(path.join(__dirname, '../../dist/')));
 
   app.use('/', require('./room-directory-routes'));

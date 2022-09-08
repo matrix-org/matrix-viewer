@@ -67,15 +67,24 @@
   margin-left: 1ch;
 }
 
+.RoomDirectoryView_mainContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .room-directory-list {
   display: grid;
   gap: 20px;
-  width: 940px;
-  padding: 0;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 1180px;
+  padding-left: 40px;
+  padding-right: 40px;
+  margin-top: 40px;
+  margin-bottom: 80px;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 750px) {
   .room-directory-list {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -88,10 +97,77 @@
 }
 
 .RoomCardView {
+  overflow: hidden;
   margin: 0;
   padding: 20px;
 
   list-style: none;
   background-color: #f4f4f4;
   border-radius: 8px;
+}
+
+.RoomCardView_header {
+  display: flex;
+  align-items: top;
+}
+
+.RoomCardView_headerTitle {
+  overflow: hidden;
+  display: -webkit-box;
+  max-height: 48px;
+  margin-top: 0;
+  margin-left: 8px;
+  margin-bottom: 0;
+
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+}
+
+.RoomCardView_alias {
+  overflow: hidden;
+  display: inline-block;
+  width: 100%;
+  margin-left: 2px;
+
+  white-space: nowrap;
+  color: #4396cf;
+  line-height: 1.8em;
+  text-overflow: ellipsis;
+  text-decoration: none;
+}
+
+.RoomCardView_topic {
+  overflow: hidden;
+  display: -webkit-box;
+  height: 2.4em;
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  line-height: 1.2em;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+}
+
+.RoomCardView_footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.RoomCardView_viewButton {
+  padding: 4px 16px;
+
+  background-color: #17191c;
+  /* Always make a pill shape */
+  border-radius: 9999px;
+
+  color: #ffffff;
+  line-height: 24px;
+  text-decoration: none;
 }

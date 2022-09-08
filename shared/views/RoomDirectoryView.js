@@ -59,7 +59,7 @@ class RoomDirectoryView extends TemplateView {
             ]),
           ]),
         ]),
-        t.main({}, [t.view(roomList)]),
+        t.main({ className: 'RoomDirectoryView_mainContent' }, [t.view(roomList)]),
       ]
     );
   }

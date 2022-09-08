@@ -18,6 +18,12 @@ class RoomCardView extends TemplateView {
       entityId: vm.roomId,
     });
 
+    // Pluralize based on number of members in the room
+    let memberDisplay = `${vm.numJoinedMembers} member`;
+    if (vm.numJoinedMembers > 1) {
+      memberDisplay = `${vm.numJoinedMembers} members`;
+    }
+
     return t.li(
       {
         className: {
@@ -25,20 +31,27 @@ class RoomCardView extends TemplateView {
         },
       },
       [
-        t.div({}, [
+        t.div({ className: 'RoomCardView_header' }, [
           t.view(new AvatarView(avatarViewModel, 24)),
           t.if(
             (vm) => vm.name,
-            (t, vm) => t.h4(vm.name)
+            (t, vm) =>
+              t.h4(
+                {
+                  className: 'RoomCardView_headerTitle',
+                  // We add a title so a tooltip shows the full name on hover
+                  title: vm.name,
+                },
+                vm.name
+              )
           ),
-          t.a({ href: 'TODO' }, [vm.canonicalAlias || vm.roomId]),
         ]),
-        t.if(
-          (vm) => vm.topic,
-          (t, vm) => t.p({}, [vm.topic])
-        ),
-        t.div({}, [`${vm.numJoinedMembers} members`]),
-        t.a({ href: 'TODO' }, 'View'),
+        t.a({ className: 'RoomCardView_alias', href: 'TODO' }, [vm.canonicalAlias || vm.roomId]),
+        t.p({ className: 'RoomCardView_topic' }, [vm.topic || '']),
+        t.div({ className: 'RoomCardView_footer' }, [
+          t.div({}, [memberDisplay]),
+          t.a({ className: 'RoomCardView_viewButton', href: 'TODO' }, 'View'),
+        ]),
       ]
     );
   }
