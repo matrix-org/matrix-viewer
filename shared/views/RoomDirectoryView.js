@@ -26,8 +26,12 @@ class RoomDirectoryView extends TemplateView {
       },
       [
         t.header({ className: 'room-directory-header' }, [
-          t.div(
-            { className: 'room-directory-matrix-logo', 'aria-label': 'Matrix Public Archive' },
+          t.a(
+            {
+              className: 'room-directory-matrix-logo',
+              title: 'Matrix Public Archive',
+              href: vm.roomDirectoryUrl,
+            },
             [t.view(new MatrixLogoView(vm))]
           ),
           t.h3(
@@ -50,12 +54,17 @@ class RoomDirectoryView extends TemplateView {
                 }),
               ]
             ),
-            t.input({ className: 'room-directory-search-input', placeholder: 'Search rooms' }),
+            t.input({
+              className: 'room-directory-search-input',
+              placeholder: 'Search rooms (disabled, not implemented yet)',
+              disabled: true,
+            }),
           ]),
           t.div({ className: 'room-directory-homeserver-select-section' }, [
             t.div({}, 'Show: Matrix rooms on'),
             t.select({ className: 'room-directory-homeserver-selector' }, [
               t.option({}, 'matrix.org'),
+              t.option({}, 'gitter.im'),
             ]),
           ]),
         ]),

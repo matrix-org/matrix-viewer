@@ -17,6 +17,10 @@ class URLCreator {
     this._basePath = basePath;
   }
 
+  roomDirectoryUrl() {
+    return this._basePath;
+  }
+
   permalinkForRoomId(roomId) {
     return `https://matrix.to/#/${roomId}`;
   }

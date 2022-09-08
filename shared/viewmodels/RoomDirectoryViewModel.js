@@ -13,6 +13,7 @@ class RoomDirectoryViewModel extends ViewModel {
     assert(rooms);
 
     this._homeserverUrl = homeserverUrl;
+    this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
     this._rooms = new ObservableArray(
       rooms.map((room) => {
         return {
@@ -31,6 +32,10 @@ class RoomDirectoryViewModel extends ViewModel {
 
   get homeserverUrl() {
     return this._homeserverUrl;
+  }
+
+  get roomDirectoryUrl() {
+    return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
   }
 
   get rooms() {
