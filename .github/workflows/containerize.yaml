@@ -75,7 +75,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             GITHUB_SHA=${{ github.sha }}
-            GITHUB_REF=${{ github.ref }}
+            GITHUB_REF=${{ github.ref_name }}
 
   # Just make sure the container can start-up and responds to the health check
   test-image:

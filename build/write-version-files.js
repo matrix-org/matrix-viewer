@@ -29,7 +29,7 @@ async function writeVersionFiles() {
 
     // Pull these values from environment variables provided by GitHub CI
     commit = process.env.GITHUB_SHA;
-    branch = process.env.GITHUB_REF?.replace(/^refs\/heads\//, '');
+    branch = process.env.GITHUB_REF;
   }
 
   if (!commit || !branch) {
