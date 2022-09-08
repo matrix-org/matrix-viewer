@@ -160,6 +160,38 @@ describe('matrix-public-archive', () => {
       return sendEvent(options);
     }
 
+    it('redirects to last day with message history', async () => {
+      const client = await getTestClientForHs(testMatrixServerUrl1);
+      const roomId = await createTestRoom(client);
+
+      // Send an event in the room so we have some day of history to redirect to
+      const eventId = await sendMessageOnArchiveDate({
+        client,
+        roomId,
+        content: {
+          msgtype: 'm.text',
+          body: 'some message in the history',
+        },
+      });
+      const expectedEventIdsOnDay = [eventId];
+
+      // Visit `/:roomIdOrAlias` and expect to be redirected to the last day with events
+      archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
+      const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+      const dom = parseHTML(archivePageHtml);
+
+      // Make sure the messages from the day we expect to get redirected to are visible
+      assert.deepStrictEqual(
+        expectedEventIdsOnDay.map((eventId) => {
+          return dom.document
+            .querySelector(`[data-event-id="${eventId}"]`)
+            ?.getAttribute('data-event-id');
+        }),
+        expectedEventIdsOnDay
+      );
+    });
+
     it('shows all events in a given day', async () => {
       const client = await getTestClientForHs(testMatrixServerUrl1);
       const roomId = await createTestRoom(client);

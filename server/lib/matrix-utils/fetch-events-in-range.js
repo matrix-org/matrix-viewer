@@ -4,6 +4,7 @@ const assert = require('assert');
 const urlJoin = require('url-join');
 
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
+const timestampToEvent = require('./timestamp-to-event');
 const { traceFunction } = require('../../tracing/trace-utilities');
 
 const config = require('../config');
@@ -27,14 +28,12 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   assert(ts);
   assert(limit);
 
-  const timestampToEventEndpoint = urlJoin(
-    matrixServerUrl,
-    `_matrix/client/unstable/org.matrix.msc3030/rooms/${roomId}/timestamp_to_event?ts=${ts}&dir=b`
-  );
-  const timestampToEventResData = await fetchEndpointAsJson(timestampToEventEndpoint, {
+  const { eventId: eventIdForTimestamp } = await timestampToEvent({
     accessToken,
+    roomId,
+    ts,
+    direction: 'b',
   });
-  const eventIdForTimestamp = timestampToEventResData.event_id;
   assert(eventIdForTimestamp);
   //console.log('eventIdForTimestamp', eventIdForTimestamp);
 

@@ -12,7 +12,9 @@ const timeoutMiddleware = require('./timeout-middleware');
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsInRange = require('../lib/matrix-utils/fetch-events-in-range');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
+const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
+const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -23,6 +25,8 @@ const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 const archiveMessageLimit = config.get('archiveMessageLimit');
 assert(archiveMessageLimit);
+
+const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
 const router = express.Router({
   caseSensitive: true,
@@ -72,6 +76,40 @@ function parseArchiveRangeFromReq(req) {
     toHour,
   };
 }
+
+router.get(
+  '/',
+  asyncHandler(async function (req, res) {
+    const roomIdOrAlias = req.params.roomIdOrAlias;
+    assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
+
+    // In case we're joining a new room for the first time,
+    // let's avoid redirecting to our join event
+    const dateBeforeJoin = Date.now();
+
+    // We have to wait for the room join to happen first before we can fetch
+    // any of the additional room info or messages.
+    await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+
+    // Find the closest day to today with messages
+    const { originServerTs } = await timestampToEvent({
+      accessToken: matrixAccessToken,
+      roomId: roomIdOrAlias,
+      ts: dateBeforeJoin,
+      direction: 'b',
+    });
+    if (!originServerTs) {
+      throw new StatusError(404, 'Unable to find day with an history');
+    }
+
+    // Redirect to a day with messages
+    res.redirect(
+      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
+        viaServers: req.query.via,
+      })
+    );
+  })
+);
 
 router.get(
   '/event/:eventId',
