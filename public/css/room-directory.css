@@ -74,6 +74,10 @@
   margin-bottom: 80px;
 }
 
+.RoomDirectoryView_paginationButtonCombo {
+  margin-top: 20px;
+}
+
 .RoomDirectoryView_paginationButtonCombo > .RoomDirectoryView_paginationButton:not(:first-child) {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
@@ -112,6 +116,7 @@
   padding-left: 40px;
   padding-right: 40px;
   margin-top: 40px;
+  margin-bottom: 0;
 }
 
 @media (min-width: 750px) {
