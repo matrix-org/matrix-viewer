@@ -20,7 +20,6 @@ RUN npm install
 COPY config /app/config/
 COPY public /app/public/
 COPY shared /app/shared/
-COPY vite.config.js /app/
 # Build the client-side bundle
 RUN npm run build
 
