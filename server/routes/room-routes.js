@@ -99,7 +99,7 @@ router.get(
       direction: 'b',
     });
     if (!originServerTs) {
-      throw new StatusError(404, 'Unable to find day with an event');
+      throw new StatusError(404, 'Unable to find day with an history');
     }
 
     // Redirect to a day with messages
