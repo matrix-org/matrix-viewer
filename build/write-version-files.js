@@ -22,14 +22,20 @@ async function writeVersionFiles() {
     branch = (await exec(`git rev-parse --abbrev-ref HEAD`)).stdout;
   } catch (err) {
     console.log(
-      'Unable to use `git` to find the commit and branch.' +
-        "Falling back to using environment variables assuming we're running in GitHub CI. The error encountered:",
+      `Failed to use \`git\` to find the commit and branch.` +
+        ` Falling back to using environment variables assuming we're running in GitHub CI. The error encountered:`,
       err
     );
 
     // Pull these values from environment variables provided by GitHub CI
     commit = process.env.GITHUB_SHA;
-    branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
+    branch = process.env.GITHUB_REF?.replace(/^refs\/heads\//, '');
+  }
+
+  if (!commit || !branch) {
+    throw new Error(
+      `Unable to get a suitable commit=${commit} or branch=${branch} while writing version files`
+    );
   }
 
   await mkdirp(path.join(__dirname, '../dist/'));
