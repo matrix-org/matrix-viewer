@@ -3,10 +3,10 @@
 const assert = require('assert');
 
 const urlJoin = require('url-join');
-const { fetchEndpointAsJson } = require('./lib/fetch-endpoint');
-const { traceFunction } = require('./tracing/trace-utilities');
+const { fetchEndpointAsJson } = require('../fetch-endpoint');
+const { traceFunction } = require('../../tracing/trace-utilities');
 
-const config = require('./lib/config');
+const config = require('../config');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

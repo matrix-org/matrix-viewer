@@ -41,13 +41,6 @@
     "max-depth": ["error", 4],
     "no-throw-literal": ["error"],
     "no-sequences": "error",
-    "no-warning-comments": [
-      "warn",
-      {
-        "terms": ["fixme", "xxx"],
-        "location": "anywhere"
-      }
-    ],
     "radix": "error",
     "yoda": "error",
     "no-nested-ternary": "warn",

@@ -4,20 +4,16 @@ console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
 const path = require('path');
 const nodemon = require('nodemon');
-const { build } = require('vite');
-const mergeOptions = require('merge-options');
 
-const viteConfig = require('../vite.config');
+const buildClient = require('../build/build-client');
 
 // Build the client-side JavaScript bundle when we see any changes
-build(
-  mergeOptions(viteConfig, {
-    build: {
-      // Rebuild when we see changes
-      watch: true,
-    },
-  })
-);
+buildClient({
+  build: {
+    // Rebuild when we see changes
+    watch: true,
+  },
+});
 
 // Pass through some args
 const args = [];
