@@ -2,7 +2,7 @@
   overflow: hidden;
 }
 
-.room-directory-header {
+.RoomDirectoryView_header {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14,14 +14,14 @@
   background-color: #fafafa;
 }
 
-.room-directory-matrix-logo {
+.RoomDirectoryView_matrixLogo {
   width: 100%;
   max-width: 148px;
 
   color: #000000;
 }
 
-.room-directory-sub-heading {
+.RoomDirectoryView_subHeader {
   margin-top: 18px;
   margin-bottom: 26px;
 
@@ -29,13 +29,13 @@
   font-size: 16px;
 }
 
-.room-directory-search {
+.RoomDirectoryView_search {
   position: relative;
   width: 100%;
   max-width: 370px;
 }
 
-.room-directory-search-icon {
+.RoomDirectoryView_searchIcon {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -45,7 +45,7 @@
   margin-right: 9px;
 }
 
-.room-directory-search-input {
+.RoomDirectoryView_searchInput {
   display: block;
   width: 100%;
   height: 32px;
@@ -58,12 +58,12 @@
   font-size: 14px;
 }
 
-.room-directory-homeserver-select-section {
+.RoomDirectoryView_homeserverSelectSection {
   display: flex;
   margin-top: 16px;
 }
 
-.room-directory-homeserver-selector {
+.RoomDirectoryView_homeserverSelector {
   margin-left: 1ch;
 }
 
@@ -104,7 +104,7 @@
   color: #bbbbbb;
 }
 
-.room-directory-list {
+.RoomDirectoryView_roomList {
   display: grid;
   gap: 20px;
   width: 100%;
@@ -115,13 +115,13 @@
 }
 
 @media (min-width: 750px) {
-  .room-directory-list {
+  .RoomDirectoryView_roomList {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 1100px) {
-  .room-directory-list {
+  .RoomDirectoryView_roomList {
     grid-template-columns: repeat(3, 1fr);
   }
 }

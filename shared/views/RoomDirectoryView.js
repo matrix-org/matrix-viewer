@@ -9,7 +9,7 @@ class RoomDirectoryView extends TemplateView {
   render(t, vm) {
     const roomList = new ListView(
       {
-        className: 'room-directory-list',
+        className: 'RoomDirectoryView_roomList',
         list: vm.rooms,
         parentProvidesUpdates: false,
       },
@@ -25,23 +25,23 @@ class RoomDirectoryView extends TemplateView {
         },
       },
       [
-        t.header({ className: 'room-directory-header' }, [
+        t.header({ className: 'RoomDirectoryView_header' }, [
           t.a(
             {
-              className: 'room-directory-matrix-logo',
+              className: 'RoomDirectoryView_matrixLogo',
               title: 'Matrix Public Archive',
               href: vm.roomDirectoryUrl,
             },
             [t.view(new MatrixLogoView(vm))]
           ),
           t.h3(
-            { className: 'room-directory-sub-heading' },
+            { className: 'RoomDirectoryView_subHeader' },
             'Browse thousands of rooms using Matrix...'
           ),
-          t.div({ className: 'room-directory-search' }, [
+          t.div({ className: 'RoomDirectoryView_search' }, [
             t.svg(
               {
-                className: 'room-directory-search-icon',
+                className: 'RoomDirectoryView_searchIcon',
                 viewBox: '0 0 18 18',
                 fill: 'currentColor',
                 xmlns: 'http://www.w3.org/2000/svg',
@@ -55,14 +55,14 @@ class RoomDirectoryView extends TemplateView {
               ]
             ),
             t.input({
-              className: 'room-directory-search-input',
+              className: 'RoomDirectoryView_searchInput',
               placeholder: 'Search rooms (disabled, not implemented yet)',
               disabled: true,
             }),
           ]),
-          t.div({ className: 'room-directory-homeserver-select-section' }, [
+          t.div({ className: 'RoomDirectoryView_homeserverSelectSection' }, [
             t.div({}, 'Show: Matrix rooms on'),
-            t.select({ className: 'room-directory-homeserver-selector' }, [
+            t.select({ className: 'RoomDirectoryView_homeserverSelector' }, [
               t.option({}, 'matrix.org'),
               t.option({}, 'gitter.im'),
             ]),
