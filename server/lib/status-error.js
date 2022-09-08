@@ -9,7 +9,7 @@ function StatusError(status, inputMessage) {
     message = http.STATUS_CODES[status] || http.STATUS_CODES['500'];
   }
 
-  this.message = message;
+  this.message = `${status} ${message}`;
   this.status = status;
   this.name = 'StatusError';
   Error.captureStackTrace(this, StatusError);

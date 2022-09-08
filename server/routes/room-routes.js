@@ -176,6 +176,18 @@ router.get(
       ),
     ]);
 
+    // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
+    const allowedToViewRoom =
+      roomData?.historyVisibility === 'world_readable' ||
+      (roomData?.historyVisibility === 'shared' && roomData?.joinRule === 'public');
+
+    if (!allowedToViewRoom) {
+      throw new StatusError(
+        403,
+        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData?.historyVisibility} m.room.join_rules=${roomData?.joinRules}`
+      );
+    }
+
     if (events.length >= archiveMessageLimit) {
       throw new Error('TODO: Redirect user to smaller hour range');
     }
@@ -200,6 +212,8 @@ router.get(
         title: `${roomData.name} - Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl],
         scripts: [jsBundleUrl],
+        // We only allow search engines to index `world_readable` rooms
+        noIndex: roomData.historyVisibility !== `world_readable`,
       }
     );
 

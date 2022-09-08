@@ -22,12 +22,31 @@ async function fetchRoomData(accessToken, roomId) {
     matrixServerUrl,
     `_matrix/client/r0/rooms/${roomId}/state/m.room.avatar`
   );
+  const stateHistoryVisibilityEndpoint = urlJoin(
+    matrixServerUrl,
+    `_matrix/client/r0/rooms/${roomId}/state/m.room.history_visibility`
+  );
+  const stateJoinRulesEndpoint = urlJoin(
+    matrixServerUrl,
+    `_matrix/client/r0/rooms/${roomId}/state/m.room.join_rules`
+  );
 
-  const [stateNameResDataOutcome, stateAvatarResDataOutcome] = await Promise.allSettled([
+  const [
+    stateNameResDataOutcome,
+    stateAvatarResDataOutcome,
+    stateHistoryVisibilityResDataOutcome,
+    stateJoinRulesResDataOutcome,
+  ] = await Promise.allSettled([
     fetchEndpointAsJson(stateNameEndpoint, {
       accessToken,
     }),
     fetchEndpointAsJson(stateAvatarEndpoint, {
+      accessToken,
+    }),
+    fetchEndpointAsJson(stateHistoryVisibilityEndpoint, {
+      accessToken,
+    }),
+    fetchEndpointAsJson(stateJoinRulesEndpoint, {
       accessToken,
     }),
   ]);
@@ -42,10 +61,22 @@ async function fetchRoomData(accessToken, roomId) {
     avatarUrl = stateAvatarResDataOutcome.value.url;
   }
 
+  let historyVisibility;
+  if (stateHistoryVisibilityResDataOutcome.reason === undefined) {
+    historyVisibility = stateHistoryVisibilityResDataOutcome.value.history_visibility;
+  }
+
+  let joinRule;
+  if (stateJoinRulesResDataOutcome.reason === undefined) {
+    joinRule = stateJoinRulesResDataOutcome.value.join_rule;
+  }
+
   return {
     id: roomId,
     name,
     avatarUrl,
+    historyVisibility,
+    joinRule,
   };
 }
 

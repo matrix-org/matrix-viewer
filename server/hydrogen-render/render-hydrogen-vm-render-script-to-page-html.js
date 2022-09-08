@@ -27,11 +27,18 @@ async function renderHydrogenVmRenderScriptToPageHtml(
   const serializableSpans = getSerializableSpans();
   const serializedSpans = JSON.stringify(serializableSpans);
 
+  // We shouldn't let some pages be indexed by search engines
+  let maybeNoIndexHtml = '';
+  if (pageOptions.noIndex) {
+    maybeNoIndexHtml = `<meta name="robots" content="noindex, nofollow" />`;
+  }
+
   const pageHtml = `
       <!doctype html>
       <html lang="en">
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1">
+          ${maybeNoIndexHtml}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
           ${pageOptions.styles
             .map((styleUrl) => `<link href="${styleUrl}" rel="stylesheet">`)
