@@ -17,7 +17,6 @@ assert(rooms);
 const nextPaginationToken = window.matrixPublicArchiveContext.nextPaginationToken;
 const prevPaginationToken = window.matrixPublicArchiveContext.prevPaginationToken;
 const searchTerm = window.matrixPublicArchiveContext.searchTerm;
-assert(searchTerm);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
@@ -34,6 +33,7 @@ async function mountHydrogen() {
     homeserverName: config.matrixServerName,
     matrixPublicArchiveURLCreator,
     rooms,
+    searchTerm,
     nextPaginationToken,
     prevPaginationToken,
   });

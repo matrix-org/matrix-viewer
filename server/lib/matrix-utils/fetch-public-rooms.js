@@ -10,18 +10,12 @@ const config = require('../config');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
-async function fetchPublicRooms(accessToken, { server, paginationToken, limit } = {}) {
+async function fetchPublicRooms(accessToken, { server, searchTerm, paginationToken, limit } = {}) {
   assert(accessToken);
 
   let qs = new URLSearchParams();
   if (server) {
     qs.append('server', server);
-  }
-  if (paginationToken) {
-    qs.append('since', paginationToken);
-  }
-  if (limit) {
-    qs.append('limit', limit);
   }
 
   const publicRoomsEndpoint = urlJoin(
@@ -30,6 +24,14 @@ async function fetchPublicRooms(accessToken, { server, paginationToken, limit } 
   );
 
   const publicRoomsRes = await fetchEndpointAsJson(publicRoomsEndpoint, {
+    method: 'POST',
+    body: {
+      filter: {
+        generic_search_term: searchTerm,
+      },
+      since: paginationToken,
+      limit,
+    },
     accessToken,
   });
 
