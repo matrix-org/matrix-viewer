@@ -95,12 +95,18 @@
 
 .RoomDirectoryView_paginationButton {
   display: inline-block;
-  padding: 4px 16px;
+  padding: 8px 32px;
   background-color: #17191c;
   border-radius: 9999px;
   color: #ffffff;
   line-height: 24px;
   text-decoration: none;
+}
+
+@media (min-width: 750px) {
+  .RoomDirectoryView_paginationButton {
+    padding: 4px 16px;
+  }
 }
 
 .RoomDirectoryView_paginationButton:not([href]) {
@@ -113,15 +119,18 @@
   gap: 20px;
   width: 100%;
   max-width: 1180px;
-  padding-left: 40px;
-  padding-right: 40px;
-  margin-top: 40px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-top: 20px;
   margin-bottom: 0;
 }
 
 @media (min-width: 750px) {
   .RoomDirectoryView_roomList {
     grid-template-columns: repeat(2, 1fr);
+    padding-left: 40px;
+    padding-right: 40px;
+    margin-top: 40px;
   }
 }
 
@@ -226,7 +235,7 @@
 
 .RoomCardView_viewButton {
   display: inline-block;
-  padding: 4px 16px;
+  padding: 8px 32px;
 
   background-color: #17191c;
   /* Always make a pill shape */
@@ -235,6 +244,12 @@
   color: #ffffff;
   line-height: 24px;
   text-decoration: none;
+}
+
+@media (min-width: 750px) {
+  .RoomCardView_viewButton {
+    padding: 4px 16px;
+  }
 }
 
 .RoomCardView_viewButtonWrapperLink:hover > .RoomCardView_viewButton,
