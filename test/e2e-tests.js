@@ -543,6 +543,9 @@ describe('matrix-public-archive', () => {
       it('search engines not allowed to index `public` room', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client, {
+          // The default options for the test rooms adds a
+          // `m.room.history_visiblity` state event so we override that here so
+          // it's only a public room.
           initial_state: [],
         });
 
