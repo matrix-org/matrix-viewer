@@ -6,9 +6,11 @@ const asyncHandler = require('../lib/express-async-handler');
 
 const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
 const getVersionTags = require('../lib/get-version-tags');
+const preventClickjackingMiddleware = require('./prevent-clickjacking-middleware');
 
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
+  app.use(preventClickjackingMiddleware);
 
   let healthCheckResponse;
   app.get(
