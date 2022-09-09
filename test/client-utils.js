@@ -73,7 +73,7 @@ async function getTestClientForHs(testMatrixServerUrl) {
 }
 
 // Create a public room to test in
-async function createTestRoom(client) {
+async function createTestRoom(client, overrideCreateOptions) {
   let qs = new URLSearchParams();
   if (client.applicationServiceUserIdOverride) {
     qs.append('user_id', client.applicationServiceUserIdOverride);
@@ -95,6 +95,7 @@ async function createTestRoom(client) {
             },
           },
         ],
+        ...overrideCreateOptions,
       },
       accessToken: client.accessToken,
     }

@@ -184,7 +184,7 @@ router.get(
     if (!allowedToViewRoom) {
       throw new StatusError(
         403,
-        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData?.historyVisibility} m.room.join_rules=${roomData?.joinRules}`
+        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData?.historyVisibility} m.room.join_rules=${roomData?.joinRule}`
       );
     }
 
@@ -213,7 +213,7 @@ router.get(
         styles: [hydrogenStylesUrl, stylesUrl],
         scripts: [jsBundleUrl],
         // We only allow search engines to index `world_readable` rooms
-        noIndex: roomData.historyVisibility !== `world_readable`,
+        noIndex: roomData?.historyVisibility !== `world_readable`,
       }
     );
 

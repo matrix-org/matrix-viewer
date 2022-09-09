@@ -6,6 +6,7 @@ const urlJoin = require('url-join');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
 
 const config = require('../config');
+const StatusError = require('../status-error');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
@@ -19,10 +20,14 @@ async function ensureRoomJoined(accessToken, roomId, viaServers = []) {
     matrixServerUrl,
     `_matrix/client/r0/join/${roomId}?${qs.toString()}`
   );
-  await fetchEndpointAsJson(joinEndpoint, {
-    method: 'POST',
-    accessToken,
-  });
+  try {
+    await fetchEndpointAsJson(joinEndpoint, {
+      method: 'POST',
+      accessToken,
+    });
+  } catch (err) {
+    throw new StatusError(403, `Archiver is unable to join room: ${err.message}`);
+  }
 }
 
 module.exports = ensureRoomJoined;
