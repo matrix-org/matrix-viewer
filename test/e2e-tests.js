@@ -506,5 +506,61 @@ describe('matrix-public-archive', () => {
     it(
       `will render a room with a sparse amount of messages (a few per day) with no contamination between days`
     );
+
+    describe('access controls', () => {
+      it('not allowed to view private room even when the archiver user is in the room', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client, {
+          preset: 'private_chat',
+          initial_state: [],
+        });
+
+        try {
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
+          await fetchEndpointAsText(archiveUrl);
+          assert.fail(
+            'We expect the request to fail with a 403 since the archive should not be able to view a private room'
+          );
+        } catch (err) {
+          assert.strictEqual(err.response.status, 403);
+        }
+      });
+
+      it('search engines allowed to index `world_readable` room', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
+
+        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
+        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+        const dom = parseHTML(archivePageHtml);
+
+        // Make sure the `<meta name="robots" ...>` tag does NOT exist on the
+        // page telling search engines not to index it
+        assert.strictEqual(dom.document.querySelector(`meta[name="robots"]`), null);
+      });
+
+      it('search engines not allowed to index `public` room', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client, {
+          // The default options for the test rooms adds a
+          // `m.room.history_visiblity` state event so we override that here so
+          // it's only a public room.
+          initial_state: [],
+        });
+
+        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
+        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+        const dom = parseHTML(archivePageHtml);
+
+        // Make sure the `<meta name="robots" ...>` tag exists on the page
+        // telling search engines not to index it
+        assert.strictEqual(
+          dom.document.querySelector(`meta[name="robots"]`)?.getAttribute('content'),
+          'noindex, nofollow'
+        );
+      });
+    });
   });
 });

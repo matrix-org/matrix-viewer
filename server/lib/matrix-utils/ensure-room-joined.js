@@ -6,6 +6,7 @@ const urlJoin = require('url-join');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
 
 const config = require('../config');
+const StatusError = require('../status-error');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
@@ -15,18 +16,18 @@ async function ensureRoomJoined(accessToken, roomId, viaServers = []) {
     qs.append('server_name', viaServer);
   });
 
-  // TODO: Only join world_readable rooms. Perhaps we want to serve public rooms
-  // where we have been invited. GET
-  // /_matrix/client/v3/directory/list/room/{roomId} (Gets the visibility of a
-  // given room on the server’s public room directory.)
   const joinEndpoint = urlJoin(
     matrixServerUrl,
     `_matrix/client/r0/join/${roomId}?${qs.toString()}`
   );
-  await fetchEndpointAsJson(joinEndpoint, {
-    method: 'POST',
-    accessToken,
-  });
+  try {
+    await fetchEndpointAsJson(joinEndpoint, {
+      method: 'POST',
+      accessToken,
+    });
+  } catch (err) {
+    throw new StatusError(403, `Archiver is unable to join room: ${err.message}`);
+  }
 }
 
 module.exports = ensureRoomJoined;
