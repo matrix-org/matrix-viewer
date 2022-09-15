@@ -66,7 +66,7 @@ class ArchiveView extends TemplateView {
             [data-event-id] {
               transition: background-color 800ms;
             }
-            [data-event-id="${vm.currentTopPositionEventEntry}"] {
+            [data-event-id="${vm.currentTopPositionEventEntry?.id}"] {
               background-color: #ffff8a;
               outline: 1px solid #f00;
               outline-offset: -1px;
