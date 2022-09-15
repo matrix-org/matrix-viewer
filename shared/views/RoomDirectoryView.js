@@ -76,11 +76,12 @@ class RoomDirectoryView extends TemplateView {
                 // Autocomplete is disabled because browsers share autocomplete
                 // suggestions across domains and this uses a very common
                 // `name="search"`. The name is important because it's what
-                // shows up in the query parameters when the `<form method="GET">` is
-                // submitted. I wish we could scope the autocomplete suggestions
-                // to the apps domain. Trying some custom non-spec value here
-                // also doesn't seem to work (Chrome decides to autofill based
-                // on `name="search"`).
+                // shows up in the query parameters when the `<form
+                // method="GET">` is submitted. I wish we could scope the
+                // autocomplete suggestions to the apps domain
+                // (https://github.com/whatwg/html/issues/8284). Trying some
+                // custom non-spec value here also doesn't seem to work (Chrome
+                // decides to autofill based on `name="search"`).
                 autocomplete: 'off',
                 autocapitalize: 'off',
               }),
