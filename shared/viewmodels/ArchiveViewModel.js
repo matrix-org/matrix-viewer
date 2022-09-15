@@ -4,8 +4,8 @@ const { ViewModel, setupLightboxNavigation } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
+const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
-
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 
 class ArchiveViewModel extends ViewModel {
@@ -20,6 +20,7 @@ class ArchiveViewModel extends ViewModel {
     this._room = room;
     this._eventEntriesByEventId = eventEntriesByEventId;
     this._currentTopPositionEventEntry = null;
+    this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
@@ -77,7 +78,16 @@ class ArchiveViewModel extends ViewModel {
     this._currentTopPositionEventEntry = currentTopPositionEventEntry;
     this.emitChange('currentTopPositionEventEntry');
 
+    // Update the calendar
     this._calendarViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
+
+    // Update the URL
+    this.history.replaceUrlSilently(
+      this._matrixPublicArchiveURLCreator.archiveUrlForDate(
+        this._room.id,
+        new Date(currentTopPositionEventEntry.timestamp)
+      )
+    );
   }
 
   _updateRightPanel() {
