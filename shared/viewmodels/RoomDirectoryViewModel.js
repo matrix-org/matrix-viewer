@@ -57,6 +57,11 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._searchTerm || '';
   }
 
+  setSearchTerm(newSearchTerm) {
+    this._searchTerm = newSearchTerm;
+    this.emitChange('searchTerm');
+  }
+
   get nextPageUrl() {
     if (this._nextPaginationToken) {
       return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({

@@ -7,6 +7,14 @@ const RoomCardView = require('./RoomCardView');
 
 class RoomDirectoryView extends TemplateView {
   render(t, vm) {
+    // Make sure we don't overwrite the search input value if someone has typed
+    // before the JavaScript has loaded
+    const searchInputBeforeRendering = document.querySelector('.RoomDirectoryView_searchInput');
+    if (searchInputBeforeRendering) {
+      const searchInputValueBeforeRendering = searchInputBeforeRendering.value;
+      vm.setSearchTerm(searchInputValueBeforeRendering);
+    }
+
     const roomList = new ListView(
       {
         className: 'RoomDirectoryView_roomList',

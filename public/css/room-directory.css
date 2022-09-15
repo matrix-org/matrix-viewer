@@ -53,6 +53,7 @@
   width: 100%;
   height: 32px;
   padding-left: 32px;
+  padding-right: 8px;
 
   background: rgba(141, 151, 165, 0.15);
   border-radius: 8px;
