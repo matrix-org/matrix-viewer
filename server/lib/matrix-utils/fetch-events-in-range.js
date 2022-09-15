@@ -12,13 +12,16 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
 // Find an event right ahead of where we are trying to look. Then paginate
-// /messages backwards. This makes sure that we can get events for the day
-// when the room started.
+// /messages backwards. This makes sure that we can get events for the day when
+// the room started. And it ensures that the `/messages` backfill kicks in
+// properly since it only works to fill in the gaps going backwards.
 //
-// Consider this scenario: dayStart(fromTs) <---- msg1 <- msg2 <-- msg3 <---- dayEnd(toTs)
+// Consider this scenario: dayStart(fromTs) <- msg1 <- msg2 <- msg3 <- dayEnd(toTs)
 //  - ❌ If we start from dayStart and look backwards, we will find nothing.
-//  - ❌ If we start from dayStart and look forwards, we will find msg1, but federated backfill won't be able to paginate forwards
-//  - ✅ If we start from dayEnd and look backwards, we will find msg3
+//  - ❌ If we start from dayStart and look forwards, we will find msg1, but
+//    federated backfill won't be able to paginate forwards
+//  - ✅ If we start from dayEnd and look backwards, we will find msg3 and
+//    federation backfill can paginate backwards
 //  - ❌ If we start from dayEnd and look forwards, we will find nothing
 //
 // Returns events in reverse-chronological order.
