@@ -92,9 +92,11 @@ class ArchiveView extends TemplateView {
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            const eventId = entry.target.getAttribute('data-event-id');
-            const eventEntry = vm.eventEntriesByEventId[eventId];
-            vm.setCurrentTopPositionEventEntry(eventEntry);
+            if (entry.isIntersecting) {
+              const eventId = entry.target.getAttribute('data-event-id');
+              const eventEntry = vm.eventEntriesByEventId[eventId];
+              vm.setCurrentTopPositionEventEntry(eventEntry);
+            }
           });
         },
         {
