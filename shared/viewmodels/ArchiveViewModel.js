@@ -19,6 +19,16 @@ class ArchiveViewModel extends ViewModel {
 
     this._room = room;
     this._eventEntriesByEventId = eventEntriesByEventId;
+    this._currentTopPositionEventEntry = null;
+
+    this._calendarViewModel = new CalendarViewModel({
+      // The day being shown in the archive
+      activeDate: fromDate,
+      // The month displayed in the calendar
+      calendarDate: fromDate,
+      room,
+      basePath,
+    });
 
     this.roomViewModel = roomViewModel;
     // FIXME: Do we have to fake this?
@@ -27,14 +37,7 @@ class ArchiveViewModel extends ViewModel {
       activeViewModel: {
         type: 'custom',
         customView: RightPanelContentView,
-        calendarViewModel: new CalendarViewModel({
-          // The day being shown in the archive
-          activeDate: fromDate,
-          // The month displayed in the calendar
-          calendarDate: fromDate,
-          room,
-          basePath,
-        }),
+        calendarViewModel: this._calendarViewModel,
       },
       closePanel() {
         const path = this.navigation.path.until('room');
@@ -58,8 +61,23 @@ class ArchiveViewModel extends ViewModel {
     });
   }
 
+  get eventEntriesByEventId() {
+    return this._eventEntriesByEventId;
+  }
+
+  get currentTopPositionEventEntry() {
+    return this._currentTopPositionEventEntry;
+  }
+
   get shouldShowRightPanel() {
     return this._shouldShowRightPanel;
+  }
+
+  setCurrentTopPositionEventEntry(currentTopPositionEventEntry) {
+    this._currentTopPositionEventEntry = currentTopPositionEventEntry;
+    this.emitChange('currentTopPositionEventEntry');
+
+    this._calendarViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
   }
 
   _updateRightPanel() {

@@ -53,7 +53,7 @@ class RoomHeaderView extends TemplateView {
 
 class ArchiveView extends TemplateView {
   render(t, vm) {
-    return t.div(
+    const rootElement = t.div(
       {
         className: {
           ArchiveView: true,
@@ -61,6 +61,19 @@ class ArchiveView extends TemplateView {
         },
       },
       [
+        t.style({}, (vm) => {
+          return `
+            [data-event-id] {
+              transition: background-color 800ms;
+            }
+            [data-event-id="${vm.currentTopPositionEventEntry}"] {
+              background-color: #ffff8a;
+              outline: 1px solid #f00;
+              outline-offset: -1px;
+              transition: background-color 0ms;
+            }
+          `;
+        }),
         t.view(
           new RoomView(vm.roomViewModel, viewClassForTile, {
             RoomHeaderView,
@@ -73,6 +86,40 @@ class ArchiveView extends TemplateView {
         ),
       ]
     );
+
+    if (typeof IntersectionObserver === 'function') {
+      const scrollRoot = rootElement.querySelector('.Timeline_scroller');
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const eventId = entry.target.getAttribute('data-event-id');
+            const eventEntry = vm.eventEntriesByEventId[eventId];
+            vm.setCurrentTopPositionEventEntry(eventEntry);
+          });
+        },
+        {
+          root: scrollRoot,
+          // We want the message at the top of the viewport to be the one
+          // representing the current active day.
+          //
+          // This is a trick that pushes the bottom margin up to the top of the
+          // root so there is just a 0px region at the top to detect
+          // intersections. This way we always recognize the element at the top.
+          // As mentioned in:
+          //  - https://stackoverflow.com/a/54874286/796832
+          //  - https://css-tricks.com/an-explanation-of-how-the-intersection-observer-watches/#aa-creating-a-position-sticky-event
+          //
+          // The format is the same as margin: top, left, bottom, right.
+          rootMargin: '0px 0px -100% 0px',
+          threshold: 0,
+        }
+      );
+      [...rootElement.querySelectorAll(`.Timeline_message`)].forEach((el) => {
+        observer.observe(el);
+      });
+    }
+
+    return rootElement;
   }
 }
 

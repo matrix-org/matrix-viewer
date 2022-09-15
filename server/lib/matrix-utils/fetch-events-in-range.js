@@ -104,21 +104,21 @@ async function fetchEventsInRange(accessToken, roomId, startTs, endTs, limit) {
   let eventsInRange = events;
   // `events` are in reverse-chronological order.
   // We only need to filter if the oldest message is before startTs
-  if (events[events.length - 1].origin_server_ts < startTs) {
-    eventsInRange = [];
+  // if (events[events.length - 1].origin_server_ts < startTs) {
+  //   eventsInRange = [];
 
-    // Let's iterate until we see events before startTs
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
+  //   // Let's iterate until we see events before startTs
+  //   for (let i = 0; i < events.length; i++) {
+  //     const event = events[i];
 
-      // Once we found an event before startTs, the rest are outside of our range
-      if (event.origin_server_ts < startTs) {
-        break;
-      }
+  //     // Once we found an event before startTs, the rest are outside of our range
+  //     if (event.origin_server_ts < startTs) {
+  //       break;
+  //     }
 
-      eventsInRange.push(event);
-    }
-  }
+  //     eventsInRange.push(event);
+  //   }
+  // }
 
   //console.log('eventsInRange', eventsInRange.length);
 
