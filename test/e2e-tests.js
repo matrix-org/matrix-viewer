@@ -507,6 +507,57 @@ describe('matrix-public-archive', () => {
       `will render a room with a sparse amount of messages (a few per day) with no contamination between days`
     );
 
+    describe('Room directory', () => {
+      it('room search narrows down results', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        // This is just an extra room to fill out the room directory and make sure
+        // that it does not appear when searching.
+        await createTestRoom(client);
+
+        // Then create two rooms we will find with search
+        const timeToken = Date.now();
+        const roomPlanetPrefix = `planet-${timeToken}`;
+        const roomSaturnId = await createTestRoom(client, {
+          name: `${roomPlanetPrefix}-saturn`,
+        });
+        const roomMarsId = await createTestRoom(client, {
+          name: `${roomPlanetPrefix}-mars`,
+        });
+
+        // Browse the room directory without search to see many rooms
+        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
+        const roomDirectoryPageHtml = await fetchEndpointAsText(archiveUrl);
+        const dom = parseHTML(roomDirectoryPageHtml);
+
+        const roomsOnPageWithoutSearch = [
+          ...dom.document.querySelectorAll(`[data-testid="room-card"]`),
+        ].map((roomCardEl) => {
+          return roomCardEl.getAttribute('data-room-id');
+        });
+
+        // Then browse the room directory again, this time with the search
+        // narrowing down results.
+        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+          searchTerm: roomPlanetPrefix,
+        });
+        const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
+        const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
+
+        const roomsOnPageWithSearch = [
+          ...domWithSearch.document.querySelectorAll(`[data-testid="room-card"]`),
+        ].map((roomCardEl) => {
+          return roomCardEl.getAttribute('data-room-id');
+        });
+
+        // Assert that the rooms we searched for are visible
+        assert.deepStrictEqual(roomsOnPageWithSearch.sort(), [roomSaturnId, roomMarsId].sort());
+
+        // Sanity check that search does something. Assert that it's not showing
+        // the same results as if we didn't make any search.
+        assert.notDeepStrictEqual(roomsOnPageWithSearch.sort(), roomsOnPageWithoutSearch.sort());
+      });
+    });
+
     describe('access controls', () => {
       it('not allowed to view private room even when the archiver user is in the room', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);

@@ -32,6 +32,8 @@ class RoomCardView extends TemplateView {
         className: {
           RoomCardView: true,
         },
+        'data-room-id': vm.roomId,
+        'data-testid': 'room-card',
       },
       [
         t.a(

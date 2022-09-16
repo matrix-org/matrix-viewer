@@ -84,6 +84,7 @@ class RoomDirectoryView extends TemplateView {
                 // decides to autofill based on `name="search"`).
                 autocomplete: 'off',
                 autocapitalize: 'off',
+                'data-testid': 'room-directory-search-input',
               }),
             ]),
             t.div({ className: 'RoomDirectoryView_homeserverSelectSection' }, [
