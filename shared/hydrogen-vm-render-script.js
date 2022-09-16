@@ -28,10 +28,10 @@ const {
 
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 
-const ArchiveView = require('matrix-public-archive-shared/views/ArchiveView');
+const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 
-const ArchiveViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveViewModel');
+const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -264,6 +264,8 @@ async function mountHydrogen() {
     this.navigation.applyPath(path);
   };
 
+  roomViewModel.roomDirectoryUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
+
   Object.defineProperty(roomViewModel, 'timelineViewModel', {
     get() {
       return timelineViewModel;
@@ -291,7 +293,7 @@ async function mountHydrogen() {
     },
   });
 
-  const archiveViewModel = new ArchiveViewModel({
+  const archiveRoomViewModel = new ArchiveRoomViewModel({
     // Hydrogen options
     navigation: navigation,
     urlCreator: urlRouter,
@@ -304,7 +306,7 @@ async function mountHydrogen() {
     basePath: config.basePath,
   });
 
-  const view = new ArchiveView(archiveViewModel);
+  const view = new ArchiveRoomView(archiveRoomViewModel);
 
   appElement.replaceChildren(view.mount());
 

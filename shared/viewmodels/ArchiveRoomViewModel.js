@@ -8,7 +8,7 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 
-class ArchiveViewModel extends ViewModel {
+class ArchiveRoomViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const { roomViewModel, room, fromDate, eventEntriesByEventId, basePath } = options;
@@ -96,4 +96,4 @@ class ArchiveViewModel extends ViewModel {
   }
 }
 
-module.exports = ArchiveViewModel;
+module.exports = ArchiveRoomViewModel;

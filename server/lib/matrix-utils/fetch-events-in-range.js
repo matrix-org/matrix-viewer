@@ -29,7 +29,11 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   assert(accessToken);
   assert(roomId);
   assert(ts);
-  assert(limit);
+  // Synapse has a max `/messages` limit of 1000
+  assert(
+    limit <= 1000,
+    'We can only get 1000 messages at a time from Synapse. If you need more messages, we will have to implement pagination'
+  );
 
   const { eventId: eventIdForTimestamp } = await timestampToEvent({
     accessToken,
