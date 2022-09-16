@@ -123,6 +123,8 @@ function supressBlankAnchorsReloadingThePage() {
 
 // eslint-disable-next-line max-statements
 async function mountHydrogen() {
+  console.log('Mounting Hydrogen...');
+  console.time('Completed mounting Hydrogen');
   const appElement = document.querySelector('#app');
 
   const platformConfig = {};
@@ -309,6 +311,8 @@ async function mountHydrogen() {
   addSupportClasses();
 
   supressBlankAnchorsReloadingThePage();
+
+  console.timeEnd('Completed mounting Hydrogen');
 }
 
 // N.B.: When we run this in a virtual machine (`vm`), it will return the last

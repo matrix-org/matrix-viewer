@@ -14,6 +14,7 @@ class RoomDirectoryViewModel extends ViewModel {
       homeserverName,
       matrixPublicArchiveURLCreator,
       rooms,
+      searchTerm,
       nextPaginationToken,
       prevPaginationToken,
     } = options;
@@ -39,6 +40,7 @@ class RoomDirectoryViewModel extends ViewModel {
         };
       })
     );
+    this._searchTerm = searchTerm;
     this._nextPaginationToken = nextPaginationToken;
     this._prevPaginationToken = prevPaginationToken;
   }
@@ -51,9 +53,19 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
   }
 
+  get searchTerm() {
+    return this._searchTerm || '';
+  }
+
+  setSearchTerm(newSearchTerm) {
+    this._searchTerm = newSearchTerm;
+    this.emitChange('searchTerm');
+  }
+
   get nextPageUrl() {
     if (this._nextPaginationToken) {
       return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        searchTerm: this.searchTerm,
         paginationToken: this._nextPaginationToken,
       });
     }
@@ -64,6 +76,7 @@ class RoomDirectoryViewModel extends ViewModel {
   get prevPageUrl() {
     if (this._prevPaginationToken) {
       return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        searchTerm: this.searchTerm,
         paginationToken: this._prevPaginationToken,
       });
     }

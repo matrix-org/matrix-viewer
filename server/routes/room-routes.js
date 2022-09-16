@@ -81,10 +81,14 @@ router.get(
   '/',
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = req.params.roomIdOrAlias;
-    assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
+    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
+    if (!isValidAlias) {
+      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
+    }
 
     // In case we're joining a new room for the first time,
-    // let's avoid redirecting to our join event
+    // let's avoid redirecting to our join event by getting
+    // the time before we join and looking backwards.
     const dateBeforeJoin = Date.now();
 
     // We have to wait for the room join to happen first before we can fetch
@@ -99,7 +103,7 @@ router.get(
       direction: 'b',
     });
     if (!originServerTs) {
-      throw new StatusError(404, 'Unable to find day with an history');
+      throw new StatusError(404, 'Unable to find day with history');
     }
 
     // Redirect to a day with messages
@@ -127,7 +131,10 @@ router.get(
   timeoutMiddleware,
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = req.params.roomIdOrAlias;
-    assert(roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#'));
+    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
+    if (!isValidAlias) {
+      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
+    }
 
     const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
       parseArchiveRangeFromReq(req);
