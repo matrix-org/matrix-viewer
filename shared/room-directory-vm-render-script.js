@@ -17,7 +17,6 @@ assert(rooms);
 const nextPaginationToken = window.matrixPublicArchiveContext.nextPaginationToken;
 const prevPaginationToken = window.matrixPublicArchiveContext.prevPaginationToken;
 const searchTerm = window.matrixPublicArchiveContext.searchTerm;
-assert(searchTerm);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
@@ -27,6 +26,8 @@ assert(config.basePath);
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
 
 async function mountHydrogen() {
+  console.log('Mounting Hydrogen...');
+  console.time('Completed mounting Hydrogen');
   const appElement = document.querySelector('#app');
 
   const roomDirectoryViewModel = new RoomDirectoryViewModel({
@@ -34,6 +35,7 @@ async function mountHydrogen() {
     homeserverName: config.matrixServerName,
     matrixPublicArchiveURLCreator,
     rooms,
+    searchTerm,
     nextPaginationToken,
     prevPaginationToken,
   });
@@ -41,6 +43,7 @@ async function mountHydrogen() {
   const view = new RoomDirectoryView(roomDirectoryViewModel);
 
   appElement.replaceChildren(view.mount());
+  console.timeEnd('Completed mounting Hydrogen');
 }
 
 // N.B.: When we run this in a virtual machine (`vm`), it will return the last

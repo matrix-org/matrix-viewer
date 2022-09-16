@@ -17,8 +17,11 @@ class URLCreator {
     this._basePath = basePath;
   }
 
-  roomDirectoryUrl({ paginationToken } = {}) {
+  roomDirectoryUrl({ searchTerm, paginationToken } = {}) {
     let qs = new URLSearchParams();
+    if (searchTerm) {
+      qs.append('search', searchTerm);
+    }
     if (paginationToken) {
       qs.append('page', paginationToken);
     }

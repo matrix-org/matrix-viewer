@@ -16,6 +16,19 @@ function getTxnId() {
   return `${new Date().getTime()}--${txnCount}`;
 }
 
+// Basic slugify function, plenty of edge cases and should not be used for
+// production.
+function slugify(inputText) {
+  return (
+    inputText
+      .toLowerCase()
+      // Replace whitespace with hyphens
+      .replace(/\s+/g, '-')
+      // Remove anything not alpha-numeric or hypen
+      .replace(/[^a-z0-9-]+/g, '')
+  );
+}
+
 async function ensureUserRegistered({ matrixServerUrl, username }) {
   const registerResponse = await fetchEndpointAsJson(
     urlJoin(matrixServerUrl, '/_matrix/client/v3/register'),
@@ -73,11 +86,14 @@ async function getTestClientForHs(testMatrixServerUrl) {
 }
 
 // Create a public room to test in
-async function createTestRoom(client, overrideCreateOptions) {
+async function createTestRoom(client, overrideCreateOptions = {}) {
   let qs = new URLSearchParams();
   if (client.applicationServiceUserIdOverride) {
     qs.append('user_id', client.applicationServiceUserIdOverride);
   }
+
+  const roomName = overrideCreateOptions.name || 'the hangout spot';
+  const roomAlias = slugify(roomName + getTxnId());
 
   const createRoomResponse = await fetchEndpointAsJson(
     urlJoin(client.homeserverUrl, `/_matrix/client/v3/createRoom?${qs.toString()}`),
@@ -85,7 +101,8 @@ async function createTestRoom(client, overrideCreateOptions) {
       method: 'POST',
       body: {
         preset: 'public_chat',
-        name: 'the hangout spot',
+        name: roomName,
+        room_alias_name: roomAlias,
         initial_state: [
           {
             type: 'm.room.history_visibility',
@@ -95,6 +112,7 @@ async function createTestRoom(client, overrideCreateOptions) {
             },
           },
         ],
+        visibility: 'public',
         ...overrideCreateOptions,
       },
       accessToken: client.accessToken,

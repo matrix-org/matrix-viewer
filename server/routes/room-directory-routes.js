@@ -29,11 +29,13 @@ router.get(
   '/',
   asyncHandler(async function (req, res) {
     const paginationToken = req.query.page;
+    const searchTerm = req.query.search;
 
     const { rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
       matrixAccessToken,
       {
         //server: TODO,
+        searchTerm,
         paginationToken,
         // It would be good to grab more rooms than we display in case we need
         // to filter any out but then the pagination tokens with the homeserver
@@ -54,7 +56,7 @@ router.get(
         rooms,
         nextPaginationToken,
         prevPaginationToken,
-        searchTerm: 'foobar (TODO)',
+        searchTerm,
         config: {
           basePath,
           matrixServerUrl,

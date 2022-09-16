@@ -10,6 +10,8 @@ function StatusError(status, inputMessage) {
   }
 
   this.message = `${status} - ${message}`;
+  // This will be picked by the default Express error handler and assign the status code,
+  // https://expressjs.com/en/guide/error-handling.html#the-default-error-handler
   this.status = status;
   this.name = 'StatusError';
   Error.captureStackTrace(this, StatusError);
