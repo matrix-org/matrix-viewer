@@ -9,6 +9,8 @@ const {
   viewClassForTile,
 } = require('hydrogen-view-sdk');
 
+const DeveloperOptionsView = require('matrix-public-archive-shared/views/DeveloperOptionsView');
+
 class RoomHeaderView extends TemplateView {
   render(t, vm) {
     return t.div({ className: 'RoomHeader middle-header' }, [
@@ -43,7 +45,7 @@ class RoomHeaderView extends TemplateView {
         {
           className: 'button-utility RoomHeader_actionButton RoomHeader_changeDatesButton',
           title: vm.i18n`Change dates`,
-          onClick: (/*evt*/) => {
+          onClick: (/*event*/) => {
             vm.openRightPanel();
           },
         },
@@ -86,19 +88,24 @@ class ArchiveRoomView extends TemplateView {
         },
       },
       [
-        t.style({}, (vm) => {
-          return `
-            [data-event-id] {
-              transition: background-color 800ms;
-            }
-            [data-event-id="${vm.currentTopPositionEventEntry?.id}"] {
-              background-color: #ffff8a;
-              outline: 1px solid #f00;
-              outline-offset: -1px;
-              transition: background-color 0ms;
-            }
-          `;
-        }),
+        t.if(
+          (vm) => vm._developerOptionsViewModel?.debugActiveDateIntersectionObserver,
+          (t, vm) => {
+            return t.style({}, (vm) => {
+              return `
+                [data-event-id] {
+                  transition: background-color 800ms;
+                }
+                [data-event-id="${vm.currentTopPositionEventEntry?.id}"] {
+                  background-color: #ffff8a;
+                  outline: 1px solid #f00;
+                  outline-offset: -1px;
+                  transition: background-color 0ms;
+                }
+              `;
+            });
+          }
+        ),
         t.view(
           new RoomView(vm.roomViewModel, viewClassForTile, {
             RoomHeaderView,
@@ -108,6 +115,10 @@ class ArchiveRoomView extends TemplateView {
         t.mapView(
           (vm) => vm.lightboxViewModel,
           (lightboxViewModel) => (lightboxViewModel ? new LightboxView(lightboxViewModel) : null)
+        ),
+        t.ifView(
+          (vm) => vm.shouldShowDeveloperOptions,
+          (vm) => new DeveloperOptionsView(vm.developerOptionsViewModel)
         ),
       ]
     );

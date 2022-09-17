@@ -29,7 +29,7 @@ async function renderHydrogenVmRenderScriptToPageHtml(
 
   // We shouldn't let some pages be indexed by search engines
   let maybeNoIndexHtml = '';
-  if (pageOptions.noIndex) {
+  if (!pageOptions.shouldIndex) {
     maybeNoIndexHtml = `<meta name="robots" content="noindex, nofollow" />`;
   }
 

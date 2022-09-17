@@ -82,6 +82,34 @@ body {
   }
 }
 
+.RightPanelContentView {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.RightPanelContentView_footer {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 16px;
+  font-size: 12px;
+}
+
+.RightPanelContentView_footerLinkList > * + * {
+  margin-left: 1ch;
+}
+
+.RightPanelContentView_footerLink {
+  text-decoration: none;
+}
+
+.RightPanelContentView_footerLink:hover,
+.RightPanelContentView_footerLink:focus {
+  color: #0098d4;
+  text-decoration: underline;
+}
+
 .CalendarView {
 }
 
@@ -204,6 +232,75 @@ body {
 
 .CalendarView_dayLink_disabled {
   opacity: 0.5;
+}
+
+/* Developer options modal */
+
+.DeveloperOptionsView {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.DeveloperOptionsView_backdrop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  background-color: rgba(46, 48, 51, 0.38);
+}
+
+.DeveloperOptionsView_modal {
+  z-index: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80%;
+  padding: 24px;
+  padding-bottom: 100px;
+
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 2px 15px 30px 0 rgb(0 0 0 / 48%);
+}
+
+.DeveloperOptionsView_modalHeader {
+  display: flex;
+  justify-content: space-between;
+}
+
+.DeveloperOptionsView_modalDismissButton {
+  padding-left: 16px;
+  padding-right: 16px;
+
+  background: none;
+  border: none;
+
+  cursor: pointer;
+  color: var(--icon-color);
+}
+
+.DeveloperOptionsView_settingsFlag {
+  display: flex;
+  align-items: flex-start;
+}
+
+.DeveloperOptionsView_labelText {
+  line-height: 1.5em;
+}
+
+.DeveloperOptionsView_microcopy {
+  font-size: 0.85em;
+  line-height: 1.5em;
+  color: #737d8c;
 }
 
 /* Error pages */

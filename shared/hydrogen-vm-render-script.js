@@ -41,6 +41,8 @@ const events = window.matrixPublicArchiveContext.events;
 assert(events);
 const stateEventMap = window.matrixPublicArchiveContext.stateEventMap;
 assert(stateEventMap);
+const shouldIndex = window.matrixPublicArchiveContext.shouldIndex;
+assert(shouldIndex !== undefined);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
@@ -101,14 +103,22 @@ function supressBlankAnchorsReloadingThePage() {
     handleEvent(e) {
       // For any `<a href="">` (anchor with a blank href), instead of reloading
       // the page just remove the hash.
-      if (
-        e.type === 'click' &&
-        e.target.tagName?.toLowerCase() === 'a' &&
-        e.target?.getAttribute('href') === ''
-      ) {
-        this.clearHash();
-        // Prevent the page navigation (reload)
-        e.preventDefault();
+      if (e.type === 'click') {
+        // Traverse up the DOM and see whether the click is a child of an anchor element
+        let target = e.target;
+        while (
+          target &&
+          // We use `nodeName` here because it's compatible with any Element (HTML or SVG)
+          target.nodeName !== 'A'
+        ) {
+          target = target.parentNode;
+        }
+
+        if (target?.tagName?.toLowerCase() === 'a' && target?.getAttribute('href') === '') {
+          this.clearHash();
+          // Prevent the page navigation (reload)
+          e.preventDefault();
+        }
       }
       // Also cleanup whenever the hash is emptied out (like when pressing escape in the lightbox)
       else if (e.type === 'hashchange' && document.location.hash === '') {
@@ -303,6 +313,7 @@ async function mountHydrogen() {
     room,
     fromDate,
     eventEntriesByEventId,
+    shouldIndex,
     basePath: config.basePath,
   });
 

@@ -195,6 +195,9 @@ router.get(
       );
     }
 
+    // We only allow search engines to index `world_readable` rooms
+    const shouldIndex = roomData?.historyVisibility === `world_readable`;
+
     if (events.length >= archiveMessageLimit) {
       throw new Error('TODO: Redirect user to smaller hour range');
     }
@@ -210,6 +213,7 @@ router.get(
         roomData,
         events,
         stateEventMap,
+        shouldIndex,
         config: {
           basePath: basePath,
           matrixServerUrl: matrixServerUrl,
@@ -219,8 +223,7 @@ router.get(
         title: `${roomData.name} - Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl],
         scripts: [jsBundleUrl],
-        // We only allow search engines to index `world_readable` rooms
-        noIndex: roomData?.historyVisibility !== `world_readable`,
+        shouldIndex,
       }
     );
 

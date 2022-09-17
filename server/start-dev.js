@@ -11,6 +11,7 @@ const buildClient = require('../build/build-client');
 buildClient({
   build: {
     // Rebuild when we see changes
+    // https://rollupjs.org/guide/en/#watch-options
     watch: true,
   },
 });
