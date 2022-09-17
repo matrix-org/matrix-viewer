@@ -62,7 +62,7 @@ class DeveloperOptionsView extends TemplateView {
             t.section([
               t.h4(['Toggles']),
               t.div({ className: 'DeveloperOptionsView_settingsFlag' }, [
-                t.label([
+                t.label({ for: 'debugActiveDateIntersectionObserver' }, [
                   t.div({ className: 'DeveloperOptionsView_labelText' }, [
                     'Show active date borders (debug ',
                     t.code('IntersectionObserver'),
@@ -74,14 +74,15 @@ class DeveloperOptionsView extends TemplateView {
                   ),
                 ]),
                 t.input({
+                  id: 'debugActiveDateIntersectionObserver',
                   type: 'checkbox',
-                  checked: vm.debugActiveDateIntersectionObserver,
+                  checked: (vm) => vm.debugActiveDateIntersectionObserver,
                   onInput: (event) =>
                     vm.toggleDebugActiveDateIntersectionObserver(event.target.checked),
                 }),
               ]),
             ]),
-            t.section([t.h4('Backend timing'), 'todo']),
+            t.section([t.h4('Backend timing'), 'todo: window.tracingSpansForRequest']),
           ]
         ),
       ]

@@ -44,8 +44,7 @@ async function renderHydrogenToString(renderOptions) {
   } catch (err) {
     throw new RethrownError(
       `Failed to render Hydrogen to string. In order to reproduce, feed in these arguments into \`renderHydrogenToString(...)\`:\n    renderHydrogenToString arguments: ${JSON.stringify(
-        { todo: 'uncomment renderOptions' }
-        //renderOptions
+        renderOptions
       )}`,
       err
     );

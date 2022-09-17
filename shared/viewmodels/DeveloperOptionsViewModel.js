@@ -15,8 +15,8 @@ class DeveloperOptionsViewModel extends ViewModel {
 
   loadValuesFromPersistence() {
     if (window.localStorage) {
-      this._debugActiveDateIntersectionObserver = window.localStorage.getItem(
-        'debugActiveDateIntersectionObserver'
+      this._debugActiveDateIntersectionObserver = JSON.parse(
+        window.localStorage.getItem('debugActiveDateIntersectionObserver')
       );
       this.emitChange('debugActiveDateIntersectionObserver');
     } else {
