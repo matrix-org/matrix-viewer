@@ -23,6 +23,7 @@ const {
   encodeKey,
   encodeEventIdKey,
   Timeline,
+  ViewModel,
   RoomViewModel,
 } = require('hydrogen-view-sdk');
 
@@ -281,27 +282,6 @@ async function mountHydrogen() {
       return timelineViewModel;
     },
   });
-  const fromDate = new Date(fromTimestamp);
-  const dateString = fromDate.toISOString().split('T')[0];
-  Object.defineProperty(roomViewModel, 'composerViewModel', {
-    get() {
-      return {
-        kind: 'disabled',
-        description: [
-          `You're viewing an archive of events from ${dateString}. Use a `,
-          tag.a(
-            {
-              href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
-              rel: 'noopener',
-              target: '_blank',
-            },
-            ['Matrix client']
-          ),
-          ` to start chatting in this room.`,
-        ],
-      };
-    },
-  });
 
   const archiveRoomViewModel = new ArchiveRoomViewModel({
     // Hydrogen options
@@ -311,18 +291,69 @@ async function mountHydrogen() {
     // Our options
     roomViewModel,
     room,
-    fromDate,
+    fromDate: new Date(fromTimestamp),
     eventEntriesByEventId,
     shouldIndex,
     basePath: config.basePath,
   });
 
-  const view = new ArchiveRoomView(archiveRoomViewModel);
+  // Create a custom disabled composer view that shows our archive message.
+  class DisabledArchiveComposerViewModel extends ViewModel {
+    constructor(options) {
+      super(options);
 
+      // Whenever the `archiveRoomViewModel.currentTopPositionEventEntry`
+      // changes, re-render the composer view with the updated date.
+      archiveRoomViewModel.on('change', (changedProps) => {
+        if (changedProps === 'currentTopPositionEventEntry') {
+          this.emitChange();
+        }
+      });
+    }
+
+    get kind() {
+      return 'disabled';
+    }
+
+    get description() {
+      return [
+        (/*vm*/) => {
+          const activeDate = new Date(
+            // If the archiveRoomViewModel is available use that date
+            archiveRoomViewModel?.currentTopPositionEventEntry?.timestamp ||
+              // Otherwise, use our initial from timestamp
+              fromTimestamp
+          );
+          const dateString = activeDate.toISOString().split('T')[0];
+          return `You're viewing an archive of events from ${dateString}. Use a `;
+        },
+        tag.a(
+          {
+            href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
+            rel: 'noopener',
+            target: '_blank',
+          },
+          ['Matrix client']
+        ),
+        ` to start chatting in this room.`,
+      ];
+    }
+  }
+  const disabledArchiveComposerViewModel = new DisabledArchiveComposerViewModel({});
+  Object.defineProperty(roomViewModel, 'composerViewModel', {
+    get() {
+      return disabledArchiveComposerViewModel;
+    },
+  });
+
+  // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
+
+  // Render what we actually care about
+  const view = new ArchiveRoomView(archiveRoomViewModel);
   appElement.replaceChildren(view.mount());
 
   addSupportClasses();
-
   supressBlankAnchorsReloadingThePage();
 
   console.timeEnd('Completed mounting Hydrogen');
