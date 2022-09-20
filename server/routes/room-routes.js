@@ -10,7 +10,7 @@ const StatusError = require('../lib/status-error');
 const timeoutMiddleware = require('./timeout-middleware');
 
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
-const fetchEventsInRange = require('../lib/matrix-utils/fetch-events-in-range');
+const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
 const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
@@ -23,8 +23,6 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
-const archiveMessageLimit = config.get('archiveMessageLimit');
-assert(archiveMessageLimit);
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
@@ -124,6 +122,38 @@ router.get(
   })
 );
 
+router.get(
+  '/jump',
+  asyncHandler(async function (req, res) {
+    const roomIdOrAlias = req.params.roomIdOrAlias;
+    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
+    if (!isValidAlias) {
+      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
+    }
+
+    const ts = parseInt(req.query.ts, 10);
+    assert(!Number.isNaN(ts), '?ts query parameter must be a number');
+    const dir = req.query.dir;
+    assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
+
+    // Find the closest day to today with messages
+    const { originServerTs } = await timestampToEvent({
+      accessToken: matrixAccessToken,
+      roomId: roomIdOrAlias,
+      ts: ts,
+      direction: dir,
+    });
+    if (!originServerTs) {
+      throw new StatusError(404, 'Unable to find day with history');
+    }
+
+    // Redirect to a day with messages
+    res.redirect(
+      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs))
+    );
+  })
+);
+
 // Based off of the Gitter archive routes,
 // https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
 router.get(
@@ -135,6 +165,14 @@ router.get(
     if (!isValidAlias) {
       throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
     }
+
+    const archiveMessageLimit = config.get('archiveMessageLimit');
+    assert(archiveMessageLimit);
+    // Synapse has a max `/messages` limit of 1000
+    assert(
+      archiveMessageLimit <= 999,
+      'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
+    );
 
     const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
       parseArchiveRangeFromReq(req);
@@ -174,13 +212,21 @@ router.get(
     // (we want to display the archive page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
       fetchRoomData(matrixAccessToken, roomIdOrAlias),
-      fetchEventsInRange(
-        matrixAccessToken,
-        roomIdOrAlias,
-        fromTimestamp,
-        toTimestamp,
-        archiveMessageLimit
-      ),
+      // We over-fetch messages outside of the range of the given day so that we
+      // can display messages from surrounding days (currently only from days
+      // before) so that the quiet rooms don't feel as desolate and broken.
+      fetchEventsFromTimestampBackwards({
+        accessToken: matrixAccessToken,
+        roomId: roomIdOrAlias,
+        ts: toTimestamp,
+        // We fetch one more than the `archiveMessageLimit` so that we can see
+        // there are too many messages from the given day. If we have over the
+        // `archiveMessageLimit` number of messages fetching from the given day,
+        // it's acceptable to have them be from surrounding days. But if all 500
+        // messages (for example) are from the same day, let's redirect to a
+        // smaller hour range to display.
+        limit: archiveMessageLimit + 1,
+      }),
     ]);
 
     // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
@@ -195,8 +241,27 @@ router.get(
       );
     }
 
-    if (events.length >= archiveMessageLimit) {
-      throw new Error('TODO: Redirect user to smaller hour range');
+    // We only allow search engines to index `world_readable` rooms
+    const shouldIndex = roomData?.historyVisibility === `world_readable`;
+
+    // If we have over the `archiveMessageLimit` number of messages fetching
+    // from the given day, it's acceptable to have them be from surrounding
+    // days. But if all 500 messages (for example) are from the same day, let's
+    // redirect to a smaller hour range to display.
+    if (
+      // If there are too many messages, check that the event is from a previous
+      // day in the surroundings.
+      events.length >= archiveMessageLimit &&
+      // Since we're only fetching previous days for the surroundings, we only
+      // need to look at the oldest event in the chronological list.
+      //
+      // XXX: In the future when we also fetch events from days after, we will
+      // need next day check.
+      events[0].origin_server_ts >= fromTimestamp
+    ) {
+      res.send('TODO: Redirect user to smaller hour range');
+      res.status(204);
+      return;
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
@@ -207,9 +272,11 @@ router.get(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {
         fromTimestamp,
+        toTimestamp,
         roomData,
         events,
         stateEventMap,
+        shouldIndex,
         config: {
           basePath: basePath,
           matrixServerUrl: matrixServerUrl,
@@ -219,8 +286,7 @@ router.get(
         title: `${roomData.name} - Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl],
         scripts: [jsBundleUrl],
-        // We only allow search engines to index `world_readable` rooms
-        noIndex: roomData?.historyVisibility !== `world_readable`,
+        shouldIndex,
       }
     );
 

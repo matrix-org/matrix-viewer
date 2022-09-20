@@ -209,11 +209,9 @@ async function createMessagesInRoom({ client, roomId, numMessages, prefix, times
         msgtype: 'm.text',
         body: `${prefix} - message${i}`,
       },
-      // We can't use the exact same timestamp for every message in the tests
-      // otherwise it's a toss up which event will be returned as the closest
-      // for `/timestamp_to_event`. As a note, we don't have to do this after
-      // https://github.com/matrix-org/synapse/pull/13658 merges but it still
-      // seems like a good idea to make the tests more clear.
+      // The timestamp doesn't matter if it's the same anymore (since
+      // https://github.com/matrix-org/synapse/pull/13658) but it still seems
+      // like a good idea to make the tests more clear.
       timestamp: timestamp + i,
     });
     eventIds.push(eventId);

@@ -12,30 +12,55 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
 // Find an event right ahead of where we are trying to look. Then paginate
-// /messages backwards. This makes sure that we can get events for the day
-// when the room started.
+// /messages backwards. This makes sure that we can get events for the day when
+// the room started. And it ensures that the `/messages` backfill kicks in
+// properly since it only works to fill in the gaps going backwards.
 //
-// Consider this scenario: dayStart(fromTs) <---- msg1 <- msg2 <-- msg3 <---- dayEnd(toTs)
+// Consider this scenario: dayStart(fromTs) <- msg1 <- msg2 <- msg3 <- dayEnd(toTs)
 //  - ❌ If we start from dayStart and look backwards, we will find nothing.
-//  - ❌ If we start from dayStart and look forwards, we will find msg1, but federated backfill won't be able to paginate forwards
-//  - ✅ If we start from dayEnd and look backwards, we will find msg3
+//  - ❌ If we start from dayStart and look forwards, we will find msg1, but
+//    federated backfill won't be able to paginate forwards
+//  - ✅ If we start from dayEnd and look backwards, we will find msg3 and
+//    federation backfill can paginate backwards
 //  - ❌ If we start from dayEnd and look forwards, we will find nothing
 //
 // Returns events in reverse-chronological order.
-async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit) {
+async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limit }) {
   assert(accessToken);
   assert(roomId);
   assert(ts);
-  assert(limit);
+  // Synapse has a max `/messages` limit of 1000
+  assert(
+    limit <= 1000,
+    'We can only get 1000 messages at a time from Synapse. If you need more messages, we will have to implement pagination'
+  );
 
-  const { eventId: eventIdForTimestamp } = await timestampToEvent({
-    accessToken,
-    roomId,
-    ts,
-    direction: 'b',
-  });
-  assert(eventIdForTimestamp);
-  //console.log('eventIdForTimestamp', eventIdForTimestamp);
+  let eventIdForTimestamp;
+  try {
+    const { eventId } = await timestampToEvent({
+      accessToken,
+      roomId,
+      ts,
+      direction: 'b',
+    });
+    eventIdForTimestamp = eventId;
+  } catch (err) {
+    const allowedErrorCodes = [
+      // Allow `404: Unable to find event xxx in direction x`
+      // so we can just display an empty placeholder with no events.
+      404,
+    ];
+    if (!allowedErrorCodes.includes(err?.response?.status)) {
+      throw err;
+    }
+  }
+
+  if (!eventIdForTimestamp) {
+    return {
+      stateEventMap: {},
+      events: [],
+    };
+  }
 
   // We only use this endpoint to get a pagination token we can use with
   // `/messages`.
@@ -56,7 +81,6 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
   const contextResData = await fetchEndpointAsJson(contextEndpoint, {
     accessToken,
   });
-  //console.log('contextResData', contextResData);
 
   // Add `filter={"lazy_load_members":true}` to only get member state events for
   // the messages included in the response
@@ -68,7 +92,6 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
     accessToken,
   });
 
-  //console.log('messageResData.state', messageResData.state);
   const stateEventMap = {};
   for (const stateEvent of messageResData.state || []) {
     if (stateEvent.type === 'm.room.member') {
@@ -76,58 +99,12 @@ async function fetchEventsFromTimestampBackwards(accessToken, roomId, ts, limit)
     }
   }
 
-  return {
-    stateEventMap,
-    events: messageResData.chunk,
-  };
-}
-
-async function fetchEventsInRange(accessToken, roomId, startTs, endTs, limit) {
-  assert(accessToken);
-  assert(roomId);
-  assert(startTs);
-  assert(endTs);
-  assert(limit);
-
-  //console.log('fetchEventsInRange', startTs, endTs);
-
-  // Fetch events from endTs and before
-  const { events, stateEventMap } = await fetchEventsFromTimestampBackwards(
-    accessToken,
-    roomId,
-    endTs,
-    limit
-  );
-
-  //console.log('events', events.length);
-
-  let eventsInRange = events;
-  // `events` are in reverse-chronological order.
-  // We only need to filter if the oldest message is before startTs
-  if (events[events.length - 1].origin_server_ts < startTs) {
-    eventsInRange = [];
-
-    // Let's iterate until we see events before startTs
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
-
-      // Once we found an event before startTs, the rest are outside of our range
-      if (event.origin_server_ts < startTs) {
-        break;
-      }
-
-      eventsInRange.push(event);
-    }
-  }
-
-  //console.log('eventsInRange', eventsInRange.length);
-
-  const chronologicalEventsInRange = eventsInRange.reverse();
+  const chronologicalEvents = messageResData?.chunk?.reverse() || [];
 
   return {
     stateEventMap,
-    events: chronologicalEventsInRange,
+    events: chronologicalEvents,
   };
 }
 
-module.exports = traceFunction(fetchEventsInRange);
+module.exports = traceFunction(fetchEventsFromTimestampBackwards);

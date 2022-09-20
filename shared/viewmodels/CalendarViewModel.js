@@ -14,7 +14,9 @@ class CalendarViewModel extends ViewModel {
     assert(room);
     assert(basePath);
 
+    // The day being shown in the archive
     this._activeDate = activeDate;
+    // The month displayed in the calendar
     this._calendarDate = calendarDate;
     this._room = room;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
@@ -26,6 +28,14 @@ class CalendarViewModel extends ViewModel {
 
   get calendarDate() {
     return this._calendarDate;
+  }
+
+  setActiveDate(newActiveDateInput) {
+    const newActiveDate = new Date(newActiveDateInput);
+    this._activeDate = newActiveDate;
+    this._calendarDate = newActiveDate;
+    this.emitChange('activeDate');
+    this.emitChange('calendarDate');
   }
 
   archiveUrlForDate(date) {

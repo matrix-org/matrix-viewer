@@ -18,35 +18,46 @@ const {
 
   TilesCollection,
   FragmentIdComparer,
-  tileClassForEntry,
   EventEntry,
   encodeKey,
   encodeEventIdKey,
   Timeline,
+  ViewModel,
   RoomViewModel,
 } = require('hydrogen-view-sdk');
 
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-
-const ArchiveView = require('matrix-public-archive-shared/views/ArchiveView');
+const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
-
-const ArchiveViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveViewModel');
+const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
+const {
+  customTileClassForEntry,
+} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
+const toTimestamp = window.matrixPublicArchiveContext.toTimestamp;
+assert(toTimestamp);
 const roomData = window.matrixPublicArchiveContext.roomData;
 assert(roomData);
 const events = window.matrixPublicArchiveContext.events;
 assert(events);
 const stateEventMap = window.matrixPublicArchiveContext.stateEventMap;
 assert(stateEventMap);
+const shouldIndex = window.matrixPublicArchiveContext.shouldIndex;
+assert(shouldIndex !== undefined);
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
+
+let txnCount = 0;
+function getFakeEventId() {
+  txnCount++;
+  return `fake-event-id-${new Date().getTime()}--${txnCount}`;
+}
 
 function addSupportClasses() {
   const input = document.createElement('input');
@@ -101,14 +112,22 @@ function supressBlankAnchorsReloadingThePage() {
     handleEvent(e) {
       // For any `<a href="">` (anchor with a blank href), instead of reloading
       // the page just remove the hash.
-      if (
-        e.type === 'click' &&
-        e.target.tagName?.toLowerCase() === 'a' &&
-        e.target?.getAttribute('href') === ''
-      ) {
-        this.clearHash();
-        // Prevent the page navigation (reload)
-        e.preventDefault();
+      if (e.type === 'click') {
+        // Traverse up the DOM and see whether the click is a child of an anchor element
+        let target = e.target;
+        while (
+          target &&
+          // We use `nodeName` here because it's compatible with any Element (HTML or SVG)
+          target.nodeName !== 'A'
+        ) {
+          target = target.parentNode;
+        }
+
+        if (target?.tagName?.toLowerCase() === 'a' && target?.getAttribute('href') === '') {
+          this.clearHash();
+          // Prevent the page navigation (reload)
+          e.preventDefault();
+        }
       }
       // Also cleanup whenever the hash is emptied out (like when pressing escape in the lightbox)
       else if (e.type === 'hashchange' && document.location.hash === '') {
@@ -193,6 +212,39 @@ async function mountHydrogen() {
   const workingStateEventMap = {
     ...stateEventMap,
   };
+
+  // Add a summary item to the bottom of the timeline that explains if we found
+  // events on the day requested.
+  const hasEventsFromGivenDay = events[events.length - 1]?.origin_server_ts >= fromTimestamp;
+  let daySummaryKind;
+  if (events.length === 0) {
+    daySummaryKind = 'no-events-at-all';
+  } else if (hasEventsFromGivenDay) {
+    daySummaryKind = 'some-events-in-day';
+  } else if (!hasEventsFromGivenDay) {
+    daySummaryKind = 'no-events-in-day';
+  }
+  events.push({
+    event_id: getFakeEventId(),
+    type: 'org.matrix.archive.not_enough_events_from_day_summary',
+    room_id: roomData.id,
+    // Even though this isn't used for sort, just using the time where the event
+    // would logically be.
+    //
+    // -1 so we're not at 00:00:00 of the next day
+    origin_server_ts: toTimestamp - 1,
+    content: {
+      daySummaryKind: daySummaryKind,
+      // The timestamp from the URL that was originally visited
+      dayTimestamp: fromTimestamp,
+      // The end of the range to use as a jumping off point to the next activity
+      rangeEndTimestamp: toTimestamp,
+      // This is a bit cheating but I don't know how else to pass this kind of
+      // info to the Tile viewmodel
+      basePath: config.basePath,
+    },
+  });
+
   const eventEntries = events.map((event) => {
     if (event.type === 'm.room.member') {
       workingStateEventMap[event.state_key] = event;
@@ -221,7 +273,7 @@ async function mountHydrogen() {
   //console.log('timeline.entries', timeline.entries.length, timeline.entries);
 
   const tiles = new TilesCollection(timeline.entries, {
-    tileClassForEntry,
+    tileClassForEntry: customTileClassForEntry,
     platform,
     navigation,
     urlCreator: urlRouter,
@@ -264,34 +316,15 @@ async function mountHydrogen() {
     this.navigation.applyPath(path);
   };
 
+  roomViewModel.roomDirectoryUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
+
   Object.defineProperty(roomViewModel, 'timelineViewModel', {
     get() {
       return timelineViewModel;
     },
   });
-  const fromDate = new Date(fromTimestamp);
-  const dateString = fromDate.toISOString().split('T')[0];
-  Object.defineProperty(roomViewModel, 'composerViewModel', {
-    get() {
-      return {
-        kind: 'disabled',
-        description: [
-          `You're viewing an archive of events from ${dateString}. Use a `,
-          tag.a(
-            {
-              href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
-              rel: 'noopener',
-              target: '_blank',
-            },
-            ['Matrix client']
-          ),
-          ` to start chatting in this room.`,
-        ],
-      };
-    },
-  });
 
-  const archiveViewModel = new ArchiveViewModel({
+  const archiveRoomViewModel = new ArchiveRoomViewModel({
     // Hydrogen options
     navigation: navigation,
     urlCreator: urlRouter,
@@ -299,17 +332,69 @@ async function mountHydrogen() {
     // Our options
     roomViewModel,
     room,
-    fromDate,
+    fromDate: new Date(fromTimestamp),
     eventEntriesByEventId,
+    shouldIndex,
     basePath: config.basePath,
   });
 
-  const view = new ArchiveView(archiveViewModel);
+  // Create a custom disabled composer view that shows our archive message.
+  class DisabledArchiveComposerViewModel extends ViewModel {
+    constructor(options) {
+      super(options);
 
+      // Whenever the `archiveRoomViewModel.currentTopPositionEventEntry`
+      // changes, re-render the composer view with the updated date.
+      archiveRoomViewModel.on('change', (changedProps) => {
+        if (changedProps === 'currentTopPositionEventEntry') {
+          this.emitChange();
+        }
+      });
+    }
+
+    get kind() {
+      return 'disabled';
+    }
+
+    get description() {
+      return [
+        (/*vm*/) => {
+          const activeDate = new Date(
+            // If the date from our `archiveRoomViewModel` is available, use that
+            archiveRoomViewModel?.currentTopPositionEventEntry?.timestamp ||
+              // Otherwise, use our initial `fromTimestamp`
+              fromTimestamp
+          );
+          const dateString = activeDate.toISOString().split('T')[0];
+          return `You're viewing an archive of events from ${dateString}. Use a `;
+        },
+        tag.a(
+          {
+            href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
+            rel: 'noopener',
+            target: '_blank',
+          },
+          ['Matrix client']
+        ),
+        ` to start chatting in this room.`,
+      ];
+    }
+  }
+  const disabledArchiveComposerViewModel = new DisabledArchiveComposerViewModel({});
+  Object.defineProperty(roomViewModel, 'composerViewModel', {
+    get() {
+      return disabledArchiveComposerViewModel;
+    },
+  });
+
+  // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
+
+  // Render what we actually care about
+  const view = new ArchiveRoomView(archiveRoomViewModel);
   appElement.replaceChildren(view.mount());
 
   addSupportClasses();
-
   supressBlankAnchorsReloadingThePage();
 
   console.timeEnd('Completed mounting Hydrogen');

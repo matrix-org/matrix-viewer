@@ -13,7 +13,7 @@ body {
 }
 
 /* Based on .SessionView from Hydrogen */
-.ArchiveView {
+.ArchiveRoomView {
   /* this takes into account whether or not the url bar is hidden on mobile
   (have tested Firefox Android and Safari on iOS),
   see https://developers.google.com/web/updates/2016/12/url-bar-resizing */
@@ -29,10 +29,20 @@ body {
   min-width: 0;
 }
 
-/* No need to open the right-panel when it's always visible at desktop widths */
-.room-header-change-dates-button {
-  display: none;
+.RoomHeader_actionButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
   color: var(--icon-color--darker-20);
+}
+.RoomHeader_actionButton > * {
+  vertical-align: middle;
+  color: var(--icon-color--darker-20);
+}
+
+/* No need to open the right-panel when it's always visible at desktop widths */
+.RoomHeader_changeDatesButton {
+  display: none;
 }
 /* No need to close the right-panel when it's always visible at desktop widths */
 .RightPanelView_buttons .close {
@@ -41,35 +51,63 @@ body {
 
 @media screen and (max-width: 800px) {
   /* Only the middle needs to be visible mobile by default */
-  .ArchiveView {
+  .ArchiveRoomView {
     grid-template:
       'status' auto
       'middle' 1fr /
       1fr;
   }
   /* Which also means hiding the right-panel by default on mobile */
-  .ArchiveView:not(.right-shown) .RightPanelView {
+  .ArchiveRoomView:not(.right-shown) .RightPanelView {
     display: none;
   }
 
   /* When the user opens the right-panel, show it */
-  .ArchiveView.right-shown {
+  .ArchiveRoomView.right-shown {
     grid-template:
       'status' auto
       'right' 1fr /
       1fr;
   }
-  .ArchiveView.right-shown .middle {
+  .ArchiveRoomView.right-shown .middle {
     display: none;
   }
   /* And show the button to open the right-panel on mobile */
-  .room-header-change-dates-button {
+  .RoomHeader_changeDatesButton {
     display: block;
   }
   /* And show the button to close the right-panel on mobile */
   .RightPanelView_buttons .close {
     display: block;
   }
+}
+
+.RightPanelContentView {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.RightPanelContentView_footer {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 16px;
+  font-size: 12px;
+}
+
+.RightPanelContentView_footerLinkList > * + * {
+  margin-left: 1ch;
+}
+
+.RightPanelContentView_footerLink {
+  text-decoration: none;
+}
+
+.RightPanelContentView_footerLink:hover,
+.RightPanelContentView_footerLink:focus {
+  color: #0098d4;
+  text-decoration: underline;
 }
 
 .CalendarView {
@@ -194,6 +232,111 @@ body {
 
 .CalendarView_dayLink_disabled {
   opacity: 0.5;
+}
+
+/* Some custom timeline, tiles stuff */
+
+.NotEnoughEventsFromDaySummaryTileView {
+  margin-top: 40px;
+  padding: 20px 12px;
+
+  background: rgba(46, 48, 51, 0.1);
+  border-top: 1px solid rgba(46, 48, 51, 0.38);
+}
+
+.NotEnoughEventsFromDaySummaryTileView_summaryMessage {
+  margin-top: 0;
+  font-size: 1.17em;
+}
+
+.NotEnoughEventsFromDaySummaryTileView_nextActivityLink {
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.NotEnoughEventsFromDaySummaryTileView_nextActivityLink:hover,
+.NotEnoughEventsFromDaySummaryTileView_nextActivityLink:focus {
+  color: #0098d4;
+  text-decoration: underline;
+}
+
+.NotEnoughEventsFromDaySummaryTileView_nextActivityIcon {
+  margin-left: 1ch;
+  vertical-align: bottom;
+}
+
+/* Developer options modal */
+
+.DeveloperOptionsView {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.DeveloperOptionsView_backdrop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  background-color: rgba(46, 48, 51, 0.38);
+}
+
+.DeveloperOptionsView_modal {
+  z-index: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80%;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding: 24px;
+  padding-bottom: 100px;
+
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 2px 15px 30px 0 rgb(0 0 0 / 48%);
+}
+
+.DeveloperOptionsView_modalHeader {
+  display: flex;
+  justify-content: space-between;
+}
+
+.DeveloperOptionsView_modalDismissButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 16px;
+  padding-right: 16px;
+
+  background: none;
+  border: none;
+
+  cursor: pointer;
+  color: var(--icon-color);
+}
+
+.DeveloperOptionsView_settingsFlag {
+  display: flex;
+  align-items: flex-start;
+}
+
+.DeveloperOptionsView_labelText {
+  line-height: 1.5em;
+}
+
+.DeveloperOptionsView_microcopy {
+  font-size: 0.85em;
+  line-height: 1.5em;
+  color: #737d8c;
 }
 
 /* Error pages */
