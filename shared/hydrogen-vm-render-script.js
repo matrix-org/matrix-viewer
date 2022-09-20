@@ -214,15 +214,26 @@ async function mountHydrogen() {
   };
 
   // TODO: comment
-  const hasEventsFromGivenDay = events[events.length - 1].origin_server_ts >= fromTimestamp;
-  if (!hasEventsFromGivenDay) {
-    events.push({
-      event_id: getFakeEventId(),
-      type: 'org.matrix.archive.not_enough_events_from_day_summary',
-      room_id: roomData.id,
-      origin_server_ts: toTimestamp,
-    });
+  const hasEventsFromGivenDay = events[events.length - 1]?.origin_server_ts >= fromTimestamp;
+  let daySummaryKind;
+  if (events.length === 0) {
+    daySummaryKind = 'no-events-at-all';
+  } else if (hasEventsFromGivenDay) {
+    daySummaryKind = 'some-events-in-day';
+  } else if (!hasEventsFromGivenDay) {
+    daySummaryKind = 'no-events-in-day';
   }
+  console.log('toTimestamp', toTimestamp);
+  events.push({
+    event_id: getFakeEventId(),
+    type: 'org.matrix.archive.not_enough_events_from_day_summary',
+    room_id: roomData.id,
+    // -1 so we're not at 00:00:00 of the next day
+    origin_server_ts: toTimestamp - 1,
+    content: {
+      kind: daySummaryKind,
+    },
+  });
 
   const eventEntries = events.map((event) => {
     if (event.type === 'm.room.member') {
