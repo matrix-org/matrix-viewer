@@ -319,9 +319,9 @@ async function mountHydrogen() {
       return [
         (/*vm*/) => {
           const activeDate = new Date(
-            // If the archiveRoomViewModel is available use that date
+            // If the date from our `archiveRoomViewModel` is available, use that
             archiveRoomViewModel?.currentTopPositionEventEntry?.timestamp ||
-              // Otherwise, use our initial from timestamp
+              // Otherwise, use our initial `fromTimestamp`
               fromTimestamp
           );
           const dateString = activeDate.toISOString().split('T')[0];
