@@ -2,13 +2,10 @@
 
 const { ViewModel } = require('hydrogen-view-sdk');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-
 class DeveloperOptionsViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const { debugActiveDateIntersectionObserver = false } = options;
-    //assert(todo);
 
     this._debugActiveDateIntersectionObserver = debugActiveDateIntersectionObserver;
   }

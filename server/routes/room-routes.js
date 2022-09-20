@@ -138,8 +138,10 @@ router.get(
       throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
     }
 
-    const ts = req.query.ts;
+    const ts = parseInt(req.query.ts, 10);
+    assert(!Number.isNaN(ts), '?ts query parameter must be a number');
     const dir = req.query.dir;
+    assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
 
     // Find the closest day to today with messages
     const { originServerTs } = await timestampToEvent({
