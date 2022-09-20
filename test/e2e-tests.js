@@ -123,6 +123,9 @@ describe('matrix-public-archive', () => {
       // messages in (we space messages out by a minute so the timestamp visibly
       // changes in the UI).
       numMessagesSent = 0;
+
+      // Reset any custom modifications made for a particular test
+      config.reset();
     });
 
     // Sends a message and makes sure that a timestamp was provided
@@ -531,13 +534,94 @@ describe('matrix-public-archive', () => {
         );
       });
 
-      it(`will redirect to hour pagination when there are too many messages`);
+      it('shows no events summary when no messages at or before the given day', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
 
-      it(`will render a room with only a day of messages`);
+        // We purposely send no events in the room
 
-      it(
-        `will render a room with a sparse amount of messages (a few per day) with no contamination between days`
-      );
+        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+        const dom = parseHTML(archivePageHtml);
+
+        // Make sure the summary exists on the page
+        assert(
+          dom.document.querySelector(
+            `[data-testid="not-enough-events-summary-kind-no-events-at-all"]`
+          )
+        );
+      });
+
+      it(`will redirect to hour pagination when there are too many messages on the same day`, async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
+        // Set this low so we can easily create more than the limit
+        config.set('archiveMessageLimit', 3);
+
+        // Create more messages than the limit
+        await createMessagesInRoom({
+          client,
+          roomId: roomId,
+          // This is larger than the `archiveMessageLimit` we set
+          numMessages: 5,
+          prefix: 'events in room',
+          timestamp: archiveDate.getTime(),
+        });
+
+        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+        assert.match(archivePageHtml, /TODO: Redirect user to smaller hour range/);
+      });
+
+      it(`will not redirect to hour pagination when there are too many messages from surrounding days`, async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
+        // Set this low so we can easily create more than the limit
+        config.set('archiveMessageLimit', 3);
+
+        // Create more messages than the limit on a previous day
+        const previousArchiveDate = new Date(Date.UTC(2022, 0, 2));
+        assert(
+          previousArchiveDate < archiveDate,
+          `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
+        );
+        const surroundEventIds = await createMessagesInRoom({
+          client,
+          roomId: roomId,
+          // This is larger than the `archiveMessageLimit` we set
+          numMessages: 2,
+          prefix: 'events in room',
+          timestamp: previousArchiveDate.getTime(),
+        });
+
+        // Create more messages than the limit
+        const eventIdsOnDay = await createMessagesInRoom({
+          client,
+          roomId: roomId,
+          // This is larger than the `archiveMessageLimit` we set
+          numMessages: 2,
+          prefix: 'events in room',
+          timestamp: archiveDate.getTime(),
+        });
+
+        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+
+        const dom = parseHTML(archivePageHtml);
+
+        // Make sure the messages are displayed
+        const expectedEventIdsToBeDisplayed = [].concat(surroundEventIds).concat(eventIdsOnDay);
+        assert.deepStrictEqual(
+          expectedEventIdsToBeDisplayed.map((eventId) => {
+            return dom.document
+              .querySelector(`[data-event-id="${eventId}"]`)
+              ?.getAttribute('data-event-id');
+          }),
+          expectedEventIdsToBeDisplayed
+        );
+      });
     });
 
     describe('Room directory', () => {

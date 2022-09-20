@@ -35,13 +35,32 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
     'We can only get 1000 messages at a time from Synapse. If you need more messages, we will have to implement pagination'
   );
 
-  const { eventId: eventIdForTimestamp } = await timestampToEvent({
-    accessToken,
-    roomId,
-    ts,
-    direction: 'b',
-  });
-  assert(eventIdForTimestamp);
+  let eventIdForTimestamp;
+  try {
+    const { eventId } = await timestampToEvent({
+      accessToken,
+      roomId,
+      ts,
+      direction: 'b',
+    });
+    eventIdForTimestamp = eventId;
+  } catch (err) {
+    const allowedErrorCodes = [
+      // Allow `404: Unable to find event xxx in direction x`
+      // so we can just display an empty placeholder with no events.
+      404,
+    ];
+    if (!allowedErrorCodes.includes(err?.response?.status)) {
+      throw err;
+    }
+  }
+
+  if (!eventIdForTimestamp) {
+    return {
+      stateEventMap: {},
+      events: [],
+    };
+  }
 
   // We only use this endpoint to get a pagination token we can use with
   // `/messages`.

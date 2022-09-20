@@ -23,13 +23,6 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
-const archiveMessageLimit = config.get('archiveMessageLimit');
-assert(archiveMessageLimit);
-// Synapse has a max `/messages` limit of 1000
-assert(
-  archiveMessageLimit <= 999,
-  'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
-);
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
@@ -173,6 +166,14 @@ router.get(
       throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
     }
 
+    const archiveMessageLimit = config.get('archiveMessageLimit');
+    assert(archiveMessageLimit);
+    // Synapse has a max `/messages` limit of 1000
+    assert(
+      archiveMessageLimit <= 999,
+      'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
+    );
+
     const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
       parseArchiveRangeFromReq(req);
 
@@ -258,7 +259,9 @@ router.get(
       // need next day check.
       events[0].origin_server_ts >= fromTimestamp
     ) {
-      throw new Error('TODO: Redirect user to smaller hour range');
+      res.send('TODO: Redirect user to smaller hour range');
+      res.status(204);
+      return;
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
