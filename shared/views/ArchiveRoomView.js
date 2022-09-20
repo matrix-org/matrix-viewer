@@ -142,8 +142,7 @@ class ArchiveRoomView extends TemplateView {
         },
         {
           root: scrollRoot,
-          // We want the message at the top of the viewport to be the one
-          // representing the current active day.
+          // Select the current active day from the top-edge of the scroll viewport.
           //
           // This is a trick that pushes the bottom margin up to the top of the
           // root so there is just a 0px region at the top to detect
