@@ -18,7 +18,6 @@ const {
 
   TilesCollection,
   FragmentIdComparer,
-  tileClassForEntry,
   EventEntry,
   encodeKey,
   encodeEventIdKey,
@@ -28,14 +27,17 @@ const {
 } = require('hydrogen-view-sdk');
 
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-
 const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
-
 const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
+const {
+  customTileClassForEntry,
+} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
+const toTimestamp = window.matrixPublicArchiveContext.toTimestamp;
+assert(toTimestamp);
 const roomData = window.matrixPublicArchiveContext.roomData;
 assert(roomData);
 const events = window.matrixPublicArchiveContext.events;
@@ -50,6 +52,12 @@ assert(config.matrixServerUrl);
 assert(config.basePath);
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
+
+let txnCount = 0;
+function getFakeEventId() {
+  txnCount++;
+  return `fake-event-id-${new Date().getTime()}--${txnCount}`;
+}
 
 function addSupportClasses() {
   const input = document.createElement('input');
@@ -204,6 +212,18 @@ async function mountHydrogen() {
   const workingStateEventMap = {
     ...stateEventMap,
   };
+
+  // TODO: comment
+  const hasEventsFromGivenDay = events[events.length - 1].origin_server_ts >= fromTimestamp;
+  if (!hasEventsFromGivenDay) {
+    events.push({
+      event_id: getFakeEventId(),
+      type: 'org.matrix.archive.not_enough_events_from_day_summary',
+      room_id: roomData.id,
+      origin_server_ts: toTimestamp,
+    });
+  }
+
   const eventEntries = events.map((event) => {
     if (event.type === 'm.room.member') {
       workingStateEventMap[event.state_key] = event;
@@ -232,7 +252,7 @@ async function mountHydrogen() {
   //console.log('timeline.entries', timeline.entries.length, timeline.entries);
 
   const tiles = new TilesCollection(timeline.entries, {
-    tileClassForEntry,
+    tileClassForEntry: customTileClassForEntry,
     platform,
     navigation,
     urlCreator: urlRouter,

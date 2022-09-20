@@ -220,8 +220,10 @@ router.get(
       // day in the surroundings.
       events.length >= archiveMessageLimit &&
       // Since we're only fetching previous days for the surroundings, we only
-      // need to look at the oldest event in the chronological list. In the future
-      // when we also fetch events from days after, we will need next day check.
+      // need to look at the oldest event in the chronological list.
+      //
+      // XXX: In the future when we also fetch events from days after, we will
+      // need next day check.
       events[0].origin_server_ts >= fromTimestamp
     ) {
       throw new Error('TODO: Redirect user to smaller hour range');
@@ -235,6 +237,7 @@ router.get(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {
         fromTimestamp,
+        toTimestamp,
         roomData,
         events,
         stateEventMap,

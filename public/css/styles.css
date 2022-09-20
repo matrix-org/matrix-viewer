@@ -234,6 +234,13 @@ body {
   opacity: 0.5;
 }
 
+/* Some custom timeline, tiles stuff */
+
+.NotEnoughEventsFromDaySummaryTileView {
+  height: 100%;
+  background: #f00;
+}
+
 /* Developer options modal */
 
 .DeveloperOptionsView {

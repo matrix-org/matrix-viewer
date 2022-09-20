@@ -6,8 +6,11 @@ const {
   RoomView,
   RightPanelView,
   LightboxView,
-  viewClassForTile,
 } = require('hydrogen-view-sdk');
+
+const {
+  customViewClassForTile,
+} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 
 const DeveloperOptionsView = require('matrix-public-archive-shared/views/DeveloperOptionsView');
 
@@ -109,7 +112,7 @@ class ArchiveRoomView extends TemplateView {
           }
         ),
         t.view(
-          new RoomView(vm.roomViewModel, viewClassForTile, {
+          new RoomView(vm.roomViewModel, customViewClassForTile, {
             RoomHeaderView,
           })
         ),
