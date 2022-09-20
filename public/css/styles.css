@@ -237,18 +237,15 @@ body {
 /* Some custom timeline, tiles stuff */
 
 .NotEnoughEventsFromDaySummaryTileView {
-  /* 4px to give some margin for the IntersectionObserver some space to pick up on */
-  height: calc(100% + 4px);
-  margin-top: 12px;
-  padding-top: 4px;
-  padding-left: 12px;
-  padding-right: 12px;
+  margin-top: 40px;
+  padding: 20px 12px;
 
   background: rgba(46, 48, 51, 0.1);
   border-top: 1px solid rgba(46, 48, 51, 0.38);
 }
 
 .NotEnoughEventsFromDaySummaryTileView_summaryMessage {
+  margin-top: 0;
   font-size: 1.17em;
 }
 

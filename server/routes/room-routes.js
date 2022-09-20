@@ -129,6 +129,36 @@ router.get(
   })
 );
 
+router.get(
+  '/jump',
+  asyncHandler(async function (req, res) {
+    const roomIdOrAlias = req.params.roomIdOrAlias;
+    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
+    if (!isValidAlias) {
+      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
+    }
+
+    const ts = req.query.ts;
+    const dir = req.query.dir;
+
+    // Find the closest day to today with messages
+    const { originServerTs } = await timestampToEvent({
+      accessToken: matrixAccessToken,
+      roomId: roomIdOrAlias,
+      ts: ts,
+      direction: dir,
+    });
+    if (!originServerTs) {
+      throw new StatusError(404, 'Unable to find day with history');
+    }
+
+    // Redirect to a day with messages
+    res.redirect(
+      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs))
+    );
+  })
+);
+
 // Based off of the Gitter archive routes,
 // https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
 router.get(

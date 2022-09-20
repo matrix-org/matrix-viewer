@@ -58,6 +58,18 @@ class URLCreator {
 
     return `${urlJoin(this._basePath, `${roomId}/date/${urlDate}`)}${qsToUrlPiece(qs)}`;
   }
+
+  archiveJumpUrlForRoom(roomId, { ts, dir }) {
+    assert(roomId);
+    assert(ts);
+    assert(dir);
+
+    let qs = new URLSearchParams();
+    qs.append('ts', ts);
+    qs.append('dir', dir);
+
+    return `${urlJoin(this._basePath, `${roomId}/jump`)}${qsToUrlPiece(qs)}`;
+  }
 }
 
 module.exports = URLCreator;

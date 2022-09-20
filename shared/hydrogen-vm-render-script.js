@@ -213,7 +213,8 @@ async function mountHydrogen() {
     ...stateEventMap,
   };
 
-  // TODO: comment
+  // Add a summary item to the bottom of the timeline that explains if we found
+  // events on the day requested.
   const hasEventsFromGivenDay = events[events.length - 1]?.origin_server_ts >= fromTimestamp;
   let daySummaryKind;
   if (events.length === 0) {
@@ -223,15 +224,24 @@ async function mountHydrogen() {
   } else if (!hasEventsFromGivenDay) {
     daySummaryKind = 'no-events-in-day';
   }
-  console.log('toTimestamp', toTimestamp);
   events.push({
     event_id: getFakeEventId(),
     type: 'org.matrix.archive.not_enough_events_from_day_summary',
     room_id: roomData.id,
+    // Even though this isn't used for sort, just using the time where the event
+    // would logically be.
+    //
     // -1 so we're not at 00:00:00 of the next day
     origin_server_ts: toTimestamp - 1,
     content: {
-      kind: daySummaryKind,
+      daySummaryKind: daySummaryKind,
+      // The timestamp from the URL that was originally visited
+      dayTimestamp: fromTimestamp,
+      // The end of the range to use as a jumping off point to the next activity
+      rangeEndTimestamp: toTimestamp,
+      // This is a bit cheating but I don't know how else to pass this kind of
+      // info to the Tile viewmodel
+      basePath: config.basePath,
     },
   });
 

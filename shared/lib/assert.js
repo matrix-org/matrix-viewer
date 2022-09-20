@@ -17,7 +17,7 @@ class AssertionError extends Error {
 function assert(value, message) {
   if (!value) {
     const error = new AssertionError(message || `expected ${value} to be truthy`);
-    console.error(error);
+    //console.error(error);
     throw error;
   }
 }
