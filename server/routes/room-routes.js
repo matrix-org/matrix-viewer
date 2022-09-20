@@ -180,20 +180,18 @@ router.get(
     const [roomData, { events, stateEventMap }] = await Promise.all([
       fetchRoomData(matrixAccessToken, roomIdOrAlias),
       // We over-fetch messages outside of the range of the given day so that we
-      // can display messages from surrounding days (currently from only days
+      // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
       fetchEventsFromTimestampBackwards({
         accessToken: matrixAccessToken,
         roomId: roomIdOrAlias,
         ts: toTimestamp,
-        // We fetch one more than the limit so we can tell if all the messages
-        // exactly fit within the given day message limit or if there are too
-        // many.
-        //
-        // We're trying to avoid the type of situation where for example GitHub
-        // takes up space and says "Load more..." in the middle of a comment
-        // thread but clicking it ends up only loading one event (it could have
-        // just loaded the one more event in the first place 😫).
+        // We fetch one more than the `archiveMessageLimit` so that we can see
+        // there are too many messages from the given day. If we have over the
+        // `archiveMessageLimit` number of messages fetching from the given day,
+        // it's acceptable to have them be from surrounding days. But if all 500
+        // messages (for example) are from the same day, let's redirect to a
+        // smaller hour range to display.
         limit: archiveMessageLimit + 1,
       }),
     ]);
@@ -213,20 +211,17 @@ router.get(
     // We only allow search engines to index `world_readable` rooms
     const shouldIndex = roomData?.historyVisibility === `world_readable`;
 
-    // We over-fetch messages outside of the range of the given day so that we
-    // can display messages from surrounding days (currently from only days
-    // before) so that the quiet rooms don't feel as desolate and broken.
-    //
     // If we have over the `archiveMessageLimit` number of messages fetching
     // from the given day, it's acceptable to have them be from surrounding
     // days. But if all 500 messages (for example) are from the same day, let's
     // redirect to a smaller hour range to display.
     if (
-      // If there are too many messages, check that the overflow event is from a
-      // previous day. The event is "overflow" because the limit is 500 but we
-      // fetched 501 messages.
+      // If there are too many messages, check that the event is from a previous
+      // day in the surroundings.
       events.length >= archiveMessageLimit &&
-      // Look at the oldest event in the chronological list
+      // Since we're only fetching previous days for the surroundings, we only
+      // need to look at the oldest event in the chronological list. In the future
+      // when we also fetch events from days after, we will need next day check.
       events[0].origin_server_ts >= fromTimestamp
     ) {
       throw new Error('TODO: Redirect user to smaller hour range');
