@@ -48,7 +48,7 @@ class RoomCardView extends TemplateView {
             t.view(new AvatarView(avatarViewModel, 24)),
             t.if(
               (vm) => vm.name,
-              (t, vm) =>
+              (t /*, vm*/) =>
                 t.h4(
                   {
                     className: 'RoomCardView_headerTitle',

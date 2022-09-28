@@ -28,8 +28,8 @@ class NotEnoughEventsFromDaySummaryTileView extends TemplateView {
       },
       [
         t.if(
-          (vm) => !!daySummaryMessage,
-          (t, vm) =>
+          (/*vm*/) => !!daySummaryMessage,
+          (t /*, vm*/) =>
             t.p(
               {
                 className: 'NotEnoughEventsFromDaySummaryTileView_summaryMessage',
