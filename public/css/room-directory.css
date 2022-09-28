@@ -7,7 +7,23 @@
   padding-bottom: 80px;
   padding-right: 10px;
 
-  background-color: #fafafa;
+  background: url('../img/matrix-lines-hero-sprite.svg'),
+    linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: cover, 400% 400%;
+  animation: Gradient 10s ease infinite;
+  color: #ffffff;
+}
+
+@keyframes Gradient {
+  0% {
+    background-position: 100% 50%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%, 100% 50%;
+  }
+  100% {
+    background-position: 100% 50%, 0% 50%;
+  }
 }
 
 .RoomDirectoryView_headerForm {
@@ -21,7 +37,7 @@
   width: 100%;
   max-width: 148px;
 
-  color: #000000;
+  color: #ffffff;
 }
 
 .RoomDirectoryView_subHeader {
@@ -43,7 +59,7 @@
   top: 50%;
   transform: translateY(-50%);
   width: 14px;
-  color: #737d8c;
+  color: rgba(255, 255, 255, 0.75);
   margin-left: 9px;
   margin-right: 9px;
 }
@@ -55,11 +71,16 @@
   padding-left: 32px;
   padding-right: 8px;
 
-  background: rgba(141, 151, 165, 0.15);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   border: none;
 
   font-size: 14px;
+  color: #ffffff;
+}
+
+.RoomDirectoryView_searchInput::placeholder {
+  color: #eeeeee;
 }
 
 .RoomDirectoryView_homeserverSelectSection {
@@ -99,23 +120,25 @@
 
 .RoomDirectoryView_paginationButton {
   display: inline-block;
-  padding: 8px 32px;
-  background-color: #17191c;
-  border-radius: 9999px;
-  color: #ffffff;
+  padding: 16px 24px;
+  background-color: transparent;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  color: #2774c2;
   line-height: 24px;
   text-decoration: none;
 }
 
 @media (min-width: 750px) {
   .RoomDirectoryView_paginationButton {
-    padding: 4px 16px;
+    padding: 12px 18px;
   }
 }
 
 .RoomDirectoryView_paginationButton:not([href]) {
-  background-color: rgba(23, 25, 28, 0.7);
-  color: #bbbbbb;
+  background-color: transparent;
+  border: 1px solid #dee2e6;
+  color: #abb5be;
 }
 
 .RoomDirectoryView_roomList {
@@ -152,7 +175,7 @@
   padding: 20px;
 
   list-style: none;
-  background-color: #f4f4f4;
+  border: 1px solid rgba(54, 139, 214, 30%);
   border-radius: 8px;
 }
 
@@ -239,24 +262,26 @@
 
 .RoomCardView_viewButton {
   display: inline-block;
-  padding: 8px 32px;
+  padding: 4px 16px;
 
-  background-color: #17191c;
+  background-color: transparent;
   /* Always make a pill shape */
   border-radius: 9999px;
+  border: 1px solid #2774c2;
 
-  color: #ffffff;
+  color: #2774c2;
   line-height: 24px;
   text-decoration: none;
 }
 
-@media (min-width: 750px) {
+@media (max-width: 750px) {
   .RoomCardView_viewButton {
-    padding: 4px 16px;
+    padding: 8px 32px;
   }
 }
 
 .RoomCardView_viewButtonWrapperLink:hover > .RoomCardView_viewButton,
 .RoomCardView_viewButtonWrapperLink:focus > .RoomCardView_viewButton {
-  background-color: #0098d4;
+  background-color: #2774c2;
+  color: #ffffff;
 }
