@@ -19,10 +19,14 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 const CaptureSpanProcessor = require('./capture-span-processor');
 
 const config = require('../lib/config');
+const basePath = config.get('basePath');
+assert(basePath);
 const jaegerTracesEndpoint = config.get('jaegerTracesEndpoint');
 
 const packageInfo = require('../../package.json');
 assert(packageInfo.name);
+
+const basePathUrl = new URL(basePath);
 
 // (Diagnostics) For troubleshooting, set the log level to DiagLogLevel.DEBUG.
 //
@@ -30,7 +34,7 @@ diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const provider = new BasicTracerProvider({
   resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: packageInfo.name,
+    [SemanticResourceAttributes.SERVICE_NAME]: `${packageInfo.name} - ${basePathUrl.host}`,
   }),
 });
 // Export spans to console (useful for debugging).
