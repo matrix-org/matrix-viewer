@@ -70,7 +70,7 @@ class RoomCardView extends TemplateView {
           },
           [aliasOrRoomId]
         ),
-        t.p({ className: 'RoomCardView_topic' }, [vm.topic || '']),
+        t.p({ className: 'RoomCardView_topic', title: vm.topic || null }, [vm.topic || '']),
         t.div({ className: 'RoomCardView_footer' }, [
           t.div({ className: 'RoomCardView_footerInner' }, [
             t.div({}, [memberDisplay]),
