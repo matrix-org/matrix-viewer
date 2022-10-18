@@ -149,7 +149,7 @@
 .RoomDirectoryView_paginationButtonCombo
   > .RoomDirectoryView_paginationButton
   + .RoomDirectoryView_paginationButton {
-  border-left: 1px solid #fff;
+  border-left: 0;
 }
 
 .RoomDirectoryView_paginationButton {
@@ -161,6 +161,13 @@
   color: #2774c2;
   line-height: 24px;
   text-decoration: none;
+}
+
+.RoomDirectoryView_paginationButton:hover,
+.RoomDirectoryView_paginationButton:focus {
+  background-color: #2774c2;
+  color: #ffffff;
+  outline: none;
 }
 
 @media (min-width: 750px) {
