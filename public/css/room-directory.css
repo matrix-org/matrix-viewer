@@ -10,8 +10,15 @@
   background: url('../img/matrix-lines-hero-sprite.svg'),
     linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
   background-size: cover, 400% 400%;
+  background-position: 100% 50%, 0% 50%;
   animation: Gradient 10s ease infinite;
   color: #ffffff;
+}
+
+@media (prefers-reduced-motion) {
+  .RoomDirectoryView_header {
+    animation: none;
+  }
 }
 
 @keyframes Gradient {
