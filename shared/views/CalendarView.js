@@ -12,13 +12,18 @@ function sameDay(date1, date2) {
   );
 }
 
-// Month in JavaScript is 0-indexed (January is 0, February is 1, etc),
-// but by using 0 as the day it will give us the last day of the prior
-// month.
+// Get the number of days in the given month where the `inputDate` lies.
 //
 // via https://stackoverflow.com/a/1184359/796832
-function numDaysInMonthForDate(date) {
-  return new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 0).getUTCDate();
+function numDaysInMonthForDate(inputDate) {
+  // Month in JavaScript is 0-indexed (January is 0, February is 1, etc),
+  // but by using 0 as the day it will give us the last day of the prior
+  const lastDayOfTheMonthDate = new Date(
+    Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth() + 1, 0)
+  );
+  const lastDayNumberOfTheMonth = lastDayOfTheMonthDate.getUTCDate();
+  // The last day number in the month is a proxy for how many days there are in that month
+  return lastDayNumberOfTheMonth;
 }
 
 // Map from day of week to the localized name of the day
@@ -147,9 +152,10 @@ class CalendarView extends TemplateView {
               }),
               (() => {
                 const todayTs = Date.now();
+                const numberOfDaysInMonth = numDaysInMonthForDate(calendarDate);
 
                 let dayNodes = [];
-                for (let i = 0; i < numDaysInMonthForDate(calendarDate); i++) {
+                for (let i = 0; i < numberOfDaysInMonth; i++) {
                   const dayNumberDate = new Date(calendarDate);
                   // Date is a 1-based number
                   dayNumberDate.setUTCDate(i + 1);
