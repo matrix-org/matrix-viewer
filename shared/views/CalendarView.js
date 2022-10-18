@@ -17,8 +17,13 @@ function sameDay(date1, date2) {
 // month.
 //
 // via https://stackoverflow.com/a/1184359/796832
-function numDaysInMonthForDate(date) {
-  return new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 0).getUTCDate();
+function numDaysInMonthForDate(inputDate) {
+  const lastDayOfTheMonthDate = new Date(
+    Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth() + 1, 0)
+  );
+  const lastDayOfTheMonth = lastDayOfTheMonthDate.getUTCDate();
+  // The last day in the month is a proxy for how many days there are in that month
+  return lastDayOfTheMonth;
 }
 
 // Map from day of week to the localized name of the day
@@ -147,9 +152,10 @@ class CalendarView extends TemplateView {
               }),
               (() => {
                 const todayTs = Date.now();
+                const numberOfDaysInMonth = numDaysInMonthForDate(calendarDate);
 
                 let dayNodes = [];
-                for (let i = 0; i < numDaysInMonthForDate(calendarDate); i++) {
+                for (let i = 0; i < numberOfDaysInMonth; i++) {
                   const dayNumberDate = new Date(calendarDate);
                   // Date is a 1-based number
                   dayNumberDate.setUTCDate(i + 1);
