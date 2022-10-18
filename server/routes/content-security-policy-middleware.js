@@ -21,9 +21,10 @@ function contentSecurityPolicyMiddleware(req, res, next) {
     // a CSP nonce or hash is present. (via
     // https://web.dev/strict-csp/#step-4-add-fallbacks-to-support-safari-and-older-browsers)
     `script-src 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline';`,
-    `style-src 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline';`,
-    // Hydrogen uses a bunch of inline styles
-    `style-src-attr 'unsafe-inline';`,
+    // Hydrogen uses a bunch of inline styles and `style-src-attr` isn't well supported
+    // in Firefox to allow it specifically. In the future, when it has better support we
+    // should switch to a strict nonce based style directive.
+    `style-src 'self' 'unsafe-inline';`,
     // We only need to load fonts from ourself
     `font-src 'self';`,
     // We only need to be able to load images/media from ourself and the homeserver media repo
