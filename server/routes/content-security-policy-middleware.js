@@ -32,6 +32,10 @@ function contentSecurityPolicyMiddleware(req, res, next) {
     `media-src 'self' ${matrixServerUrl};`,
     // Only allow the room directory search form to submit to ourself
     `form-action 'self';`,
+    // We have no need ourself to embed in an iframe. And we shouldn't allow others to
+    // iframe embed which can lead to clickjacking.  We also have the
+    // `prevent-clickjacking-middleware` to cover this.
+    `frame-ancestors 'none';`,
   ];
 
   res.set('Content-Security-Policy', directives.join(' '));
