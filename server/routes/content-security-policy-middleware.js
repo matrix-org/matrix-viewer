@@ -14,7 +14,7 @@ function contentSecurityPolicyMiddleware(req, res, next) {
   const directives = [
     // Default to fully-restrictive and only allow what's needed below
     `default-src 'none';`,
-    // Only only <script> and <style> tags that have the nonce provided
+    // Only <script> and <style> tags that have the nonce provided
     //
     // To ensure compatibility with very old browser versions (4+ years), we add
     // 'unsafe-inline' as a fallback. All recent browsers will ignore 'unsafe-inline' if
