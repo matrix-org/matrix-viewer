@@ -6,6 +6,7 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
+const RethrownError = require('../lib/rethrown-error');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 
@@ -31,19 +32,31 @@ router.get(
     const paginationToken = req.query.page;
     const searchTerm = req.query.search;
 
-    const { rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
-      matrixAccessToken,
-      {
-        //server: TODO,
-        searchTerm,
-        paginationToken,
-        // It would be good to grab more rooms than we display in case we need
-        // to filter any out but then the pagination tokens with the homeserver
-        // will be out of sync. XXX: It would be better if we could just filter
-        // `/publicRooms` directly via the API (needs MSC).
-        limit: 9,
-      }
-    );
+    // It would be good to grab more rooms than we display in case we need
+    // to filter any out but then the pagination tokens with the homeserver
+    // will be out of sync. XXX: It would be better if we could just filter
+    // `/publicRooms` directly via the API (needs MSC).
+    const limit = 9;
+
+    let rooms;
+    let nextPaginationToken;
+    let prevPaginationToken;
+    try {
+      ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
+        matrixAccessToken,
+        {
+          //server: TODO,
+          searchTerm,
+          paginationToken,
+          limit,
+        }
+      ));
+    } catch (err) {
+      throw new RethrownError(
+        `Unable to fetch rooms from room directory (homeserver=${matrixServerUrl})\n    searchTerm=${searchTerm}, paginationToken=${paginationToken}, limit=${limit}`,
+        err
+      );
+    }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
