@@ -30,9 +30,8 @@ function contentSecurityPolicyMiddleware(req, res, next) {
     // We only need to be able to load images/media from ourself and the homeserver media repo
     `img-src 'self' ${matrixServerUrl};`,
     `media-src 'self' ${matrixServerUrl};`,
-    // It seems like we would also need the `form-action` directive but since we don't
-    // use any `action` on the room directory search form, it seems to work without
-    // needing to allow it here.
+    // Only allow the room directory search form to submit to ourself
+    `form-action 'self';`,
   ];
 
   res.set('Content-Security-Policy', directives.join(' '));
