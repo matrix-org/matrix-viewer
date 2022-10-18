@@ -66,6 +66,8 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
   assert(renderOptions);
   assert(renderOptions.vmRenderScriptFilePath);
   assert(renderOptions.vmRenderContext);
+  assert(renderOptions.pageOptions);
+  assert(renderOptions.pageOptions.cspNonce);
 
   const { dom, vmContext } = createDomAndSetupVmContext();
 
@@ -78,7 +80,7 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
   dom.document.body.insertAdjacentHTML(
     'beforeend',
     `
-      <script type="text/javascript">
+      <script type="text/javascript" nonce="${renderOptions.pageOptions.cspNonce}">
         window.matrixPublicArchiveContext = ${safeJson(serializedContext)}
       </script>
       `
