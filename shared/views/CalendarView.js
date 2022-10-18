@@ -18,20 +18,10 @@ function sameDay(date1, date2) {
 //
 // via https://stackoverflow.com/a/1184359/796832
 function numDaysInMonthForDate(inputDate) {
-  console.log('------------------------------------');
-  console.log('inputDate', inputDate.toUTCString(), new Date(inputDate).getTime());
   const lastDayOfTheMonthDate = new Date(
-    inputDate.getUTCFullYear(),
-    inputDate.getUTCMonth() + 1,
-    0
-  );
-  console.log(
-    'lastDayOfTheMonthDate',
-    lastDayOfTheMonthDate.toUTCString(),
-    new Date(lastDayOfTheMonthDate).getTime()
+    Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth() + 1, 0)
   );
   const lastDayOfTheMonth = lastDayOfTheMonthDate.getUTCDate();
-  console.log('lastDayOfTheMonth', lastDayOfTheMonth);
   // The last day in the month is a proxy for how many days there are in that month
   return lastDayOfTheMonth;
 }
