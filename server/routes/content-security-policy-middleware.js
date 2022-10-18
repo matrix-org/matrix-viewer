@@ -43,7 +43,7 @@ function contentSecurityPolicyMiddleware(req, res, next) {
   res.set('Content-Security-Policy', directives.join(' '));
 
   // Make this available for down-stream routes to use
-  res.locals.nonce = nonce;
+  res.locals.cspNonce = nonce;
 
   next();
 }

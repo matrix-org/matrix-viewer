@@ -48,7 +48,7 @@ async function timeoutMiddleware(req, res, next) {
       humanReadableSpans = [noTracingDataAvailableItem];
     }
 
-    const cspNonce = res.locals.nonce;
+    const cspNonce = res.locals.cspNonce;
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
