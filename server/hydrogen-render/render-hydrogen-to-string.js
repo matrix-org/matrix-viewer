@@ -23,7 +23,7 @@ async function renderHydrogenToString(renderOptions) {
   assert(renderOptions.vmRenderContext.config);
   assert(
     !renderOptions.vmRenderContext.config.matrixAccessToken,
-    'We should not be leaking the `matrixAccessToken` to the Hydrogen render function because this will reach the client!'
+    'We should not be leaking the `config.matrixAccessToken` to the Hydrogen render function because this will reach the client!'
   );
 
   try {
