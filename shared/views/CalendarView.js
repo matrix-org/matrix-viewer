@@ -21,9 +21,9 @@ function numDaysInMonthForDate(inputDate) {
   const lastDayOfTheMonthDate = new Date(
     Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth() + 1, 0)
   );
-  const lastDayOfTheMonth = lastDayOfTheMonthDate.getUTCDate();
-  // The last day in the month is a proxy for how many days there are in that month
-  return lastDayOfTheMonth;
+  const lastDayNumberOfTheMonth = lastDayOfTheMonthDate.getUTCDate();
+  // The last day number in the month is a proxy for how many days there are in that month
+  return lastDayNumberOfTheMonth;
 }
 
 // Map from day of week to the localized name of the day
