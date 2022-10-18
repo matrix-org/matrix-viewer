@@ -16,7 +16,9 @@ const vm = require('vm');
 const path = require('path');
 const { readFile } = require('fs').promises;
 const crypto = require('crypto');
+
 const { parseHTML } = require('linkedom');
+const safeJson = require('../lib/safe-json');
 
 // Setup the DOM context with any necessary shims/polyfills and ensure the VM
 // context global has everything that a normal document does so Hydrogen can
@@ -72,11 +74,12 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
     ...renderOptions.vmRenderContext,
   };
   // Serialize it for when we run this again client-side
+  const serializedContext = JSON.stringify(dom.window.matrixPublicArchiveContext);
   dom.document.body.insertAdjacentHTML(
     'beforeend',
     `
       <script type="text/javascript">
-        window.matrixPublicArchiveContext = ${JSON.stringify(dom.window.matrixPublicArchiveContext)}
+        window.matrixPublicArchiveContext = ${safeJson(serializedContext)}
       </script>
       `
   );
