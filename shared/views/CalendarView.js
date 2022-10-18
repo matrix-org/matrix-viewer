@@ -12,12 +12,12 @@ function sameDay(date1, date2) {
   );
 }
 
-// Month in JavaScript is 0-indexed (January is 0, February is 1, etc),
-// but by using 0 as the day it will give us the last day of the prior
-// month.
+// Get the number of days in the given month where the `inputDate` lies.
 //
 // via https://stackoverflow.com/a/1184359/796832
 function numDaysInMonthForDate(inputDate) {
+  // Month in JavaScript is 0-indexed (January is 0, February is 1, etc),
+  // but by using 0 as the day it will give us the last day of the prior
   const lastDayOfTheMonthDate = new Date(
     Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth() + 1, 0)
   );
