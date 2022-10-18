@@ -86,10 +86,21 @@
 
   background: rgba(255, 255, 255, 0.25);
   border-radius: 8px;
-  border: none;
+  border: 2px solid transparent;
+
+  transition: border-color 0.2s ease;
 
   font-size: 14px;
   color: #ffffff;
+}
+
+.RoomDirectoryView_searchInput:hover {
+  border: 2px solid rgba(213, 231, 246, 0.3);
+}
+
+.RoomDirectoryView_searchInput:focus {
+  border: 2px solid rgba(213, 231, 246, 0.5);
+  outline: none;
 }
 
 .RoomDirectoryView_searchInput::placeholder {
