@@ -48,13 +48,23 @@
 
 .RoomDirectoryView_matrixLogo {
   width: 100%;
-  max-width: 148px;
+  max-width: 170px;
+  padding: 9px;
+
+  border: 2px solid transparent;
+  border-radius: 8px;
 
   color: #ffffff;
 }
 
+.RoomDirectoryView_matrixLogo:focus {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(213, 231, 246, 0.5);
+  outline: none;
+}
+
 .RoomDirectoryView_subHeader {
-  margin-top: 18px;
+  margin-top: 9px;
   margin-bottom: 26px;
 
   font-weight: normal;
