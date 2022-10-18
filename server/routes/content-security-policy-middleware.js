@@ -36,6 +36,8 @@ function contentSecurityPolicyMiddleware(req, res, next) {
     // iframe embed which can lead to clickjacking.  We also have the
     // `prevent-clickjacking-middleware` to cover this.
     `frame-ancestors 'none';`,
+    // Extra restriction since we have no plans to change the `<base>`
+    `base-uri 'self'`,
   ];
 
   res.set('Content-Security-Policy', directives.join(' '));
