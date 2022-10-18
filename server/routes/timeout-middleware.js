@@ -48,6 +48,8 @@ async function timeoutMiddleware(req, res, next) {
       humanReadableSpans = [noTracingDataAvailableItem];
     }
 
+    const cspNonce = res.locals.nonce;
+
     const hydrogenStylesUrl = urlJoin(basePath, '/css/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
 
@@ -57,8 +59,8 @@ async function timeoutMiddleware(req, res, next) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Server timeout - Matrix Public Archive</title>
-        <link href="${hydrogenStylesUrl}" rel="stylesheet">
-        <link href="${stylesUrl}" rel="stylesheet">
+        <link href="${hydrogenStylesUrl}" rel="stylesheet" nonce="${cspNonce}">
+        <link href="${stylesUrl}" rel="stylesheet" nonce="${cspNonce}">
       </head>
       ${/* We add the .hydrogen class here just to get normal body styles */ ''}
       <body class="hydrogen">
@@ -75,9 +77,9 @@ async function timeoutMiddleware(req, res, next) {
           }</span></h2>`
         )}
 
-        <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
-          serializedSpans
-        )};</script>
+        <script type="text/javascript" nonce="${cspNonce}">
+          window.tracingSpansForRequest = ${safeJson(serializedSpans)};
+        </script>
       </body>
     </html>
     `;

@@ -57,9 +57,9 @@ async function renderHydrogenVmRenderScriptToPageHtml(
                 `<script type="text/javascript" src="${scriptUrl}" nonce="${pageOptions.cspNonce}"></script>`
             )
             .join('\n')}
-          <script type="text/javascript" nonce="${
-            pageOptions.cspNonce
-          }">window.tracingSpansForRequest = ${safeJson(serializedSpans)};</script>
+          <script type="text/javascript" nonce="${pageOptions.cspNonce}">
+            window.tracingSpansForRequest = ${safeJson(serializedSpans)};
+          </script>
         </body>
       </html>
       `;
