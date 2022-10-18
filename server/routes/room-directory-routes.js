@@ -32,6 +32,12 @@ router.get(
     const paginationToken = req.query.page;
     const searchTerm = req.query.search;
 
+    // It would be good to grab more rooms than we display in case we need
+    // to filter any out but then the pagination tokens with the homeserver
+    // will be out of sync. XXX: It would be better if we could just filter
+    // `/publicRooms` directly via the API (needs MSC).
+    const limit = 9;
+
     let rooms;
     let nextPaginationToken;
     let prevPaginationToken;
@@ -42,15 +48,14 @@ router.get(
           //server: TODO,
           searchTerm,
           paginationToken,
-          // It would be good to grab more rooms than we display in case we need
-          // to filter any out but then the pagination tokens with the homeserver
-          // will be out of sync. XXX: It would be better if we could just filter
-          // `/publicRooms` directly via the API (needs MSC).
-          limit: 9,
+          limit,
         }
       ));
     } catch (err) {
-      throw new RethrownError(`Unable to fetch rooms from room directory`, err);
+      throw new RethrownError(
+        `Unable to fetch rooms from room directory (homeserver=${matrixServerUrl})\n    searchTerm=${searchTerm}, paginationToken=${paginationToken}, limit=${limit}`,
+        err
+      );
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
