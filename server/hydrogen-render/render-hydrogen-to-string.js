@@ -18,6 +18,14 @@ async function renderHydrogenToString(renderOptions) {
   assert(renderOptions.vmRenderScriptFilePath);
   assert(renderOptions.vmRenderContext);
 
+  // We expect `config` but we should sanity check that we aren't leaking the access token
+  // to the client if someone naievely copied the whole `config` object to here.
+  assert(renderOptions.vmRenderContext.config);
+  assert(
+    !renderOptions.vmRenderContext.config.matrixAccessToken,
+    'We should not be leaking the `config.matrixAccessToken` to the Hydrogen render function because this will reach the client!'
+  );
+
   try {
     // In development, if you're running into a hard to track down error with
     // the render hydrogen stack and fighting against the multiple layers of
