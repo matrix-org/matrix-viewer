@@ -7,7 +7,30 @@
   padding-bottom: 80px;
   padding-right: 10px;
 
-  background-color: #fafafa;
+  background: url('../img/matrix-lines-hero-sprite.svg'),
+    linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: cover, 400% 400%;
+  background-position: 100% 50%, 0% 50%;
+  animation: Gradient 10s ease infinite;
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion) {
+  .RoomDirectoryView_header {
+    animation: none;
+  }
+}
+
+@keyframes Gradient {
+  0% {
+    background-position: 100% 50%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%, 100% 50%;
+  }
+  100% {
+    background-position: 100% 50%, 0% 50%;
+  }
 }
 
 .RoomDirectoryView_headerForm {
@@ -15,17 +38,33 @@
   flex-direction: column;
   align-items: center;
   padding-top: 80px;
+
+  /* Based on https://css-tricks.com/make-a-smooth-shadow-friend/ */
+  filter: drop-shadow(0 2.8px 2.2px rgba(0, 0, 0, 0.034))
+    drop-shadow(0 6.7px 5.3px rgba(0, 0, 0, 0.048)) drop-shadow(0 12.5px 10px rgba(0, 0, 0, 0.06))
+    drop-shadow(0 22.3px 17.9px rgba(0, 0, 0, 0.072))
+    drop-shadow(0 41.8px 33.4px rgba(0, 0, 0, 0.086)) drop-shadow(0 100px 80px rgba(0, 0, 0, 0.12));
 }
 
 .RoomDirectoryView_matrixLogo {
   width: 100%;
-  max-width: 148px;
+  max-width: 170px;
+  padding: 9px;
 
-  color: #000000;
+  border: 2px solid transparent;
+  border-radius: 8px;
+
+  color: #ffffff;
+}
+
+.RoomDirectoryView_matrixLogo:focus {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(213, 231, 246, 0.5);
+  outline: none;
 }
 
 .RoomDirectoryView_subHeader {
-  margin-top: 18px;
+  margin-top: 9px;
   margin-bottom: 26px;
 
   font-weight: normal;
@@ -43,7 +82,7 @@
   top: 50%;
   transform: translateY(-50%);
   width: 14px;
-  color: #737d8c;
+  color: rgba(255, 255, 255, 0.75);
   margin-left: 9px;
   margin-right: 9px;
 }
@@ -55,11 +94,27 @@
   padding-left: 32px;
   padding-right: 8px;
 
-  background: rgba(141, 151, 165, 0.15);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 8px;
-  border: none;
+  border: 2px solid transparent;
+
+  transition: border-color 0.2s ease;
 
   font-size: 14px;
+  color: #ffffff;
+}
+
+.RoomDirectoryView_searchInput:hover {
+  border: 2px solid rgba(213, 231, 246, 0.3);
+}
+
+.RoomDirectoryView_searchInput:focus {
+  border: 2px solid rgba(213, 231, 246, 0.5);
+  outline: none;
+}
+
+.RoomDirectoryView_searchInput::placeholder {
+  color: #eeeeee;
 }
 
 .RoomDirectoryView_homeserverSelectSection {
@@ -94,28 +149,37 @@
 .RoomDirectoryView_paginationButtonCombo
   > .RoomDirectoryView_paginationButton
   + .RoomDirectoryView_paginationButton {
-  border-left: 1px solid #fff;
+  border-left: 0;
 }
 
 .RoomDirectoryView_paginationButton {
   display: inline-block;
-  padding: 8px 32px;
-  background-color: #17191c;
-  border-radius: 9999px;
-  color: #ffffff;
+  padding: 16px 24px;
+  background-color: transparent;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  color: #2774c2;
   line-height: 24px;
   text-decoration: none;
 }
 
+.RoomDirectoryView_paginationButton:hover,
+.RoomDirectoryView_paginationButton:focus {
+  background-color: #2774c2;
+  color: #ffffff;
+  outline: none;
+}
+
 @media (min-width: 750px) {
   .RoomDirectoryView_paginationButton {
-    padding: 4px 16px;
+    padding: 12px 18px;
   }
 }
 
 .RoomDirectoryView_paginationButton:not([href]) {
-  background-color: rgba(23, 25, 28, 0.7);
-  color: #bbbbbb;
+  background-color: transparent;
+  border: 1px solid #dee2e6;
+  color: #abb5be;
 }
 
 .RoomDirectoryView_roomList {
@@ -152,7 +216,7 @@
   padding: 20px;
 
   list-style: none;
-  background-color: #f4f4f4;
+  border: 1px solid rgba(54, 139, 214, 30%);
   border-radius: 8px;
 }
 
@@ -239,24 +303,26 @@
 
 .RoomCardView_viewButton {
   display: inline-block;
-  padding: 8px 32px;
+  padding: 4px 16px;
 
-  background-color: #17191c;
+  background-color: transparent;
   /* Always make a pill shape */
   border-radius: 9999px;
+  border: 1px solid #2774c2;
 
-  color: #ffffff;
+  color: #2774c2;
   line-height: 24px;
   text-decoration: none;
 }
 
-@media (min-width: 750px) {
+@media (max-width: 750px) {
   .RoomCardView_viewButton {
-    padding: 4px 16px;
+    padding: 8px 32px;
   }
 }
 
 .RoomCardView_viewButtonWrapperLink:hover > .RoomCardView_viewButton,
 .RoomCardView_viewButtonWrapperLink:focus > .RoomCardView_viewButton {
-  background-color: #0098d4;
+  background-color: #2774c2;
+  color: #ffffff;
 }
