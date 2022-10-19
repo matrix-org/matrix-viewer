@@ -4,9 +4,10 @@ const { ViewModel, setupLightboxNavigation } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
+const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
-const DeveloperOptionsViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsViewModel');
+const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 
 class ArchiveRoomViewModel extends ViewModel {
@@ -24,6 +25,9 @@ class ArchiveRoomViewModel extends ViewModel {
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
+    const navigation = this.navigation;
+    const urlCreator = this.urlCreator;
+
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
       activeDate: fromDate,
@@ -33,16 +37,23 @@ class ArchiveRoomViewModel extends ViewModel {
       basePath,
     });
 
-    this._shouldShowDeveloperOptions = false;
-    this._developerOptionsViewModel = new DeveloperOptionsViewModel(
+    this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
       this.childOptions({
         /* any explicit options */
       })
     );
-    this._developerOptionsViewModel.loadValuesFromPersistence();
+    this._developerOptionsContentViewModel.loadValuesFromPersistence();
 
-    const navigation = this.navigation;
-    const urlCreator = this.urlCreator;
+    this._developerOptionsModalViewModel = new ModalViewModel(
+      this.childOptions({
+        title: 'Developer options',
+        contentViewModel: this._developerOptionsContentViewModel,
+        closeCallback: () => {
+          const path = this.navigation.path.until('room');
+          this.navigation.applyPath(path);
+        },
+      })
+    );
 
     this.roomViewModel = roomViewModel;
     // FIXME: Do we have to fake this?
@@ -125,17 +136,16 @@ class ArchiveRoomViewModel extends ViewModel {
     handleLightBoxNavigationChange(initialLightBoxEventId);
   }
 
-  get shouldShowDeveloperOptions() {
-    return this._shouldShowDeveloperOptions;
-  }
-
   setShouldShowDeveloperOptions(shouldShowDeveloperOptions) {
-    this._shouldShowDeveloperOptions = shouldShowDeveloperOptions;
-    this.emitChange('shouldShowDeveloperOptions');
+    this._developerOptionsModalViewModel.setOpen(shouldShowDeveloperOptions);
   }
 
-  get developerOptionsViewModel() {
-    return this._developerOptionsViewModel;
+  get developerOptionsContentViewModel() {
+    return this._developerOptionsContentViewModel;
+  }
+
+  get developerOptionsModalViewModel() {
+    return this._developerOptionsModalViewModel;
   }
 
   get eventEntriesByEventId() {
