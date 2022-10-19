@@ -119,11 +119,35 @@
 
 .RoomDirectoryView_homeserverSelectSection {
   display: flex;
+  align-items: center;
   margin-top: 16px;
 }
 
 .RoomDirectoryView_homeserverSelector {
   margin-left: 1ch;
+  padding: 2px 6px;
+  padding-right: 2px;
+
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+
+  transition: border-color 0.2s ease;
+
+  color: #ffffff;
+}
+
+.RoomDirectoryView_homeserverSelector:hover {
+  border: 2px solid rgba(213, 231, 246, 0.3);
+}
+
+.RoomDirectoryView_homeserverSelector:focus {
+  border: 2px solid rgba(213, 231, 246, 0.5);
+  outline: none;
+}
+
+.RoomDirectoryView_homeserverSelector > option {
+  color: initial;
 }
 
 .RoomDirectoryView_mainContent {
