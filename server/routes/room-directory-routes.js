@@ -80,6 +80,7 @@ router.get(
         title: `Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
         scripts: [jsBundleUrl],
+        cspNonce: res.locals.cspNonce,
       }
     );
 

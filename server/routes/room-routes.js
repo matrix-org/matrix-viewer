@@ -287,6 +287,7 @@ router.get(
         styles: [hydrogenStylesUrl, stylesUrl],
         scripts: [jsBundleUrl],
         shouldIndex,
+        cspNonce: res.locals.cspNonce,
       }
     );
 

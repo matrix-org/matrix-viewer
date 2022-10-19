@@ -15,8 +15,7 @@ const runInChildProcess = require('../child-process-runner/run-in-child-process'
 const RENDER_TIMEOUT = 5000;
 
 async function renderHydrogenToString(renderOptions) {
-  assert(renderOptions.vmRenderScriptFilePath);
-  assert(renderOptions.vmRenderContext);
+  assert(renderOptions);
 
   // We expect `config` but we should sanity check that we aren't leaking the access token
   // to the client if someone naievely copied the whole `config` object to here.

@@ -18,10 +18,12 @@ async function renderHydrogenVmRenderScriptToPageHtml(
   assert(pageOptions.title);
   assert(pageOptions.styles);
   assert(pageOptions.scripts);
+  assert(pageOptions.cspNonce);
 
   const hydrogenHtmlOutput = await renderHydrogenToString({
     vmRenderScriptFilePath,
     vmRenderContext,
+    pageOptions,
   });
 
   const serializableSpans = getSerializableSpans();
@@ -41,17 +43,23 @@ async function renderHydrogenVmRenderScriptToPageHtml(
           ${maybeNoIndexHtml}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
           ${pageOptions.styles
-            .map((styleUrl) => `<link href="${styleUrl}" rel="stylesheet">`)
+            .map(
+              (styleUrl) =>
+                `<link href="${styleUrl}" rel="stylesheet" nonce="${pageOptions.cspNonce}">`
+            )
             .join('\n')}
         </head>
         <body>
           ${hydrogenHtmlOutput}
           ${pageOptions.scripts
-            .map((scriptUrl) => `<script type="text/javascript" src="${scriptUrl}"></script>`)
+            .map(
+              (scriptUrl) =>
+                `<script type="text/javascript" src="${scriptUrl}" nonce="${pageOptions.cspNonce}"></script>`
+            )
             .join('\n')}
-          <script type="text/javascript">window.tracingSpansForRequest = ${safeJson(
-            serializedSpans
-          )};</script>
+          <script type="text/javascript" nonce="${pageOptions.cspNonce}">
+            window.tracingSpansForRequest = ${safeJson(serializedSpans)};
+          </script>
         </body>
       </html>
       `;
