@@ -281,7 +281,10 @@ body {
 
 .ModalView_modal {
   width: 100%;
-  max-width: 500px;
+  /* Only expand up to 500px, but on width-constrained devices, make sure there is a bit
+   * of gap between the modal and the edge. 
+   */
+  max-width: min(500px, 100% - 20px);
   max-height: 80%;
   padding: 0;
 
