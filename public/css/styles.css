@@ -265,19 +265,7 @@ body {
   vertical-align: bottom;
 }
 
-/* Developer options modal */
-
-.DeveloperOptionsView {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+/* Modal */
 
 .ModalView_modal {
   width: 100%;
@@ -327,16 +315,18 @@ body {
   color: var(--icon-color);
 }
 
-.DeveloperOptionsView_settingsFlag {
+/* Developer options modal */
+
+.DeveloperOptionsContentView_settingsFlag {
   display: flex;
   align-items: flex-start;
 }
 
-.DeveloperOptionsView_labelText {
+.DeveloperOptionsContentView_labelText {
   line-height: 1.5em;
 }
 
-.DeveloperOptionsView_microcopy {
+.DeveloperOptionsContentView_microcopy {
   font-size: 0.85em;
   line-height: 1.5em;
   color: #737d8c;

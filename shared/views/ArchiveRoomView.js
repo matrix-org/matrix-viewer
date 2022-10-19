@@ -123,10 +123,6 @@ class ArchiveRoomView extends TemplateView {
           (lightboxViewModel) => (lightboxViewModel ? new LightboxView(lightboxViewModel) : null)
         ),
         t.view(new ModalView(DeveloperOptionsContentView, vm.developerOptionsModalViewModel)),
-        // t.ifView(
-        //   (vm) => vm.shouldShowDeveloperOptions,
-        //   (vm) =>
-        // ),
       ]
     );
 

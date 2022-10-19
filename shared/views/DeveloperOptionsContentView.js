@@ -7,15 +7,15 @@ class DeveloperOptionsContentView extends TemplateView {
     return t.div({}, [
       t.section([
         t.h4(['Toggles']),
-        t.div({ className: 'DeveloperOptionsView_settingsFlag' }, [
+        t.div({ className: 'DeveloperOptionsContentView_settingsFlag' }, [
           t.label({ for: 'debugActiveDateIntersectionObserver' }, [
-            t.div({ className: 'DeveloperOptionsView_labelText' }, [
+            t.div({ className: 'DeveloperOptionsContentView_labelText' }, [
               'Show active date borders (debug ',
               t.code('IntersectionObserver'),
               ')',
             ]),
             t.div(
-              { className: 'DeveloperOptionsView_microcopy' },
+              { className: 'DeveloperOptionsContentView_microcopy' },
               'Show red border and yellow background trail around the event that is driving the active date as you scroll around.'
             ),
           ]),
