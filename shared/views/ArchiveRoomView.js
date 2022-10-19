@@ -12,7 +12,8 @@ const {
   customViewClassForTile,
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 
-const DeveloperOptionsView = require('matrix-public-archive-shared/views/DeveloperOptionsView');
+const DeveloperOptionsContentView = require('matrix-public-archive-shared/views/DeveloperOptionsContentView');
+const ModalView = require('matrix-public-archive-shared/views/ModalView');
 
 class RoomHeaderView extends TemplateView {
   render(t, vm) {
@@ -121,10 +122,11 @@ class ArchiveRoomView extends TemplateView {
           (vm) => vm.lightboxViewModel,
           (lightboxViewModel) => (lightboxViewModel ? new LightboxView(lightboxViewModel) : null)
         ),
-        t.ifView(
-          (vm) => vm.shouldShowDeveloperOptions,
-          (vm) => new DeveloperOptionsView(vm.developerOptionsViewModel)
-        ),
+        t.view(new ModalView(DeveloperOptionsContentView, vm.developerOptionsModalViewModel)),
+        // t.ifView(
+        //   (vm) => vm.shouldShowDeveloperOptions,
+        //   (vm) =>
+        // ),
       ]
     );
 

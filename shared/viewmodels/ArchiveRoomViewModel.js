@@ -4,9 +4,10 @@ const { ViewModel, setupLightboxNavigation } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
+const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
-const DeveloperOptionsViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsViewModel');
+const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 
 class ArchiveRoomViewModel extends ViewModel {
@@ -33,13 +34,18 @@ class ArchiveRoomViewModel extends ViewModel {
       basePath,
     });
 
-    this._shouldShowDeveloperOptions = false;
-    this._developerOptionsViewModel = new DeveloperOptionsViewModel(
+    this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
       this.childOptions({
         /* any explicit options */
       })
     );
-    this._developerOptionsViewModel.loadValuesFromPersistence();
+    this._developerOptionsContentViewModel.loadValuesFromPersistence();
+
+    this._developerOptionsModalViewModel = new ModalViewModel({
+      title: 'Developer options',
+      contentViewModel: this._developerOptionsContentViewModel,
+      closeUrl: this.urlCreator.urlUntilSegment('room'),
+    });
 
     const navigation = this.navigation;
     const urlCreator = this.urlCreator;
@@ -125,17 +131,16 @@ class ArchiveRoomViewModel extends ViewModel {
     handleLightBoxNavigationChange(initialLightBoxEventId);
   }
 
-  get shouldShowDeveloperOptions() {
-    return this._shouldShowDeveloperOptions;
-  }
-
   setShouldShowDeveloperOptions(shouldShowDeveloperOptions) {
-    this._shouldShowDeveloperOptions = shouldShowDeveloperOptions;
-    this.emitChange('shouldShowDeveloperOptions');
+    this._developerOptionsModalViewModel.setOpen(shouldShowDeveloperOptions);
   }
 
-  get developerOptionsViewModel() {
-    return this._developerOptionsViewModel;
+  get developerOptionsContentViewModel() {
+    return this._developerOptionsContentViewModel;
+  }
+
+  get developerOptionsModalViewModel() {
+    return this._developerOptionsModalViewModel;
   }
 
   get eventEntriesByEventId() {
