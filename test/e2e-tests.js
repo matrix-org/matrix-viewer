@@ -673,6 +673,8 @@ describe('matrix-public-archive', () => {
         // the same results as if we didn't make any search.
         assert.notDeepStrictEqual(roomsOnPageWithSearch.sort(), roomsOnPageWithoutSearch.sort());
       });
+
+      it('can show rooms from another server');
     });
 
     describe('access controls', () => {
