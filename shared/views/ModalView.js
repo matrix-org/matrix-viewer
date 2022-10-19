@@ -9,6 +9,7 @@ class ModalView extends TemplateView {
     assert(vm);
 
     super(vm);
+    this._vm = vm;
     this._ContentViewClass = ContentViewClass;
   }
 
@@ -19,6 +20,7 @@ class ModalView extends TemplateView {
           ModalView_modal: true,
         },
         onClick: (event) => this.onDialogClicked(event),
+        onClose: () => this.onNativeDialogClosed(),
       },
       [
         // We have a `modalInner` element so that it will be the target of clicks when
@@ -102,12 +104,17 @@ class ModalView extends TemplateView {
     }
   }
 
+  onNativeDialogClosed() {
+    this._vm.closeCallback();
+  }
+
   showModal() {
     this.dialogNode.showModal();
   }
 
   closeModal() {
     this.dialogNode.close();
+    this._vm.closeCallback();
   }
 }
 

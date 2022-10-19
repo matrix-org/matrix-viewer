@@ -25,6 +25,9 @@ class ArchiveRoomViewModel extends ViewModel {
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
+    const navigation = this.navigation;
+    const urlCreator = this.urlCreator;
+
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
       activeDate: fromDate,
@@ -41,14 +44,16 @@ class ArchiveRoomViewModel extends ViewModel {
     );
     this._developerOptionsContentViewModel.loadValuesFromPersistence();
 
-    this._developerOptionsModalViewModel = new ModalViewModel({
-      title: 'Developer options',
-      contentViewModel: this._developerOptionsContentViewModel,
-      closeUrl: this.urlCreator.urlUntilSegment('room'),
-    });
-
-    const navigation = this.navigation;
-    const urlCreator = this.urlCreator;
+    this._developerOptionsModalViewModel = new ModalViewModel(
+      this.childOptions({
+        title: 'Developer options',
+        contentViewModel: this._developerOptionsContentViewModel,
+        closeCallback: () => {
+          const path = this.navigation.path.until('room');
+          this.navigation.applyPath(path);
+        },
+      })
+    );
 
     this.roomViewModel = roomViewModel;
     // FIXME: Do we have to fake this?

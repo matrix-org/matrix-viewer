@@ -5,11 +5,12 @@ const { ViewModel } = require('hydrogen-view-sdk');
 class DeveloperOptionsViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { title, contentViewModel, open = false } = options;
+    const { title, contentViewModel, closeCallback, open = false } = options;
 
     this._open = open;
     this._title = title;
     this._contentViewModel = contentViewModel;
+    this._closeCallback = closeCallback;
   }
 
   get open() {
@@ -27,6 +28,10 @@ class DeveloperOptionsViewModel extends ViewModel {
 
   get contentViewModel() {
     return this._contentViewModel;
+  }
+
+  get closeCallback() {
+    return this._closeCallback;
   }
 }
 
