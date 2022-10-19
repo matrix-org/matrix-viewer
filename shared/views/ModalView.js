@@ -81,7 +81,6 @@ class ModalView extends TemplateView {
         // The dialog has to be in the DOM before we can call `showModal`, etc.
         // Assume this view will be mounted in the parent DOM straight away.
         requestAnimationFrame(() => {
-          console.log('side-effect dialog open', open);
           if (open) {
             this.showModal();
           } else {
