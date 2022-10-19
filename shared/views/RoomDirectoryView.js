@@ -89,10 +89,17 @@ class RoomDirectoryView extends TemplateView {
             ]),
             t.div({ className: 'RoomDirectoryView_homeserverSelectSection' }, [
               t.div({}, 'Show: Matrix rooms on'),
-              t.select(
-                { className: 'RoomDirectoryView_homeserverSelector', name: 'homeserver' },
-                availableHomeserverOptionElements
-              ),
+              t.select({ className: 'RoomDirectoryView_homeserverSelector', name: 'homeserver' }, [
+                ...availableHomeserverOptionElements,
+                t.optgroup({ label: 'Added servers' }, [
+                  t.option({}, 'beta.gitter.im'),
+                  t.option({}, 'foo.bar'),
+                ]),
+                t.optgroup({ label: 'Actions' }, [
+                  t.option({}, 'Add new server...'),
+                  t.option({ disabled: true }, 'Clear servers...'),
+                ]),
+              ]),
             ]),
           ]),
         ]),

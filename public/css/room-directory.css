@@ -146,7 +146,7 @@
   outline: none;
 }
 
-.RoomDirectoryView_homeserverSelector > option {
+.RoomDirectoryView_homeserverSelector > * {
   color: initial;
 }
 
