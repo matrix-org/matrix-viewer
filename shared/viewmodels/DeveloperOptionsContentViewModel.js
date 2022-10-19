@@ -33,10 +33,6 @@ class DeveloperOptionsViewModel extends ViewModel {
     );
     this.emitChange('debugActiveDateIntersectionObserver');
   }
-
-  get closeUrl() {
-    return this.urlCreator.urlUntilSegment('room');
-  }
 }
 
 module.exports = DeveloperOptionsViewModel;

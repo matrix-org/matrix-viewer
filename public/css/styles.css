@@ -265,52 +265,43 @@ body {
   vertical-align: bottom;
 }
 
-/* Developer options modal */
+/* Modal */
 
-.DeveloperOptionsView {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.DeveloperOptionsView_backdrop {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  background-color: rgba(46, 48, 51, 0.38);
-}
-
-.DeveloperOptionsView_modal {
-  z-index: 1;
-  overflow-y: auto;
+.ModalView_modal {
   width: 100%;
-  max-width: 500px;
+  /* Only expand up to 500px, but on width-constrained devices, make sure there is a bit
+   * of gap between the modal and the edge. 
+   */
+  max-width: min(500px, 100% - 20px);
   max-height: 80%;
-  margin-left: 10px;
-  margin-right: 10px;
-  padding: 24px;
-  padding-bottom: 100px;
+  padding: 0;
 
   background-color: #ffffff;
   border-radius: 8px;
+  border: 0;
   box-shadow: 2px 15px 30px 0 rgb(0 0 0 / 48%);
 }
 
-.DeveloperOptionsView_modalHeader {
+.ModalView_modalInner {
+  overflow-y: auto;
+  padding: 24px;
+  padding-bottom: 100px;
+}
+
+.ModalView_modal::backdrop {
+  background-color: rgba(46, 48, 51, 0.38);
+}
+
+.ModalView_modalHeader {
   display: flex;
   justify-content: space-between;
 }
 
-.DeveloperOptionsView_modalDismissButton {
+.ModalView_modalDismissForm {
+  display: inline-flex;
+}
+
+.ModalView_modalDismissButton {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -324,16 +315,18 @@ body {
   color: var(--icon-color);
 }
 
-.DeveloperOptionsView_settingsFlag {
+/* Developer options modal */
+
+.DeveloperOptionsContentView_settingsFlag {
   display: flex;
   align-items: flex-start;
 }
 
-.DeveloperOptionsView_labelText {
+.DeveloperOptionsContentView_labelText {
   line-height: 1.5em;
 }
 
-.DeveloperOptionsView_microcopy {
+.DeveloperOptionsContentView_microcopy {
   font-size: 0.85em;
   line-height: 1.5em;
   color: #737d8c;
