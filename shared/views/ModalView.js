@@ -35,7 +35,7 @@ class ModalView extends TemplateView {
           },
           [
             t.header({ className: 'ModalView_modalHeader' }, [
-              t.h3('Developer options'),
+              t.h3(vm.title),
               t.form({ method: 'dialog', className: 'ModalView_modalDismissForm' }, [
                 t.button(
                   {

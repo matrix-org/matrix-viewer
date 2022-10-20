@@ -4,6 +4,9 @@ const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
+const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
+const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel');
+
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 
 const ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY = 'addedHomservers';
@@ -48,6 +51,41 @@ class RoomDirectoryViewModel extends ViewModel {
     this._prevPaginationToken = prevPaginationToken;
 
     this._homeserverSelection = this.availableHomeserverList[0];
+
+    this._homeserverSelectionModalContentViewModel = new HomeserverSelectionModalContentViewModel({
+      onNewHomeserverAdded: this.onNewHomeserverAdded.bind(this),
+    });
+
+    this.homeserverSelectionModalViewModel = new ModalViewModel(
+      this.childOptions({
+        title: 'Add a new server',
+        contentViewModel: this._homeserverSelectionModalContentViewModel,
+        closeCallback: () => {
+          const path = this.navigation.pathFrom([]);
+          this.navigation.applyPath(path);
+        },
+      })
+    );
+
+    this.#setupNavigation();
+  }
+
+  #setupNavigation() {
+    // Make sure the add-server modal open when the URL changes
+    const handleAddServerNavigationChange = () => {
+      const shouldShowAddServerModal = !!this.navigation.path.get('add-server')?.value;
+      this.setShouldShowAddServerModal(shouldShowAddServerModal);
+    };
+    const addServer = this.navigation.observe('add-server');
+    this.track(addServer.subscribe(handleAddServerNavigationChange));
+    // Also handle the case where the URL already includes `#/add-server`
+    // stuff from page-load
+    const initialAddServer = addServer.get();
+    handleAddServerNavigationChange(initialAddServer);
+  }
+
+  setShouldShowAddServerModal(shouldShowAddServerModal) {
+    this.homeserverSelectionModalViewModel.setOpen(shouldShowAddServerModal);
   }
 
   get homeserverUrl() {
@@ -70,16 +108,20 @@ class RoomDirectoryViewModel extends ViewModel {
   setHomeserverSelection(newHomeserver) {
     this._homeserverSelection = newHomeserver;
     this.emitChange('homeserverSelection');
+  }
 
-    if (newHomeserver === 'action:add-new-server') {
-      // TODO
-      this.setAddedHomeserversList(['foo.bar', 'baz.qux']);
-    } else if (newHomeserver === 'action:clear-servers') {
+  onHomeserverSelectionAction(action) {
+    if (action === 'action:add-new-server') {
+      const path = this.navigation.pathFrom([this.navigation.segment('add-server')]);
+      this.navigation.applyPath(path);
+    } else if (action === 'action:clear-servers') {
       this.setAddedHomeserversList([]);
       // After clearing the added servers, just fallback to the first one in the available list.
       // We don't want people to be stuck on the "Clear servers" option.
       this._homeserverSelection = this.availableHomeserverList[0];
       this.emitChange('homeserverSelection');
+    } else {
+      console.warn(`Unknown action=${action} passed to \`onHomeserverSelectionAction\``);
     }
   }
 
@@ -122,11 +164,22 @@ class RoomDirectoryViewModel extends ViewModel {
 
   setAddedHomeserversList(addedHomeserversList) {
     this._addedHomeserversList = addedHomeserversList;
+    window.localStorage.setItem(
+      ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY,
+      JSON.stringify(this._addedHomeserversList)
+    );
     this.emitChange('addedHomeserversList');
   }
 
   get addedHomeserversList() {
     return this._addedHomeserversList;
+  }
+
+  onNewHomeserverAdded(newHomeserver) {
+    const addedHomeserversList = this.addedHomeserversList;
+    this.setAddedHomeserversList(addedHomeserversList.concat(newHomeserver));
+    this.setHomeserverSelection(newHomeserver);
+    // TODO: Submit form
   }
 
   get nextPageUrl() {

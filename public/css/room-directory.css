@@ -342,6 +342,8 @@
   color: #2774c2;
   line-height: 24px;
   text-decoration: none;
+
+  cursor: pointer;
 }
 
 @media (max-width: 750px) {
