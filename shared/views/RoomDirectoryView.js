@@ -142,14 +142,6 @@ class RoomDirectoryView extends TemplateView {
           new ModalView(HomeserverSelectionModalContentView, vm.homeserverSelectionModalViewModel)
         ),
       ]),
-      t.a(
-        {
-          href: (vm) => {
-            return vm.urlCreator.urlForSegments([vm.navigation.segment('add-server')]);
-          },
-        },
-        'asddfsaadsf'
-      ),
     ]);
 
     // Make sure the `<select>` is updated when the ViewModel is updated

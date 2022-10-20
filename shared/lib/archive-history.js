@@ -33,7 +33,7 @@ class ArchiveHistory extends History {
       if (url === '') {
         replacingUrl = window.location.pathname;
       }
-      super.replaceUrlSilently(replacingUrl);
+      super.replaceUrlSilently(replacingUrl + window.location.search);
     }
   }
 
@@ -43,7 +43,7 @@ class ArchiveHistory extends History {
     if (url === '') {
       replacingUrl = window.location.pathname;
     }
-    super.pushUrlSilently(replacingUrl);
+    super.pushUrlSilently(replacingUrl + window.location.search);
   }
 
   // Make the URLs we use in the UI of the app relative to the room:
