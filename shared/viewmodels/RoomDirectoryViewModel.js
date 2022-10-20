@@ -179,7 +179,6 @@ class RoomDirectoryViewModel extends ViewModel {
     const addedHomeserversList = this.addedHomeserversList;
     this.setAddedHomeserversList(addedHomeserversList.concat(newHomeserver));
     this.setHomeserverSelection(newHomeserver);
-    // TODO: Submit form
   }
 
   get nextPageUrl() {
