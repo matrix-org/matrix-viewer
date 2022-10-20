@@ -8,7 +8,7 @@ class RoomCardView extends TemplateView {
     const avatarViewModel = new AvatarViewModel({
       homeserverUrlToPullMediaFrom: vm.homeserverUrlToPullMediaFrom,
       avatarUrl: vm.avatarUrl,
-      avatarTitle: vm.name,
+      avatarTitle: vm.name || vm.canonicalAlias || vm.roomId,
       avatarLetterString:
         vm.name ||
         // Strip the `#` off the alias

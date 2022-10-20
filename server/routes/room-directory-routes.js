@@ -31,6 +31,7 @@ router.get(
   asyncHandler(async function (req, res) {
     const paginationToken = req.query.page;
     const searchTerm = req.query.search;
+    const homeserver = req.query.homeserver;
 
     // It would be good to grab more rooms than we display in case we need
     // to filter any out but then the pagination tokens with the homeserver
@@ -45,7 +46,7 @@ router.get(
       ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
         matrixAccessToken,
         {
-          //server: TODO,
+          server: homeserver,
           searchTerm,
           paginationToken,
           limit,
@@ -53,7 +54,7 @@ router.get(
       ));
     } catch (err) {
       throw new RethrownError(
-        `Unable to fetch rooms from room directory (homeserver=${matrixServerUrl})\n    searchTerm=${searchTerm}, paginationToken=${paginationToken}, limit=${limit}`,
+        `Unable to fetch rooms from room directory (using matrixServerUrl=${matrixServerUrl})\n    homeserver=${homeserver}, searchTerm=${searchTerm}, paginationToken=${paginationToken}, limit=${limit}`,
         err
       );
     }

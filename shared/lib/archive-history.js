@@ -7,17 +7,18 @@ const assert = require('./assert');
 // constructing URL's for use `href` etc, they should relative to the room
 // (remove session and room from the hash).
 class ArchiveHistory extends History {
-  constructor(roomId) {
+  constructor(baseHash) {
+    assert(baseHash);
     super();
 
-    assert(roomId);
-    this._baseHash = `#/session/123/room/${roomId}`;
+    this._baseHash = baseHash;
   }
 
   // Even though the page hash is relative to the room, we still expose the full
   // hash for Hydrogen to route things internally as expected.
   get() {
-    const hash = super.get()?.replace(/^#/, '') ?? '';
+    const documentHash = document?.location?.hash;
+    const hash = documentHash?.replace(/^#/, '') ?? '';
     return this._baseHash + hash;
   }
 
@@ -32,7 +33,7 @@ class ArchiveHistory extends History {
       if (url === '') {
         replacingUrl = window.location.pathname;
       }
-      super.replaceUrlSilently(replacingUrl);
+      super.replaceUrlSilently(replacingUrl + window.location.search);
     }
   }
 
@@ -42,7 +43,7 @@ class ArchiveHistory extends History {
     if (url === '') {
       replacingUrl = window.location.pathname;
     }
-    super.pushUrlSilently(replacingUrl);
+    super.pushUrlSilently(replacingUrl + window.location.search);
   }
 
   // Make the URLs we use in the UI of the app relative to the room:

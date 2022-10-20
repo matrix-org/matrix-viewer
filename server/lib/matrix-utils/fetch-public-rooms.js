@@ -26,6 +26,7 @@ async function fetchPublicRooms(accessToken, { server, searchTerm, paginationTok
   const publicRoomsRes = await fetchEndpointAsJson(publicRoomsEndpoint, {
     method: 'POST',
     body: {
+      include_all_networks: true,
       filter: {
         generic_search_term: searchTerm,
       },
