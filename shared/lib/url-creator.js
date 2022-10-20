@@ -21,10 +21,13 @@ class URLCreator {
     return `https://matrix.to/#/${roomId}`;
   }
 
-  roomDirectoryUrl({ searchTerm, paginationToken } = {}) {
+  roomDirectoryUrl({ searchTerm, homeserver, paginationToken } = {}) {
     let qs = new URLSearchParams();
     if (searchTerm) {
       qs.append('search', searchTerm);
+    }
+    if (homeserver) {
+      qs.append('homeserver', homeserver);
     }
     if (paginationToken) {
       qs.append('page', paginationToken);

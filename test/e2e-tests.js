@@ -438,7 +438,7 @@ describe('matrix-public-archive', () => {
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(hs2RoomId, archiveDate, {
           // Since hs1 doesn't know about this room on hs2 yet, we have to provide
           // a via server to ask through.
-          viaServers: ['hs2'],
+          viaServers: [HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2]],
         });
 
         const archivePageHtml = await fetchEndpointAsText(archiveUrl);
@@ -632,6 +632,9 @@ describe('matrix-public-archive', () => {
         await createTestRoom(client);
 
         // Then create two rooms we will find with search
+        //
+        // We use a `timeToken` so that we can namespace these rooms away from other
+        // test runs against the same homeserver
         const timeToken = Date.now();
         const roomPlanetPrefix = `planet-${timeToken}`;
         const roomSaturnId = await createTestRoom(client, {
@@ -674,7 +677,38 @@ describe('matrix-public-archive', () => {
         assert.notDeepStrictEqual(roomsOnPageWithSearch.sort(), roomsOnPageWithoutSearch.sort());
       });
 
-      it('can show rooms from another server');
+      it('can show rooms from another remote server', async () => {
+        const hs2Client = await getTestClientForHs(testMatrixServerUrl2);
+
+        // Create some rooms on hs2
+        //
+        // We use a `timeToken` so that we can namespace these rooms away from other
+        // test runs against the same homeserver
+        const timeToken = Date.now();
+        const roomPlanetPrefix = `remote-planet-${timeToken}`;
+        const roomXId = await createTestRoom(hs2Client, {
+          name: `${roomPlanetPrefix}-x`,
+        });
+        const roomYId = await createTestRoom(hs2Client, {
+          name: `${roomPlanetPrefix}-y`,
+        });
+
+        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+          homeserver: HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2],
+          searchTerm: roomPlanetPrefix,
+        });
+        const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
+        const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
+
+        const roomsOnPageWithSearch = [
+          ...domWithSearch.document.querySelectorAll(`[data-testid="room-card"]`),
+        ].map((roomCardEl) => {
+          return roomCardEl.getAttribute('data-room-id');
+        });
+
+        // Assert that the rooms we searched for on remote hs2 are visible
+        assert.deepStrictEqual(roomsOnPageWithSearch.sort(), [roomXId, roomYId].sort());
+      });
     });
 
     describe('access controls', () => {
