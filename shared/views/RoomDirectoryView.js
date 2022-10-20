@@ -1,6 +1,6 @@
 'use strict';
 
-const { TemplateView, ListView } = require('hydrogen-view-sdk');
+const { TemplateView, ListView, text } = require('hydrogen-view-sdk');
 
 const MatrixLogoView = require('./MatrixLogoView');
 const RoomCardView = require('./RoomCardView');
@@ -27,8 +27,57 @@ class RoomDirectoryView extends TemplateView {
     );
 
     const availableHomeserverOptionElements = vm.availableHomeserverList.map((homeserverName) => {
-      return t.option({}, homeserverName);
+      return t.option({ value: homeserverName }, homeserverName);
     });
+
+    const homeserverSelectElement = t.select(
+      {
+        className: 'RoomDirectoryView_homeserverSelector',
+        name: 'homeserver',
+        onInput: (event) => vm.setHomeserverSelection(event.target.value),
+      },
+      [
+        ...availableHomeserverOptionElements,
+
+        t.map(
+          (vm) => vm.addedHomeserversList,
+          (_, t, vm) => {
+            const addedHomeserverOptionElements = vm.addedHomeserversList.map((homeserverName) => {
+              return t.option({ value: homeserverName }, homeserverName);
+            });
+
+            let addedHomeserversOptGroup = text('');
+            if (addedHomeserverOptionElements.length > 0) {
+              addedHomeserversOptGroup = t.optgroup(
+                { label: 'Added servers' },
+                addedHomeserverOptionElements
+              );
+            }
+
+            return addedHomeserversOptGroup;
+          }
+        ),
+        t.optgroup({ label: 'Actions' }, [
+          t.option({ value: 'action:add-new-server' }, 'Add new server...'),
+          t.option(
+            {
+              value: 'action:clear-servers',
+              disabled: (vm) => {
+                return vm.addedHomeserversList.length === 0;
+              },
+            },
+            'Clear servers...'
+          ),
+        ]),
+      ]
+    );
+
+    t.mapSideEffect(
+      (vm) => vm.homeserverSelection,
+      (homeserverSelection /*, oldHomeserverSelection*/) => {
+        homeserverSelectElement.value = homeserverSelection;
+      }
+    );
 
     return t.div(
       {
@@ -89,26 +138,7 @@ class RoomDirectoryView extends TemplateView {
             ]),
             t.div({ className: 'RoomDirectoryView_homeserverSelectSection' }, [
               t.div({}, 'Show: Matrix rooms on'),
-              t.select(
-                {
-                  className: 'RoomDirectoryView_homeserverSelector',
-                  name: 'homeserver',
-                  onInput: () => {
-                    console.log('input');
-                  },
-                },
-                [
-                  ...availableHomeserverOptionElements,
-                  t.optgroup({ label: 'Added servers' }, [
-                    t.option({}, 'beta.gitter.im'),
-                    t.option({}, 'foo.bar'),
-                  ]),
-                  t.optgroup({ label: 'Actions' }, [
-                    t.option({}, 'Add new server...'),
-                    t.option({ disabled: true }, 'Clear servers...'),
-                  ]),
-                ]
-              ),
+              homeserverSelectElement,
             ]),
           ]),
         ]),

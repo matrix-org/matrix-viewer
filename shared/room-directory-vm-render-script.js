@@ -39,6 +39,7 @@ async function mountHydrogen() {
     nextPaginationToken,
     prevPaginationToken,
   });
+  roomDirectoryViewModel.loadAddedHomserversListFromPersistence();
 
   const view = new RoomDirectoryView(roomDirectoryViewModel);
 

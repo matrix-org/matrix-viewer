@@ -2,6 +2,9 @@
 
 const { ViewModel } = require('hydrogen-view-sdk');
 
+const DEBUG_ACTIVE_DATE_INTERSECTION_OBSERVER_LOCAL_STORAGE_KEY =
+  'debugActiveDateIntersectionObserver';
+
 class DeveloperOptionsViewModel extends ViewModel {
   constructor(options) {
     super(options);
@@ -13,11 +16,11 @@ class DeveloperOptionsViewModel extends ViewModel {
   loadValuesFromPersistence() {
     if (window.localStorage) {
       this._debugActiveDateIntersectionObserver = JSON.parse(
-        window.localStorage.getItem('debugActiveDateIntersectionObserver')
+        window.localStorage.getItem(DEBUG_ACTIVE_DATE_INTERSECTION_OBSERVER_LOCAL_STORAGE_KEY)
       );
       this.emitChange('debugActiveDateIntersectionObserver');
     } else {
-      console.warn(`Skipping read from localStorage since it's not available`);
+      console.warn(`Skipping read from LocalStorage since LocalStorage not available`);
     }
   }
 
@@ -28,7 +31,7 @@ class DeveloperOptionsViewModel extends ViewModel {
   toggleDebugActiveDateIntersectionObserver(checkedValue) {
     this._debugActiveDateIntersectionObserver = checkedValue;
     window.localStorage.setItem(
-      'debugActiveDateIntersectionObserver',
+      DEBUG_ACTIVE_DATE_INTERSECTION_OBSERVER_LOCAL_STORAGE_KEY,
       this._debugActiveDateIntersectionObserver
     );
     this.emitChange('debugActiveDateIntersectionObserver');
