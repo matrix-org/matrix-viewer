@@ -32,6 +32,7 @@ class RoomDirectoryView extends TemplateView {
       {
         className: 'RoomDirectoryView_homeserverSelector',
         name: 'homeserver',
+        'data-testid': 'homeserver-select',
         onInput: (event) => {
           const optionValue = event.target.value;
           if (optionValue.startsWith('action:')) {
