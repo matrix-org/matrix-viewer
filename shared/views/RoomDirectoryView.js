@@ -54,7 +54,10 @@ class RoomDirectoryView extends TemplateView {
             const availableHomeserverOptionElements = vm.availableHomeserverList.map(
               (homeserverName) => {
                 return t.option(
-                  { value: homeserverName, selected: vm.homeserverSelection === homeserverName },
+                  {
+                    value: homeserverName,
+                    selected: (vm) => vm.homeserverSelection === homeserverName,
+                  },
                   homeserverName
                 );
               }
@@ -76,7 +79,10 @@ class RoomDirectoryView extends TemplateView {
           (_, t, vm) => {
             const addedHomeserverOptionElements = vm.addedHomeserversList.map((homeserverName) => {
               return t.option(
-                { value: homeserverName, selected: vm.homeserverSelection === homeserverName },
+                {
+                  value: homeserverName,
+                  selected: (vm) => vm.homeserverSelection === homeserverName,
+                },
                 homeserverName
               );
             });
@@ -169,8 +175,6 @@ class RoomDirectoryView extends TemplateView {
     t.mapSideEffect(
       (vm) => vm.homeserverSelection,
       (homeserverSelection, oldHomeserverSelection) => {
-        homeserverSelectElement.value = homeserverSelection;
-
         const pickedActionOption = homeserverSelection.startsWith('action:');
         const isInitialization = oldHomeserverSelection === undefined;
         if (!pickedActionOption && !isInitialization) {
@@ -182,20 +186,6 @@ class RoomDirectoryView extends TemplateView {
           // Submit the page with the new homeserver selection to get results.
           headerForm.submit();
         }
-      }
-    );
-
-    // Also update the selection whenever the lists change around
-    t.mapSideEffect(
-      (vm) => vm.availableHomeserverList,
-      () => {
-        homeserverSelectElement.value = vm.homeserverSelection;
-      }
-    );
-    t.mapSideEffect(
-      (vm) => vm.addedHomeserversList,
-      () => {
-        homeserverSelectElement.value = vm.homeserverSelection;
       }
     );
 
