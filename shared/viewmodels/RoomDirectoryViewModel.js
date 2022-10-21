@@ -20,7 +20,7 @@ class RoomDirectoryViewModel extends ViewModel {
       matrixPublicArchiveURLCreator,
       rooms,
       roomFetchError,
-      searchParameters,
+      pageSearchParameters,
       nextPaginationToken,
       prevPaginationToken,
     } = options;
@@ -49,13 +49,19 @@ class RoomDirectoryViewModel extends ViewModel {
       })
     );
 
-    this._searchParameters = searchParameters;
-    this._searchTerm = searchParameters.searchTerm;
-    this._addedHomeserversList = [];
+    this._pageSearchParameters = pageSearchParameters;
+    // Default to what the page started with
+    this._searchTerm = pageSearchParameters.searchTerm;
     this._nextPaginationToken = nextPaginationToken;
     this._prevPaginationToken = prevPaginationToken;
 
-    this._homeserverSelection = this.availableHomeserverList[0];
+    // The default selected homeserver should be the one according to the page or the first one in the list
+    this._homeserverSelection = pageSearchParameters.homeserver || this._availableHomeserverList[0];
+    // The homeservers that the user added themselves (pulled from LocalStorage)
+    this._addedHomeserversList = [];
+    this.loadAddedHomserversListFromPersistence();
+    // The default list of homeservers to select from
+    this._calculateAvailableHomeserverList();
 
     this._homeserverSelectionModalContentViewModel = new HomeserverSelectionModalContentViewModel({
       onNewHomeserverAdded: this.onNewHomeserverAdded.bind(this),
@@ -105,8 +111,8 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
   }
 
-  get searchParameters() {
-    return this._searchParameters;
+  get pageSearchParameters() {
+    return this._pageSearchParameters;
   }
 
   get searchTerm() {
@@ -181,6 +187,12 @@ class RoomDirectoryViewModel extends ViewModel {
       ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY,
       JSON.stringify(this._addedHomeserversList)
     );
+
+    // If the added homeserver list changes, make sure the default page selected
+    // homeserver is still somewhere in the list. If it's no longer in the added
+    // homeserver list, we will put it in the default available list.
+    this._calculateAvailableHomeserverList();
+
     this.emitChange('addedHomeserversList');
   }
 
@@ -220,9 +232,28 @@ class RoomDirectoryViewModel extends ViewModel {
     return null;
   }
 
-  get availableHomeserverList() {
+  // The default list of available homeservers to select from. Deduplicates the the
+  // homeserver we're pulling from and the `DEFAULT_SERVER_LIST`. Also makes sure that
+  // the page selected homeserver is either in our default available list or in the
+  // added servers list.
+  _calculateAvailableHomeserverList() {
     // Append the default homeserver to the front
     const rawList = [this._homeserverName, ...DEFAULT_SERVER_LIST];
+
+    console.log(
+      'has homeserver in collection',
+      this.homeserverSelection,
+      rawList.includes(this.homeserverSelection),
+      this._addedHomeserversList.includes(this.homeserverSelection)
+    );
+    // Make sure the page selected homeserver is in the list somewhere
+    if (
+      this.homeserverSelection &&
+      !rawList.includes(this.homeserverSelection) &&
+      !this._addedHomeserversList.includes(this.homeserverSelection)
+    ) {
+      rawList.unshift(this.homeserverSelection);
+    }
 
     // Then deduplicate the list
     const deduplicatedHomeserverMap = {};
@@ -231,7 +262,13 @@ class RoomDirectoryViewModel extends ViewModel {
     });
     const deduplicatedHomeserverList = Object.keys(deduplicatedHomeserverMap);
 
-    return deduplicatedHomeserverList;
+    this._availableHomeserverList = deduplicatedHomeserverList;
+    console.log('resultant this._availableHomeserverList', this._availableHomeserverList);
+    this.emit('availableHomeserverList');
+  }
+
+  get availableHomeserverList() {
+    return this._availableHomeserverList;
   }
 
   get rooms() {

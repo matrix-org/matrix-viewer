@@ -73,8 +73,8 @@ router.get(
           : null,
         nextPaginationToken,
         prevPaginationToken,
-        searchParameters: {
-          homeserver,
+        pageSearchParameters: {
+          homeserver: homeserver || matrixServerName,
           searchTerm,
           paginationToken,
           limit,

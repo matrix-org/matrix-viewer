@@ -20,7 +20,7 @@ assert(rooms);
 const roomFetchError = window.matrixPublicArchiveContext.roomFetchError;
 const nextPaginationToken = window.matrixPublicArchiveContext.nextPaginationToken;
 const prevPaginationToken = window.matrixPublicArchiveContext.prevPaginationToken;
-const searchParameters = window.matrixPublicArchiveContext.searchParameters;
+const pageSearchParameters = window.matrixPublicArchiveContext.pageSearchParameters;
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
@@ -80,11 +80,10 @@ async function mountHydrogen() {
     matrixPublicArchiveURLCreator,
     rooms,
     roomFetchError,
-    searchParameters,
+    pageSearchParameters,
     nextPaginationToken,
     prevPaginationToken,
   });
-  roomDirectoryViewModel.loadAddedHomserversListFromPersistence();
 
   const view = new RoomDirectoryView(roomDirectoryViewModel);
 

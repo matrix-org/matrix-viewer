@@ -28,10 +28,6 @@ class RoomDirectoryView extends TemplateView {
       }
     );
 
-    const availableHomeserverOptionElements = vm.availableHomeserverList.map((homeserverName) => {
-      return t.option({ value: homeserverName }, homeserverName);
-    });
-
     const homeserverSelectElement = t.select(
       {
         className: 'RoomDirectoryView_homeserverSelector',
@@ -51,13 +47,37 @@ class RoomDirectoryView extends TemplateView {
         },
       },
       [
-        ...availableHomeserverOptionElements,
+        t.map(
+          (vm) => vm.availableHomeserverList,
+          (_, t, vm) => {
+            const availableHomeserverOptionElements = vm.availableHomeserverList.map(
+              (homeserverName) => {
+                return t.option(
+                  { value: homeserverName, selected: vm.homeserverSelection === homeserverName },
+                  homeserverName
+                );
+              }
+            );
 
+            let availableHomeserversOptGroup = text('');
+            if (availableHomeserverOptionElements.length > 0) {
+              availableHomeserversOptGroup = t.optgroup(
+                { label: 'Defaults' },
+                availableHomeserverOptionElements
+              );
+            }
+
+            return availableHomeserversOptGroup;
+          }
+        ),
         t.map(
           (vm) => vm.addedHomeserversList,
           (_, t, vm) => {
             const addedHomeserverOptionElements = vm.addedHomeserversList.map((homeserverName) => {
-              return t.option({ value: homeserverName }, homeserverName);
+              return t.option(
+                { value: homeserverName, selected: vm.homeserverSelection === homeserverName },
+                homeserverName
+              );
             });
 
             let addedHomeserversOptGroup = text('');
@@ -159,6 +179,20 @@ class RoomDirectoryView extends TemplateView {
       }
     );
 
+    // Also update the selection whenever the lists change around
+    t.mapSideEffect(
+      (vm) => vm.availableHomeserverList,
+      () => {
+        homeserverSelectElement.value = vm.homeserverSelection;
+      }
+    );
+    t.mapSideEffect(
+      (vm) => vm.addedHomeserversList,
+      () => {
+        homeserverSelectElement.value = vm.homeserverSelection;
+      }
+    );
+
     return t.div(
       {
         className: {
@@ -168,13 +202,14 @@ class RoomDirectoryView extends TemplateView {
       [
         t.header({ className: 'RoomDirectoryView_header' }, [headerForm]),
         t.main({ className: 'RoomDirectoryView_mainContent' }, [
+          // Display a nice error section when we failed to fetch rooms from the room directory
           t.if(
             (vm) => vm.roomFetchError,
             (t, vm) => {
               return t.section({ className: 'RoomDirectoryView_roomListError' }, [
                 t.h3('❗ Unable to fetch rooms from room directory'),
                 t.p({}, [
-                  `This may be a temporary problem with the homeserver where the room directory lives (${vm.searchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search term or select a different homeserver to look at. If this problem persists, please open a `,
+                  `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search term or select a different homeserver to look at. If this problem persists, please open a `,
                   t.a(
                     { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
                     'bug report'
@@ -198,7 +233,7 @@ class RoomDirectoryView extends TemplateView {
                 t.p({}, `The  error occured with these search paramers:`),
                 t.pre(
                   { className: 'RoomDirectoryView_codeBlock' },
-                  t.code({}, JSON.stringify(vm.searchParameters, null, 2))
+                  t.code({}, JSON.stringify(vm.pageSearchParameters, null, 2))
                 ),
                 t.details({}, [
                   t.summary({}, 'Why are we showing so many details?'),
@@ -239,6 +274,7 @@ class RoomDirectoryView extends TemplateView {
               ]);
             }
           ),
+          // Otherwise, display the rooms that we fetched
           t.view(roomList),
           t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
             t.a(
