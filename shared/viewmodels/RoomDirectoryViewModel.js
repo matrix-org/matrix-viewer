@@ -213,6 +213,7 @@ class RoomDirectoryViewModel extends ViewModel {
   get nextPageUrl() {
     if (this._nextPaginationToken) {
       return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        homeserver: this.homeserverSelection,
         searchTerm: this.searchTerm,
         paginationToken: this._nextPaginationToken,
       });
@@ -224,6 +225,7 @@ class RoomDirectoryViewModel extends ViewModel {
   get prevPageUrl() {
     if (this._prevPaginationToken) {
       return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        homeserver: this.homeserverSelection,
         searchTerm: this.searchTerm,
         paginationToken: this._prevPaginationToken,
       });
