@@ -222,12 +222,38 @@
   margin-bottom: 0;
 }
 
+.RoomDirectoryView_roomListError {
+  display: block;
+  width: 100%;
+  max-width: 1180px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-top: 20px;
+
+  line-height: 1.5;
+}
+
+.RoomDirectoryView_codeBlock {
+  overflow: auto;
+  padding: 0.5em 0.8em;
+
+  background-color: #f6f6f6;
+  border: 1px solid rgb(233, 233, 233);
+  border-radius: 4px;
+}
+
 @media (min-width: 750px) {
   .RoomDirectoryView_roomList {
     grid-template-columns: repeat(2, 1fr);
+    margin-top: 40px;
     padding-left: 40px;
     padding-right: 40px;
+  }
+
+  .RoomDirectoryView_roomListError {
     margin-top: 40px;
+    padding-left: 40px;
+    padding-right: 40px;
   }
 }
 

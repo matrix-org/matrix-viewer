@@ -17,9 +17,10 @@ const RoomDirectoryViewModel = require('matrix-public-archive-shared/viewmodels/
 
 const rooms = window.matrixPublicArchiveContext.rooms;
 assert(rooms);
+const roomFetchError = window.matrixPublicArchiveContext.roomFetchError;
 const nextPaginationToken = window.matrixPublicArchiveContext.nextPaginationToken;
 const prevPaginationToken = window.matrixPublicArchiveContext.prevPaginationToken;
-const searchTerm = window.matrixPublicArchiveContext.searchTerm;
+const searchParameters = window.matrixPublicArchiveContext.searchParameters;
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
@@ -78,7 +79,8 @@ async function mountHydrogen() {
     homeserverName: config.matrixServerName,
     matrixPublicArchiveURLCreator,
     rooms,
-    searchTerm,
+    roomFetchError,
+    searchParameters,
     nextPaginationToken,
     prevPaginationToken,
   });

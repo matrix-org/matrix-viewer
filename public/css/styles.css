@@ -12,6 +12,32 @@ body {
   margin: 0;
 }
 
+summary {
+  cursor: pointer;
+}
+
+.PrimaryActionButton {
+  display: inline-block;
+  padding: 4px 16px;
+
+  background-color: transparent;
+  /* Always make a pill shape */
+  border-radius: 9999px;
+  border: 1px solid #2774c2;
+
+  color: #2774c2;
+  line-height: 24px;
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.PrimaryActionButton:hover,
+.PrimaryActionButton:focus {
+  background-color: #2774c2;
+  color: #ffffff;
+}
+
 /* Based on .SessionView from Hydrogen */
 .ArchiveRoomView {
   /* this takes into account whether or not the url bar is hidden on mobile
@@ -319,28 +345,6 @@ body {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
-}
-
-.ModalView_actionButton {
-  display: inline-block;
-  padding: 4px 16px;
-
-  background-color: transparent;
-  /* Always make a pill shape */
-  border-radius: 9999px;
-  border: 1px solid #2774c2;
-
-  color: #2774c2;
-  line-height: 24px;
-  text-decoration: none;
-
-  cursor: pointer;
-}
-
-.ModalView_actionButton:hover,
-.ModalView_actionButton:focus {
-  background-color: #2774c2;
-  color: #ffffff;
 }
 
 /* Developer options modal */

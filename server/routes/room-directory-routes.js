@@ -6,7 +6,6 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
-const RethrownError = require('../lib/rethrown-error');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 
@@ -39,9 +38,10 @@ router.get(
     // `/publicRooms` directly via the API (needs MSC).
     const limit = 9;
 
-    let rooms;
+    let rooms = [];
     let nextPaginationToken;
     let prevPaginationToken;
+    let roomFetchError;
     try {
       ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
         matrixAccessToken,
@@ -53,10 +53,7 @@ router.get(
         }
       ));
     } catch (err) {
-      throw new RethrownError(
-        `Unable to fetch rooms from room directory (using matrixServerUrl=${matrixServerUrl})\n    homeserver=${homeserver}, searchTerm=${searchTerm}, paginationToken=${paginationToken}, limit=${limit}`,
-        err
-      );
+      roomFetchError = err;
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
@@ -68,9 +65,20 @@ router.get(
       path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
       {
         rooms,
+        roomFetchError: roomFetchError
+          ? {
+              message: roomFetchError.message,
+              stack: roomFetchError.stack,
+            }
+          : null,
         nextPaginationToken,
         prevPaginationToken,
-        searchTerm,
+        searchParameters: {
+          homeserver,
+          searchTerm,
+          paginationToken,
+          limit,
+        },
         config: {
           basePath,
           matrixServerUrl,
