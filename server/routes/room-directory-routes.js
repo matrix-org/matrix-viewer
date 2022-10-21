@@ -65,10 +65,12 @@ router.get(
       path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
       {
         rooms,
-        roomFetchError: {
-          message: roomFetchError.message,
-          stack: roomFetchError.stack,
-        },
+        roomFetchError: roomFetchError
+          ? {
+              message: roomFetchError.message,
+              stack: roomFetchError.stack,
+            }
+          : null,
         nextPaginationToken,
         prevPaginationToken,
         searchParameters: {
