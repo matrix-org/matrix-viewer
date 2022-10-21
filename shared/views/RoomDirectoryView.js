@@ -183,8 +183,16 @@ class RoomDirectoryView extends TemplateView {
           // modal close callback but this races with it and sometimes we beat it.
           const path = vm.navigation.pathFrom([]);
           vm.navigation.applyPath(path);
-          // Submit the page with the new homeserver selection to get results.
-          headerForm.submit();
+
+          // Set the `<select>` value before we submit to ensure we have the most up to
+          // date information. Normally this would be updated by having Hydrogen do its
+          // render cycle and have the `<option selected>` be swapped around.
+          homeserverSelectElement.value = homeserverSelection;
+
+          setTimeout(() => {
+            // Submit the page with the new homeserver selection to get results.
+            headerForm.submit();
+          }, 0);
         }
       }
     );
