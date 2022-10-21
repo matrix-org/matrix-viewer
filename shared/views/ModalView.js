@@ -81,9 +81,12 @@ class ModalView extends TemplateView {
         // The dialog has to be in the DOM before we can call `showModal`, etc.
         // Assume this view will be mounted in the parent DOM straight away.
         requestAnimationFrame(() => {
-          if (open) {
+          // Prevent doing extra work if the modal is already closed or open and already
+          // matches our intention
+          const isAlreadyOpen = !!dialog.getAttribute('open');
+          if (open && !isAlreadyOpen) {
             this.showModal();
-          } else {
+          } else if (isAlreadyOpen) {
             this.closeModal();
           }
         });
@@ -98,6 +101,10 @@ class ModalView extends TemplateView {
   }
 
   onDialogClicked(event) {
+    // Close the dialog when the backdrop is clicked. The `::backdrop` is considered
+    // part of the `dialogNode` but we have a `modalInner` element that stops clicks on
+    // the dialog content itself counting as a click on it. So the only clicks to the
+    // dialog will be on the backdrop and we can safely assume they meant to close it.
     if (event.target === this.dialogNode) {
       this.closeModal();
     }
