@@ -6,7 +6,6 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
-const RethrownError = require('../lib/rethrown-error');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 
@@ -43,7 +42,6 @@ router.get(
     let nextPaginationToken;
     let prevPaginationToken;
     let roomFetchError;
-    let roomFetchUnderlyingError;
     try {
       ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
         matrixAccessToken,
@@ -55,7 +53,7 @@ router.get(
         }
       ));
     } catch (err) {
-      roomFetchUnderlyingError = err;
+      roomFetchError = err;
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
@@ -68,8 +66,8 @@ router.get(
       {
         rooms,
         roomFetchError: {
-          message: roomFetchUnderlyingError.message,
-          stack: roomFetchUnderlyingError.stack,
+          message: roomFetchError.message,
+          stack: roomFetchError.stack,
         },
         nextPaginationToken,
         prevPaginationToken,
