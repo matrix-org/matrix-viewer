@@ -701,11 +701,11 @@ describe('matrix-public-archive', () => {
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         // Make sure the `?homserver` is selected in the homeserver selector `<select>`
-        const selectedHomeserverOptionElement = domWithSearch.document.querySelector(
-          `[data-testid="homeserver-select"] option[selected]`
+        const homeserverSelectElement = domWithSearch.document.querySelector(
+          `[data-testid="homeserver-select"]`
         );
         assert.strictEqual(
-          selectedHomeserverOptionElement.getAttribute('value'),
+          homeserverSelectElement.value,
           HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2]
         );
 
