@@ -24,7 +24,7 @@ class HomeserverSelectionModalContentView extends TemplateView {
             t.p(['Enter the name of a new server you want to explore.']),
             serverNameInput,
             t.footer({ className: 'ModalView_footerActionBar' }, [
-              t.button({ className: 'ModalView_actionButton' }, 'Add'),
+              t.button({ className: 'PrimaryActionButton' }, 'Add'),
             ]),
           ]),
         ]
