@@ -700,6 +700,15 @@ describe('matrix-public-archive', () => {
         const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
+        // Make sure the `?homserver` is selected in the homeserver selector `<select>`
+        const selectedHomeserverOptionElement = domWithSearch.document.querySelector(
+          `[data-testid="homeserver-select"] option[selected]`
+        );
+        assert.strictEqual(
+          selectedHomeserverOptionElement.getAttribute('value'),
+          HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2]
+        );
+
         const roomsOnPageWithSearch = [
           ...domWithSearch.document.querySelectorAll(`[data-testid="room-card"]`),
         ].map((roomCardEl) => {
