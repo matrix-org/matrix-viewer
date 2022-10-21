@@ -240,12 +240,6 @@ class RoomDirectoryViewModel extends ViewModel {
     // Append the default homeserver to the front
     const rawList = [this._homeserverName, ...DEFAULT_SERVER_LIST];
 
-    console.log(
-      'has homeserver in collection',
-      this.homeserverSelection,
-      rawList.includes(this.homeserverSelection),
-      this._addedHomeserversList.includes(this.homeserverSelection)
-    );
     // Make sure the page selected homeserver is in the list somewhere
     if (
       this.homeserverSelection &&
@@ -263,7 +257,6 @@ class RoomDirectoryViewModel extends ViewModel {
     const deduplicatedHomeserverList = Object.keys(deduplicatedHomeserverMap);
 
     this._availableHomeserverList = deduplicatedHomeserverList;
-    console.log('resultant this._availableHomeserverList', this._availableHomeserverList);
     this.emit('availableHomeserverList');
   }
 

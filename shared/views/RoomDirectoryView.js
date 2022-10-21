@@ -173,7 +173,12 @@ class RoomDirectoryView extends TemplateView {
         const pickedActionOption = homeserverSelection.startsWith('action:');
         const isInitialization = oldHomeserverSelection === undefined;
         if (!pickedActionOption && !isInitialization) {
-          // Submit the page with the new homeserver selection to get results
+          // Clear the hash out before we submit the form so it doesn't come back from
+          // the dead after the page loads. Normally, the hash would go away in the
+          // modal close callback but this races with it and sometimes we beat it.
+          const path = vm.navigation.pathFrom([]);
+          vm.navigation.applyPath(path);
+          // Submit the page with the new homeserver selection to get results.
           headerForm.submit();
         }
       }
