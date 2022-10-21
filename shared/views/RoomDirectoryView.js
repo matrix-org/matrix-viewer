@@ -220,7 +220,7 @@ class RoomDirectoryView extends TemplateView {
                     { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
                     'bug report'
                   ),
-                  ` with all of this whole section copy-pasted into the issue.`,
+                  ` with this whole section copy-pasted into the issue.`,
                 ]),
                 t.button(
                   {
