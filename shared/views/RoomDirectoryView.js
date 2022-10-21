@@ -168,6 +168,62 @@ class RoomDirectoryView extends TemplateView {
       [
         t.header({ className: 'RoomDirectoryView_header' }, [headerForm]),
         t.main({ className: 'RoomDirectoryView_mainContent' }, [
+          t.if(
+            (vm) => vm.roomFetchError,
+            (t, vm) => {
+              return t.section({ className: 'RoomDirectoryView_roomListError' }, [
+                t.h3('Unable to fetch rooms from room directory'),
+                t.p({}, [
+                  `This may be a temporary problem with the homeserver where the room directory lives (${vm.searchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search term or picking a different homeserver to look at. If this problem persists, please open a `,
+                  t.a(
+                    { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
+                    'bug report'
+                  ),
+                  ` with all of these details copy-pasted into the issue.`,
+                ]),
+                t.p({}, `The exact error we ran into was:`),
+                t.pre({}, vm.roomFetchError.stack),
+                t.p({}, `The  error occured with these search paramers:`),
+                t.pre({}, JSON.stringify(vm.searchParameters, null, 2)),
+                t.details({}, [
+                  t.summary({}, 'Why are we showing so many details?'),
+                  t.p({}, [
+                    `We're showing as much detail as we know so you're not frustrated by a generic message with no feedback on how to move forward. This also makes it easier for you to write a `,
+                    t.a(
+                      { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
+                      'bug report'
+                    ),
+                    ` with all the details necessary for us to triage it.`,
+                  ]),
+                  t.p({}, t.strong(`Isn't this a security risk?`)),
+                  t.p({}, [
+                    `Not really. Usually, people are worried about returning details because it makes it easier for people to know how to prod and poke and get better feedback about what's going wrong to craft exploits. But the `,
+                    t.a(
+                      { href: 'https://github.com/matrix-org/matrix-public-archive' },
+                      'Matrix Public Archive'
+                    ),
+                    ` is open source so you can run your own instance against the same homeservers that we are to find problems.`,
+                  ]),
+                  t.p({}, [
+                    `If you find any security vulnerabilities, please `,
+                    t.a(
+                      { href: 'https://matrix.org/security-disclosure-policy/' },
+                      'responsibly disclose'
+                    ),
+                    ` them to us.`,
+                  ]),
+                  t.p({}, [
+                    `If you have ideas on how we can present these errors better, please `,
+                    t.a(
+                      { href: 'https://github.com/matrix-org/matrix-public-archive/issues' },
+                      'create an issue'
+                    ),
+                    `.`,
+                  ]),
+                ]),
+              ]);
+            }
+          ),
           t.view(roomList),
           t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
             t.a(

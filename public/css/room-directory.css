@@ -222,12 +222,29 @@
   margin-bottom: 0;
 }
 
+.RoomDirectoryView_roomListError {
+  display: block;
+  width: 100%;
+  max-width: 1180px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-top: 20px;
+
+  line-height: 1.5;
+}
+
 @media (min-width: 750px) {
   .RoomDirectoryView_roomList {
     grid-template-columns: repeat(2, 1fr);
+    margin-top: 40px;
     padding-left: 40px;
     padding-right: 40px;
+  }
+
+  .RoomDirectoryView_roomListError {
     margin-top: 40px;
+    padding-left: 40px;
+    padding-right: 40px;
   }
 }
 

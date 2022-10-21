@@ -19,7 +19,8 @@ class RoomDirectoryViewModel extends ViewModel {
       homeserverName,
       matrixPublicArchiveURLCreator,
       rooms,
-      searchTerm,
+      roomFetchError,
+      searchParameters,
       nextPaginationToken,
       prevPaginationToken,
     } = options;
@@ -27,6 +28,8 @@ class RoomDirectoryViewModel extends ViewModel {
     assert(homeserverName);
     assert(matrixPublicArchiveURLCreator);
     assert(rooms);
+
+    this._roomFetchError = roomFetchError;
 
     this._homeserverUrl = homeserverUrl;
     this._homeserverName = homeserverName;
@@ -45,7 +48,9 @@ class RoomDirectoryViewModel extends ViewModel {
         };
       })
     );
-    this._searchTerm = searchTerm;
+
+    this._searchParameters = searchParameters;
+    this._searchTerm = searchParameters.searchTerm;
     this._addedHomeserversList = [];
     this._nextPaginationToken = nextPaginationToken;
     this._prevPaginationToken = prevPaginationToken;
@@ -92,8 +97,16 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._homeserverUrl;
   }
 
+  get homeserverName() {
+    return this._homeserverName;
+  }
+
   get roomDirectoryUrl() {
     return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
+  }
+
+  get searchParameters() {
+    return this._searchParameters;
   }
 
   get searchTerm() {
@@ -179,6 +192,10 @@ class RoomDirectoryViewModel extends ViewModel {
     const addedHomeserversList = this.addedHomeserversList;
     this.setAddedHomeserversList(addedHomeserversList.concat(newHomeserver));
     this.setHomeserverSelection(newHomeserver);
+  }
+
+  get roomFetchError() {
+    return this._roomFetchError;
   }
 
   get nextPageUrl() {
