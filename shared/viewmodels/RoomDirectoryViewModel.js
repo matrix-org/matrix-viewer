@@ -34,20 +34,6 @@ class RoomDirectoryViewModel extends ViewModel {
     this._homeserverUrl = homeserverUrl;
     this._homeserverName = homeserverName;
     this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
-    this._rooms = new ObservableArray(
-      rooms.map((room) => {
-        return {
-          roomId: room.room_id,
-          canonicalAlias: room.canonical_alias,
-          name: room.name,
-          mxcAvatarUrl: room.avatar_url,
-          homeserverUrlToPullMediaFrom: homeserverUrl,
-          numJoinedMembers: room.num_joined_members,
-          topic: room.topic,
-          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(room.room_id),
-        };
-      })
-    );
 
     this._pageSearchParameters = pageSearchParameters;
     // Default to what the page started with
@@ -75,6 +61,23 @@ class RoomDirectoryViewModel extends ViewModel {
           const path = this.navigation.pathFrom([]);
           this.navigation.applyPath(path);
         },
+      })
+    );
+
+    this._rooms = new ObservableArray(
+      rooms.map((room) => {
+        return {
+          roomId: room.room_id,
+          canonicalAlias: room.canonical_alias,
+          name: room.name,
+          mxcAvatarUrl: room.avatar_url,
+          homeserverUrlToPullMediaFrom: homeserverUrl,
+          numJoinedMembers: room.num_joined_members,
+          topic: room.topic,
+          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(room.room_id, {
+            viaServers: [this.pageSearchParameters.homeserver],
+          }),
+        };
       })
     );
 
