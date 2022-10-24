@@ -251,7 +251,7 @@ class RoomDirectoryView extends TemplateView {
                   ]),
                   t.p({}, t.strong(`Isn't this a security risk?`)),
                   t.p({}, [
-                    `Not really. Usually, people are worried about returning details because it makes it easier for people to know how to prod and poke and get better feedback about what's going wrong to craft exploits. But the `,
+                    `Not really. Usually, people are worried about returning details because it makes it easier for people to probe the system by getting better feedback about what's going wrong to craft exploits. But the `,
                     t.a(
                       { href: 'https://github.com/matrix-org/matrix-public-archive' },
                       'Matrix Public Archive'
