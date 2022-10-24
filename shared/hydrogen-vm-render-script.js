@@ -326,7 +326,7 @@ async function mountHydrogen() {
         },
         tag.a(
           {
-            href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
+            href: matrixPublicArchiveURLCreator.permalinkForRoom(roomData.id),
             rel: 'noopener',
             target: '_blank',
           },

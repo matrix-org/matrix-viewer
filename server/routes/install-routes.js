@@ -58,7 +58,10 @@ function installRoutes(app) {
 
   app.use('/', require('./room-directory-routes'));
 
-  app.use('/:roomIdOrAlias', require('./room-routes'));
+  // For room aliases
+  app.use('/r/:roomIdOrAlias', require('./room-routes'));
+  // For room ID's
+  app.use('/roomid/:roomIdOrAlias', require('./room-routes'));
 }
 
 module.exports = installRoutes;

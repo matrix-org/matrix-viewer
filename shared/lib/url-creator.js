@@ -17,8 +17,8 @@ class URLCreator {
     this._basePath = basePath;
   }
 
-  permalinkForRoomId(roomId) {
-    return `https://matrix.to/#/${roomId}`;
+  permalinkForRoom(roomIdOrAlias) {
+    return `https://matrix.to/#/${roomIdOrAlias}`;
   }
 
   roomDirectoryUrl({ searchTerm, homeserver, paginationToken } = {}) {
@@ -36,12 +36,19 @@ class URLCreator {
     return `${this._basePath}${qsToUrlPiece(qs)}`;
   }
 
-  archiveUrlForRoom(roomId, { viaServers = [] } = {}) {
-    assert(roomId);
+  archiveUrlForRoom(roomIdOrAlias, { viaServers = [] } = {}) {
+    assert(roomIdOrAlias);
     let qs = new URLSearchParams();
     [].concat(viaServers).forEach((viaServer) => {
       qs.append('via', viaServer);
     });
+
+    let asdf;
+    if (roomIdOrAlias.startsWith('#')) {
+      asdf = `/r/${roomIdOrAlias}`;
+    } else if (roomIdOrAlias.startsWith('!')) {
+      asdf = `/roomid/${roomIdOrAlias}`;
+    }
 
     return `${urlJoin(this._basePath, `${roomId}`)}${qsToUrlPiece(qs)}`;
   }
