@@ -114,12 +114,12 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
     // Find the closest day to today with messages
     const { originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
-      roomId: roomIdOrAlias,
+      roomId,
       ts: dateBeforeJoin,
       direction: 'b',
     });
@@ -221,18 +221,18 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
-      fetchRoomData(matrixAccessToken, roomIdOrAlias),
+      fetchRoomData(matrixAccessToken, roomId),
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
       fetchEventsFromTimestampBackwards({
         accessToken: matrixAccessToken,
-        roomId: roomIdOrAlias,
+        roomId,
         ts: toTimestamp,
         // We fetch one more than the `archiveMessageLimit` so that we can see
         // there are too many messages from the given day. If we have over the

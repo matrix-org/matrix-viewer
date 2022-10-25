@@ -138,7 +138,7 @@ async function joinRoom({ client, roomId, viaServers }) {
 
   const joinRoomUrl = urlJoin(
     client.homeserverUrl,
-    `/_matrix/client/v3/join/${roomId}?${qs.toString()}`
+    `/_matrix/client/v3/join/${encodeURIComponent(roomId)}?${qs.toString()}`
   );
   const joinRoomResponse = await fetchEndpointAsJson(joinRoomUrl, {
     method: 'POST',
@@ -174,12 +174,16 @@ async function sendEvent({ client, roomId, eventType, stateKey, content, timesta
   if (stateKey) {
     url = urlJoin(
       client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${roomId}/state/${eventType}/${stateKey}?${qs.toString()}`
+      `/_matrix/client/v3/rooms/${encodeURIComponent(
+        roomId
+      )}/state/${eventType}/${stateKey}?${qs.toString()}`
     );
   } else {
     url = urlJoin(
       client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${roomId}/send/${eventType}/${getTxnId()}?${qs.toString()}`
+      `/_matrix/client/v3/rooms/${encodeURIComponent(
+        roomId
+      )}/send/${eventType}/${getTxnId()}?${qs.toString()}`
     );
   }
 

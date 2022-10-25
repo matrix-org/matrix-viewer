@@ -39,7 +39,10 @@ class CalendarViewModel extends ViewModel {
   }
 
   archiveUrlForDate(date) {
-    return this._matrixPublicArchiveURLCreator.archiveUrlForDate(this._room.id, date);
+    return this._matrixPublicArchiveURLCreator.archiveUrlForDate(
+      this._room.canonicalAlias || this._room.id,
+      date
+    );
   }
 
   prevMonth() {

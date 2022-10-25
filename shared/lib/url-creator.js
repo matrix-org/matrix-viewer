@@ -18,6 +18,7 @@ class URLCreator {
   }
 
   permalinkForRoom(roomIdOrAlias) {
+    // We don't `encodeURIComponent(...)` because the URL looks nicer without encoded things
     return `https://matrix.to/#/${roomIdOrAlias}`;
   }
 
@@ -38,6 +39,7 @@ class URLCreator {
 
   _getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias) {
     let urlPath;
+    // We don't `encodeURIComponent(...)` because the URL looks nicer without encoded things
     if (roomIdOrAlias.startsWith('#')) {
       urlPath = `/r/${roomIdOrAlias.replace(/^#/, '')}`;
     } else if (roomIdOrAlias.startsWith('!')) {

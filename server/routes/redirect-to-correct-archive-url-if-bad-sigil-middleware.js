@@ -45,7 +45,7 @@ function redirectToCorrectArchiveUrlIfBadSigilMiddleware(req, res, next) {
       `(/(?:r|roomid))?/${escapeStringRegexp(roomIdOrAliasDirty)}(/?.*)`
     );
     urlObj.pathname = urlObj.pathname.replace(dirtyPathRegex, (_match, _beforePath, afterPath) => {
-      return `/${entityDescriptor}/${roomIdOrAliasWithoutSigil}${afterPath}`;
+      return `/${entityDescriptor}/${encodeURIComponent(roomIdOrAliasWithoutSigil)}${afterPath}`;
     });
 
     res.redirect(301, urlObj.toString());

@@ -76,7 +76,9 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
   // event mark.
   const contextEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/r0/rooms/${roomId}/context/${eventIdForTimestamp}?limit=0&filter={"lazy_load_members":true}`
+    `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(
+      eventIdForTimestamp
+    )}?limit=0&filter={"lazy_load_members":true}`
   );
   const contextResData = await fetchEndpointAsJson(contextEndpoint, {
     accessToken,
@@ -86,7 +88,9 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
   // the messages included in the response
   const messagesEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/r0/rooms/${roomId}/messages?dir=b&from=${contextResData.end}&limit=${limit}&filter={"lazy_load_members":true}`
+    `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/messages?dir=b&from=${encodeURIComponent(
+      contextResData.end
+    )}&limit=${limit}&filter={"lazy_load_members":true}`
   );
   const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
     accessToken,

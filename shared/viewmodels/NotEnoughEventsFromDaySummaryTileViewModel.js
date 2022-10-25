@@ -33,6 +33,7 @@ class NotEnoughEventsFromDaySummaryTileViewModel extends SimpleTile {
   }
 
   get jumpToNextActivityUrl() {
+    console.log('this._entry TODO', this._entry);
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(this._entry.roomId, {
       ts: this.rangeEndTimestamp,
       dir: 'f',

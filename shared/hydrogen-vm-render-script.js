@@ -143,6 +143,7 @@ async function mountHydrogen() {
   const room = {
     name: roomData.name,
     id: roomData.id,
+    canonicalAlias: roomData.canonicalAlias,
     avatarUrl: roomData.avatarUrl,
     avatarColorId: roomData.id,
     mediaRepository: mediaRepository,
