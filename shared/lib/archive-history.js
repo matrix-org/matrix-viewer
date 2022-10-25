@@ -28,20 +28,52 @@ class ArchiveHistory extends History {
     // downstream call of `urlRouter.attach()` which we do when bootstraping
     // everything.
     if (window.history) {
-      let replacingUrl = document?.location?.search + url;
-      // This is a way to make sure the hash gets cleared out
-      if (url === '') {
+      let replacingUrl;
+      // Hydrogen hash routing on the end of the URL
+      if (url.startsWith('#')) {
+        replacingUrl = url;
+      }
+      // Hydrogen hash routing: This is the sign that Hydrogen is navigating back to the
+      // root. Because of our custom archive logic, the `#` is removed before it gets
+      // here. But we just want to make sure the hash gets cleared out while maintaining
+      // our path and query parameters.
+      //
+      // Before: /foo?search=bar#/developer-options
+      // pushUrlSilently(url='')
+      // After: /foo?search=bar
+      else if (url === '') {
         replacingUrl = document?.location?.pathname + document?.location?.search;
+      }
+      // Otherwise, it's probably an absolute URL that we can totally replace the page
+      // URL with
+      else {
+        replacingUrl = url;
       }
       super.replaceUrlSilently(replacingUrl);
     }
   }
 
   pushUrlSilently(url) {
-    let replacingUrl = document?.location?.search + url;
-    // This is a way to make sure the hash gets cleared out
-    if (url === '') {
+    let replacingUrl;
+    // Hydrogen hash routing on the end of the URL
+    if (url.startsWith('#')) {
+      replacingUrl = url;
+    }
+    // Hydrogen hash routing: This is the sign that Hydrogen is navigating back to the
+    // root. Because of our custom archive logic, the `#` is removed before it gets
+    // here. But we just want to make sure the hash gets cleared out while maintaining
+    // our path and query parameters.
+    //
+    // Before: /foo?search=bar#/developer-options
+    // pushUrlSilently(url='')
+    // After: /foo?search=bar
+    else if (url === '') {
       replacingUrl = document?.location?.pathname + document?.location?.search;
+    }
+    // Otherwise, it's probably an absolute URL that we can totally replace the page
+    // URL with
+    else {
+      replacingUrl = url;
     }
     super.pushUrlSilently(replacingUrl);
   }
