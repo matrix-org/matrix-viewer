@@ -213,7 +213,7 @@ class RoomDirectoryView extends TemplateView {
               return t.section({ className: 'RoomDirectoryView_roomListError' }, [
                 t.h3('❗ Unable to fetch rooms from room directory'),
                 t.p({}, [
-                  `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search term or select a different homeserver to look at. If this problem persists, please open a `,
+                  `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search or select a different homeserver to look at. If this problem persists, please check the homeserver status and with a homeserver admin first, then open a `,
                   t.a(
                     { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
                     'bug report'
@@ -234,7 +234,7 @@ class RoomDirectoryView extends TemplateView {
                   { className: 'RoomDirectoryView_codeBlock' },
                   t.code({}, vm.roomFetchError.stack)
                 ),
-                t.p({}, `The  error occured with these search paramers:`),
+                t.p({}, `The error occured with these search parameters:`),
                 t.pre(
                   { className: 'RoomDirectoryView_codeBlock' },
                   t.code({}, JSON.stringify(vm.pageSearchParameters, null, 2))
@@ -251,7 +251,7 @@ class RoomDirectoryView extends TemplateView {
                   ]),
                   t.p({}, t.strong(`Isn't this a security risk?`)),
                   t.p({}, [
-                    `Not really. Usually, people are worried about returning details because it makes it easier for people to know how to prod and poke and get better feedback about what's going wrong to craft exploits. But the `,
+                    `Not really. Usually, people are worried about returning details because it makes it easier for people to probe the system by getting better feedback about what's going wrong to craft exploits. But the `,
                     t.a(
                       { href: 'https://github.com/matrix-org/matrix-public-archive' },
                       'Matrix Public Archive'
