@@ -8,6 +8,7 @@ const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
 const getVersionTags = require('../lib/get-version-tags');
 const preventClickjackingMiddleware = require('./prevent-clickjacking-middleware');
 const contentSecurityPolicyMiddleware = require('./content-security-policy-middleware');
+const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
@@ -58,10 +59,12 @@ function installRoutes(app) {
 
   app.use('/', require('./room-directory-routes'));
 
-  // For room aliases
-  app.use('/r/:roomIdOrAlias', require('./room-routes'));
-  // For room ID's
-  app.use('/roomid/:roomIdOrAlias', require('./room-routes'));
+  // For room aliases (/r) or room ID's (/roomid)
+  app.use('/:entityDescriptor(r|roomid)/:roomIdOrAliasDirty', require('./room-routes'));
+
+  // Correct any honest mistakes: If someone accidentally put the sigil in the URL, then
+  // redirect them to the correct URL without the sigil to the correct path above.
+  app.use('/:roomIdOrAliasDirty', redirectToCorrectArchiveUrlIfBadSigil);
 }
 
 module.exports = installRoutes;

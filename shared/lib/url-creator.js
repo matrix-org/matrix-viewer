@@ -36,6 +36,21 @@ class URLCreator {
     return `${this._basePath}${qsToUrlPiece(qs)}`;
   }
 
+  _getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias) {
+    let urlPath;
+    if (roomIdOrAlias.startsWith('#')) {
+      urlPath = `/r/${roomIdOrAlias.replace(/^#/, '')}`;
+    } else if (roomIdOrAlias.startsWith('!')) {
+      urlPath = `/roomid/${roomIdOrAlias.replace(/^!/, '')}`;
+    } else {
+      throw new Error(
+        'URLCreator._getArchiveUrlPathForRoomIdOrAlias(...): roomIdOrAlias should start with # (alias) or ! (room ID)'
+      );
+    }
+
+    return urlPath;
+  }
+
   archiveUrlForRoom(roomIdOrAlias, { viaServers = [] } = {}) {
     assert(roomIdOrAlias);
     let qs = new URLSearchParams();
@@ -43,18 +58,13 @@ class URLCreator {
       qs.append('via', viaServer);
     });
 
-    let asdf;
-    if (roomIdOrAlias.startsWith('#')) {
-      asdf = `/r/${roomIdOrAlias}`;
-    } else if (roomIdOrAlias.startsWith('!')) {
-      asdf = `/roomid/${roomIdOrAlias}`;
-    }
+    const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
 
-    return `${urlJoin(this._basePath, `${roomId}`)}${qsToUrlPiece(qs)}`;
+    return `${urlJoin(this._basePath, `${urlPath}`)}${qsToUrlPiece(qs)}`;
   }
 
-  archiveUrlForDate(roomId, date, { viaServers = [] } = {}) {
-    assert(roomId);
+  archiveUrlForDate(roomIdOrAlias, date, { viaServers = [] } = {}) {
+    assert(roomIdOrAlias);
     assert(date);
 
     let qs = new URLSearchParams();
@@ -62,15 +72,17 @@ class URLCreator {
       qs.append('via', viaServer);
     });
 
+    const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
+
     // Gives the date in YYYY/mm/dd format.
     // date.toISOString() -> 2022-02-16T23:20:04.709Z
     const urlDate = date.toISOString().split('T')[0].replaceAll('-', '/');
 
-    return `${urlJoin(this._basePath, `${roomId}/date/${urlDate}`)}${qsToUrlPiece(qs)}`;
+    return `${urlJoin(this._basePath, `${urlPath}/date/${urlDate}`)}${qsToUrlPiece(qs)}`;
   }
 
-  archiveJumpUrlForRoom(roomId, { ts, dir }) {
-    assert(roomId);
+  archiveJumpUrlForRoom(roomIdOrAlias, { ts, dir }) {
+    assert(roomIdOrAlias);
     assert(ts);
     assert(dir);
 
@@ -78,7 +90,9 @@ class URLCreator {
     qs.append('ts', ts);
     qs.append('dir', dir);
 
-    return `${urlJoin(this._basePath, `${roomId}/jump`)}${qsToUrlPiece(qs)}`;
+    const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
+
+    return `${urlJoin(this._basePath, `${urlPath}/jump`)}${qsToUrlPiece(qs)}`;
   }
 }
 

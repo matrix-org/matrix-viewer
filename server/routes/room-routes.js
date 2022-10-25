@@ -8,6 +8,7 @@ const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
 const timeoutMiddleware = require('./timeout-middleware');
+const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
@@ -31,6 +32,30 @@ const router = express.Router({
   // Preserve the req.params values from the parent router.
   mergeParams: true,
 });
+
+const VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP = {
+  r: '#',
+  roomid: '!',
+};
+const validSigilList = Object.values(VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP);
+const sigilRe = new RegExp(`^(${validSigilList.join('|')})`);
+
+function getRoomIdOrAliasFromReq(req) {
+  const entityDescriptor = req.params.entityDescriptor;
+  // This could be with or with our without the sigil. Although the correct thing here
+  // is to have no sigil. We will try to correct it for them in any case.
+  const roomIdOrAliasDirty = req.params.roomIdOrAliasDirty;
+  const roomIdOrAliasWithoutSigil = roomIdOrAliasDirty.replace(sigilRe, '');
+
+  const sigil = VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP[entityDescriptor];
+  if (!sigil) {
+    throw new Error(
+      `Unknown entityDescriptor=${entityDescriptor} has no sigil. This is an error with the Matrix Public Archive itself (please open an issue).`
+    );
+  }
+
+  return `${sigil}${roomIdOrAliasWithoutSigil}`;
+}
 
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
@@ -75,14 +100,12 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
+router.use(redirectToCorrectArchiveUrlIfBadSigil);
+
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    const roomIdOrAlias = req.params.roomIdOrAlias;
-    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
-    if (!isValidAlias) {
-      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
-    }
+    const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     // In case we're joining a new room for the first time,
     // let's avoid redirecting to our join event by getting
@@ -125,11 +148,7 @@ router.get(
 router.get(
   '/jump',
   asyncHandler(async function (req, res) {
-    const roomIdOrAlias = req.params.roomIdOrAlias;
-    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
-    if (!isValidAlias) {
-      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
-    }
+    const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     const ts = parseInt(req.query.ts, 10);
     assert(!Number.isNaN(ts), '?ts query parameter must be a number');
@@ -160,11 +179,7 @@ router.get(
   '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
   timeoutMiddleware,
   asyncHandler(async function (req, res) {
-    const roomIdOrAlias = req.params.roomIdOrAlias;
-    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
-    if (!isValidAlias) {
-      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
-    }
+    const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     const archiveMessageLimit = config.get('archiveMessageLimit');
     assert(archiveMessageLimit);
