@@ -275,7 +275,7 @@ router.get(
       // need to look at the oldest event in the chronological list.
       //
       // XXX: In the future when we also fetch events from days after, we will
-      // need next day check.
+      // need to change this next day check.
       events[0].origin_server_ts >= fromTimestamp
     ) {
       res.send('TODO: Redirect user to smaller hour range');
