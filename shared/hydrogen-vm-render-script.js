@@ -191,7 +191,8 @@ async function mountHydrogen() {
     // -1 so we're not at 00:00:00 of the next day
     origin_server_ts: toTimestamp - 1,
     content: {
-      daySummaryKind: daySummaryKind,
+      canonicalAlias: roomData.canonicalAlias,
+      daySummaryKind,
       // The timestamp from the URL that was originally visited
       dayTimestamp: fromTimestamp,
       // The end of the range to use as a jumping off point to the next activity

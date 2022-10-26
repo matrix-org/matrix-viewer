@@ -5,11 +5,12 @@ const { ViewModel } = require('hydrogen-view-sdk');
 const DEBUG_ACTIVE_DATE_INTERSECTION_OBSERVER_LOCAL_STORAGE_KEY =
   'debugActiveDateIntersectionObserver';
 
-class DeveloperOptionsViewModel extends ViewModel {
+class DeveloperOptionsContentViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { debugActiveDateIntersectionObserver = false } = options;
+    const { room, debugActiveDateIntersectionObserver = false } = options;
 
+    this._room = room;
     this._debugActiveDateIntersectionObserver = debugActiveDateIntersectionObserver;
   }
 
@@ -36,6 +37,10 @@ class DeveloperOptionsViewModel extends ViewModel {
     );
     this.emitChange('debugActiveDateIntersectionObserver');
   }
+
+  get roomId() {
+    return this._room.id;
+  }
 }
 
-module.exports = DeveloperOptionsViewModel;
+module.exports = DeveloperOptionsContentViewModel;

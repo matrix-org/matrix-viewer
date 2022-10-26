@@ -28,6 +28,7 @@ class DeveloperOptionsContentView extends TemplateView {
         ]),
       ]),
       t.section([t.h4('Backend timing'), 'todo: window.tracingSpansForRequest']),
+      t.section([t.h4('Room ID'), t.pre({}, t.code({}, vm.roomId))]),
     ]);
   }
 }

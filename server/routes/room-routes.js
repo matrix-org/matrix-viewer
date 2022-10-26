@@ -155,10 +155,14 @@ router.get(
     const dir = req.query.dir;
     assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
 
+    // We have to wait for the room join to happen first before we can use the jump to
+    // date endpoint
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+
     // Find the closest day to today with messages
     const { originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
-      roomId: roomIdOrAlias,
+      roomId,
       ts: ts,
       direction: dir,
     });
@@ -288,7 +292,15 @@ router.get(
       {
         fromTimestamp,
         toTimestamp,
-        roomData,
+        roomData: {
+          ...roomData,
+          // The `canonicalAlias` will take precedence over the `roomId` when present so we only
+          // want to use it if that's what the user originally browsed to. We shouldn't
+          // try to switch someone over to the room alias if they browsed from the room
+          // ID or vice versa.
+          canonicalAlias:
+            roomIdOrAlias === roomData.canonicalAlias ? roomData.canonicalAlias : undefined,
+        },
         events,
         stateEventMap,
         shouldIndex,
