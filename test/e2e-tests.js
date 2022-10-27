@@ -778,7 +778,7 @@ describe('matrix-public-archive', () => {
       });
     });
 
-    describe('fix honest mistake redirects', () => {
+    describe('redirects', () => {
       const controller = new AbortController();
       const { signal } = controller;
 
@@ -800,69 +800,153 @@ describe('matrix-public-archive', () => {
         });
       }
 
-      let testRedirects = [];
-      before(async () => {
-        const client = await getTestClientForHs(testMatrixServerUrl1);
-        const roomId = await createTestRoom(client);
-        const roomIdWithoutSigil = roomId.replace(/^(#|!)/, '');
-        const canonicalAlias = await getCanonicalAlias({ client, roomId });
-        const canonicalAliasWithoutSigil = canonicalAlias.replace(/^(#|!)/, '');
-
-        testRedirects.push(
-          ...[
-            {
-              description: 'Using a room ID with a prefix sigil (pasting a room ID)',
-              from: urlJoin(basePath, `/roomid/${roomId}`),
-              to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
-            },
-            {
-              description: 'Using a room ID with a prefix sigil with extra path after',
-              from: urlJoin(basePath, `/roomid/${roomId}/date/2022/09/20?via=my.synapse.server`),
-              to: urlJoin(
-                basePath,
-                `/roomid/${roomIdWithoutSigil}/date/2022/09/20?via=my.synapse.server`
-              ),
-            },
-            {
-              description: 'Pasting a room ID after the domain root',
-              from: urlJoin(basePath, `/${roomId}`),
-              to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
-            },
-            {
-              description: 'URI encoded room ID',
-              from: urlJoin(basePath, `/${encodeURIComponent(roomId)}`),
-              to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
-            },
-            {
-              description: 'URI encoded canonical alias',
-              from: urlJoin(basePath, `/${encodeURIComponent(canonicalAlias)}`),
-              to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
-            },
-            {
-              description:
-                'URI encoded canonical alias but on a visiting `/roomid/xxx` will redirect to alias `/r/xxx`',
-              from: urlJoin(basePath, `/roomid/${encodeURIComponent(canonicalAlias)}`),
-              to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
-            },
-          ]
-        );
-      });
-
       after(() => {
         // Abort any in-flight request
         controller.abort();
       });
 
-      it('redirects people to the correct place', async () => {
-        assert(testRedirects.length > 0, 'Expected more than 0 redirects to be tested');
+      describe('general', () => {
+        let testRedirects = [];
+        before(async () => {
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+          const roomIdWithoutSigil = roomId.replace(/^(#|!)/, '');
+          const canonicalAlias = await getCanonicalAlias({ client, roomId });
+          const canonicalAliasWithoutSigil = canonicalAlias.replace(/^(#|!)/, '');
 
-        for (const testRedirect of testRedirects) {
-          const res = await httpRequest(testRedirect.from);
+          const nowDate = new Date();
+          // Gives the date in YYYY/mm/dd format.
+          // date.toISOString() -> 2022-02-16T23:20:04.709Z
+          const urlDate = nowDate.toISOString().split('T')[0].replaceAll('-', '/');
 
-          assert.strictEqual(res.statusCode, 301, 'We expected a 301 redirect');
-          // Make sure it redirected to the right location
-          assert.strictEqual(res.headers.location, testRedirect.to, testRedirect.description);
-        }
+          // Warn if it's close to the end of the UTC day. This test could be a flakey
+          // and cause a failure if the room was created just before midnight (UTC) and
+          // this timestamp comes after midnight. The redirect would want to go to the
+          // day before when the latest event was created instead of the `nowDate` we
+          // expected in the URL's.
+          //
+          // We could lookup the date of the latest event to use the `origin_server_ts`
+          // from ourselves which may be less faff than this big warning but 🤷
+          const utcMidnightOfNowDay = Date.UTC(
+            nowDate.getUTCFullYear(),
+            nowDate.getUTCMonth(),
+            nowDate.getUTCDate() + 1
+          );
+          if (utcMidnightOfNowDay - nowDate.getTime() < 30 * 1000 /* 30 seconds */) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `Test is being run at the end of the UTC day. This could result in a flakey ` +
+                `failure where the room was created before midnight (UTC) but the \`nowDate\` ` +
+                `was after midnight meaning our expected URL's would be a day ahead. Since ` +
+                `this is an e2e test we can't control the date/time exactly.`
+            );
+          }
+
+          testRedirects.push(
+            ...[
+              {
+                description:
+                  'Visiting via a room ID will keep the URL as a room ID (avoid the canonical alias taking precedence)',
+                from: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+                to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}/date/${urlDate}`),
+              },
+              {
+                description: 'Visiting via a room alias will keep the URL as a room alias',
+                from: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
+                to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}/date/${urlDate}`),
+              },
+              {
+                description:
+                  'Removes the `?via` query parameter after joining from hitting the first endpoint (via parameter only necessary for room IDs)',
+                from: urlJoin(
+                  basePath,
+                  `/roomid/${roomIdWithoutSigil}?via=${HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl1]}`
+                ),
+                to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}/date/${urlDate}`),
+              },
+            ]
+          );
+        });
+
+        it('redirects people to the correct place (see internal test matrix)', async () => {
+          assert(testRedirects.length > 0, 'Expected more than 0 redirects to be tested');
+
+          for (const testRedirect of testRedirects) {
+            const res = await httpRequest(testRedirect.from);
+
+            // This should be a temporary redirect because the latest date will change
+            // as new events are sent for example.
+            assert.strictEqual(res.statusCode, 302, 'We expected a 302 temporary redirect');
+            // Make sure it redirected to the right location
+            assert.strictEqual(res.headers.location, testRedirect.to, testRedirect.description);
+          }
+        });
+      });
+
+      describe('fix honest mistakes and redirect to the correct place', () => {
+        let testRedirects = [];
+        before(async () => {
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+          const roomIdWithoutSigil = roomId.replace(/^(#|!)/, '');
+          const canonicalAlias = await getCanonicalAlias({ client, roomId });
+          const canonicalAliasWithoutSigil = canonicalAlias.replace(/^(#|!)/, '');
+
+          testRedirects.push(
+            ...[
+              {
+                description: 'Using a room ID with a prefix sigil (pasting a room ID)',
+                from: urlJoin(basePath, `/roomid/${roomId}`),
+                to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+              },
+              {
+                description: 'Using a room ID with a prefix sigil with extra path after',
+                from: urlJoin(basePath, `/roomid/${roomId}/date/2022/09/20?via=my.synapse.server`),
+                to: urlJoin(
+                  basePath,
+                  `/roomid/${roomIdWithoutSigil}/date/2022/09/20?via=my.synapse.server`
+                ),
+              },
+              {
+                description: 'Pasting a room ID with a prefix sigil after the domain root',
+                from: urlJoin(basePath, `/${roomId}`),
+                to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+              },
+              {
+                description: 'URI encoded room ID',
+                from: urlJoin(basePath, `/${encodeURIComponent(roomId)}`),
+                to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+              },
+              {
+                description: 'URI encoded canonical alias',
+                from: urlJoin(basePath, `/${encodeURIComponent(canonicalAlias)}`),
+                to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
+              },
+              {
+                description:
+                  'URI encoded canonical alias but on a visiting `/roomid/xxx` will redirect to alias `/r/xxx`',
+                from: urlJoin(basePath, `/roomid/${encodeURIComponent(canonicalAlias)}`),
+                to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
+              },
+            ]
+          );
+        });
+
+        it('redirects people to the correct place (see internal test matrix)', async () => {
+          assert(testRedirects.length > 0, 'Expected more than 0 redirects to be tested');
+
+          for (const testRedirect of testRedirects) {
+            const res = await httpRequest(testRedirect.from);
+
+            assert.strictEqual(
+              res.statusCode,
+              301,
+              'We expected a 301 permanent redirect for mistakes'
+            );
+            // Make sure it redirected to the right location
+            assert.strictEqual(res.headers.location, testRedirect.to, testRedirect.description);
+          }
+        });
       });
     });
   });

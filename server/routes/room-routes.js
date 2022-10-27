@@ -130,7 +130,10 @@ router.get(
     // Redirect to a day with messages
     res.redirect(
       matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
-        viaServers: req.query.via,
+        // We can avoid passing along the `via` query parameter because we already
+        // joined the room above (see `ensureRoomJoined`).
+        //
+        //viaServers: req.query.via,
       })
     );
   })
