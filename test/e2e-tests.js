@@ -4,6 +4,7 @@ process.env.NODE_ENV = 'test';
 
 const assert = require('assert');
 const path = require('path');
+const http = require('http');
 const urlJoin = require('url-join');
 const escapeStringRegexp = require('escape-string-regexp');
 const { parseHTML } = require('linkedom');
@@ -16,6 +17,7 @@ const config = require('../server/lib/config');
 const {
   getTestClientForHs,
   createTestRoom,
+  getCanonicalAlias,
   joinRoom,
   sendEvent,
   sendMessage,
@@ -773,6 +775,94 @@ describe('matrix-public-archive', () => {
           dom.document.querySelector(`meta[name="robots"]`)?.getAttribute('content'),
           'noindex, nofollow'
         );
+      });
+    });
+
+    describe('fix honest mistake redirects', () => {
+      const controller = new AbortController();
+      const { signal } = controller;
+
+      // We have to use this over `fetch` because `fetch` does not allow us to manually
+      // follow redirects and get the resultant URL, see
+      // https://github.com/whatwg/fetch/issues/763
+      function httpRequest(url) {
+        return new Promise((resolve, reject) => {
+          const req = http.request(url, { signal });
+          req.on('response', (res) => {
+            resolve(res);
+          });
+          req.on('error', (err) => {
+            reject(err);
+          });
+
+          // This must be called for the request to actually go out
+          req.end();
+        });
+      }
+
+      let testRedirects = [];
+      before(async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
+        const roomIdWithoutSigil = roomId.replace(/^(#|!)/, '');
+        const canonicalAlias = await getCanonicalAlias({ client, roomId });
+        const canonicalAliasWithoutSigil = canonicalAlias.replace(/^(#|!)/, '');
+
+        testRedirects.push(
+          ...[
+            {
+              description: 'Using a room ID with a prefix sigil (pasting a room ID)',
+              from: urlJoin(basePath, `/roomid/${roomId}`),
+              to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+            },
+            {
+              description: 'Using a room ID with a prefix sigil with extra path after',
+              from: urlJoin(basePath, `/roomid/${roomId}/date/2022/09/20?via=my.synapse.server`),
+              to: urlJoin(
+                basePath,
+                `/roomid/${roomIdWithoutSigil}/date/2022/09/20?via=my.synapse.server`
+              ),
+            },
+            {
+              description: 'Pasting a room ID after the domain root',
+              from: urlJoin(basePath, `/${roomId}`),
+              to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+            },
+            {
+              description: 'URI encoded room ID',
+              from: urlJoin(basePath, `/${encodeURIComponent(roomId)}`),
+              to: urlJoin(basePath, `/roomid/${roomIdWithoutSigil}`),
+            },
+            {
+              description: 'URI encoded canonical alias',
+              from: urlJoin(basePath, `/${encodeURIComponent(canonicalAlias)}`),
+              to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
+            },
+            {
+              description:
+                'URI encoded canonical alias but on a visiting `/roomid/xxx` will redirect to alias `/r/xxx`',
+              from: urlJoin(basePath, `/roomid/${encodeURIComponent(canonicalAlias)}`),
+              to: urlJoin(basePath, `/r/${canonicalAliasWithoutSigil}`),
+            },
+          ]
+        );
+      });
+
+      after(() => {
+        // Abort any in-flight request
+        controller.abort();
+      });
+
+      it('redirects people to the correct place', async () => {
+        assert(testRedirects.length > 0, 'Expected more than 0 redirects to be tested');
+
+        for (const testRedirect of testRedirects) {
+          const res = await httpRequest(testRedirect.from);
+
+          assert.strictEqual(res.statusCode, 301, 'We expected a 301 redirect');
+          // Make sure it redirected to the right location
+          assert.strictEqual(res.headers.location, testRedirect.to, testRedirect.description);
+        }
       });
     });
   });

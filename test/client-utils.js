@@ -124,6 +124,23 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
   return roomId;
 }
 
+async function getCanonicalAlias({ client, roomId }) {
+  const stateCanonicalAliasRes = await fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/m.room.canonical_alias`
+    ),
+    {
+      accessToken: client.accessToken,
+    }
+  );
+
+  const canonicalAlias = stateCanonicalAliasRes.alias;
+  assert(canonicalAlias, `getCanonicalAlias() did not return canonicalAlias as expected`);
+
+  return canonicalAlias;
+}
+
 async function joinRoom({ client, roomId, viaServers }) {
   let qs = new URLSearchParams();
   if (viaServers) {
@@ -313,6 +330,7 @@ module.exports = {
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
+  getCanonicalAlias,
   joinRoom,
   sendEvent,
   sendMessage,
