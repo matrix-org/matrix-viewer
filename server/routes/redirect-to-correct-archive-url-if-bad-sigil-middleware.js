@@ -61,6 +61,7 @@ function redirectToCorrectArchiveUrlIfBadSigilMiddleware(req, res, next) {
       return `/${entityDescriptor}/${roomIdOrAliasWithoutSigil}${afterPath}`;
     });
 
+    // 301 permanent redirect any mistakes to the correct place
     res.redirect(301, urlObj.toString());
     return;
   }

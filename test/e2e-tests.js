@@ -826,7 +826,9 @@ describe('matrix-public-archive', () => {
           // expected in the URL's.
           //
           // We could lookup the date of the latest event to use the `origin_server_ts`
-          // from ourselves which may be less faff than this big warning but 🤷
+          // from ourselves which may be less faff than this big warning but 🤷 - that's
+          // kinda like making sure `/timestamp_to_event` works by using
+          // `/timestamp_to_event`.
           const utcMidnightOfNowDay = Date.UTC(
             nowDate.getUTCFullYear(),
             nowDate.getUTCMonth(),
