@@ -288,6 +288,21 @@ class RoomDirectoryView extends TemplateView {
             t.a({ className: 'RoomDirectoryView_paginationButton', href: vm.nextPageUrl }, 'Next'),
           ]),
         ]),
+        t.if(
+          (vm) => vm.isPageRedirectingFromUrlHash,
+          (t /*, vm*/) => {
+            return t.div({ className: 'RoomDirectoryView_notificationToast', role: 'alert' }, [
+              t.h5(
+                { className: 'RoomDirectoryView_notificationToastTitle' },
+                'Found room alias in URL #hash'
+              ),
+              t.p(
+                { className: 'RoomDirectoryView_notificationToastDescription' },
+                'One sec while we try to redirect you to the right place.'
+              ),
+            ]);
+          }
+        ),
       ]
     );
   }

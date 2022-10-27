@@ -8,6 +8,7 @@ const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
 const getVersionTags = require('../lib/get-version-tags');
 const preventClickjackingMiddleware = require('./prevent-clickjacking-middleware');
 const contentSecurityPolicyMiddleware = require('./content-security-policy-middleware');
+const clientSideRoomAliasHashRedirectRoute = require('./client-side-room-alias-hash-redirect-route');
 const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 function installRoutes(app) {
@@ -61,6 +62,11 @@ function installRoutes(app) {
 
   // For room aliases (/r) or room ID's (/roomid)
   app.use('/:entityDescriptor(r|roomid)/:roomIdOrAliasDirty', require('./room-routes'));
+
+  // Since everything after the hash (`#`) won't make it to the server, let's serve a 404
+  // page that will potentially redirect them to the correct place if they tried
+  // `/r/#room-alias:server/date/2022/10/27` -> `/r/room-alias:server/date/2022/10/27`
+  app.use('/:entityDescriptor(r|roomid)', clientSideRoomAliasHashRedirectRoute);
 
   // Correct any honest mistakes: If someone accidentally put the sigil in the URL, then
   // redirect them to the correct URL without the sigil to the correct path above.

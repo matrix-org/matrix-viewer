@@ -19,6 +19,7 @@ const generateViteConfigForEntryPoint = require('./generate-vite-config-for-entr
 const entryPoints = [
   path.resolve(__dirname, '../public/js/entry-client-hydrogen.js'),
   path.resolve(__dirname, '../public/js/entry-client-room-directory.js'),
+  path.resolve(__dirname, '../public/js/entry-client-room-alias-hash-redirect.js'),
 ];
 
 async function buildClientScripts(extraConfig = {}) {

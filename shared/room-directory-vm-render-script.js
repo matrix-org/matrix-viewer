@@ -11,6 +11,7 @@ const { Platform, Navigation, createRouter } = require('hydrogen-view-sdk');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
+const redirectIfRoomAliasInHash = require('matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash');
 
 const RoomDirectoryView = require('matrix-public-archive-shared/views/RoomDirectoryView');
 const RoomDirectoryViewModel = require('matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel');
@@ -30,6 +31,15 @@ assert(config.basePath);
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
 
 supressBlankAnchorsReloadingThePage();
+
+let roomDirectoryViewModel;
+let isRedirecting = false;
+isRedirecting = redirectIfRoomAliasInHash(matrixPublicArchiveURLCreator, () => {
+  isRedirecting = true;
+  if (roomDirectoryViewModel) {
+    roomDirectoryViewModel.setPageRedirectingFromUrlHash(true);
+  }
+});
 
 async function mountHydrogen() {
   console.log('Mounting Hydrogen...');
@@ -69,7 +79,7 @@ async function mountHydrogen() {
   // page don't say `undefined`.
   urlRouter.attach();
 
-  const roomDirectoryViewModel = new RoomDirectoryViewModel({
+  roomDirectoryViewModel = new RoomDirectoryViewModel({
     // Hydrogen options
     navigation: navigation,
     urlCreator: urlRouter,
@@ -84,6 +94,8 @@ async function mountHydrogen() {
     nextPaginationToken,
     prevPaginationToken,
   });
+  // Update the model with the initial value
+  roomDirectoryViewModel.setPageRedirectingFromUrlHash(isRedirecting);
 
   const view = new RoomDirectoryView(roomDirectoryViewModel);
 

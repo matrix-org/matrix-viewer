@@ -155,6 +155,32 @@
   color: initial;
 }
 
+.RoomDirectoryView_notificationToast {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  max-width: 450px;
+  margin-right: 20px;
+  padding: 20px;
+
+  background: hsl(207deg 36% 18% / 90%);
+  border-radius: 8px;
+
+  color: #fff;
+}
+
+.RoomDirectoryView_notificationToastTitle {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.RoomDirectoryView_notificationToastDescription {
+  margin-top: 1em;
+  margin-bottom: 0;
+}
+
 .RoomDirectoryView_mainContent {
   display: flex;
   flex-direction: column;
