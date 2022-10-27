@@ -74,9 +74,13 @@ class RoomDirectoryViewModel extends ViewModel {
           homeserverUrlToPullMediaFrom: homeserverUrl,
           numJoinedMembers: room.num_joined_members,
           topic: room.topic,
-          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(room.room_id, {
-            viaServers: [this.pageSearchParameters.homeserver],
-          }),
+          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(
+            room.canonical_alias || room.room_id,
+            {
+              // Only include via servers when we have to fallback to the room ID
+              viaServers: room.canonical_alias ? undefined : [this.pageSearchParameters.homeserver],
+            }
+          ),
         };
       })
     );

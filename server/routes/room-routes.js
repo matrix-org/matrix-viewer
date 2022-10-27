@@ -8,6 +8,7 @@ const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
 const timeoutMiddleware = require('./timeout-middleware');
+const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
@@ -31,6 +32,30 @@ const router = express.Router({
   // Preserve the req.params values from the parent router.
   mergeParams: true,
 });
+
+const VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP = {
+  r: '#',
+  roomid: '!',
+};
+const validSigilList = Object.values(VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP);
+const sigilRe = new RegExp(`^(${validSigilList.join('|')})`);
+
+function getRoomIdOrAliasFromReq(req) {
+  const entityDescriptor = req.params.entityDescriptor;
+  // This could be with or with our without the sigil. Although the correct thing here
+  // is to have no sigil. We will try to correct it for them in any case.
+  const roomIdOrAliasDirty = req.params.roomIdOrAliasDirty;
+  const roomIdOrAliasWithoutSigil = roomIdOrAliasDirty.replace(sigilRe, '');
+
+  const sigil = VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP[entityDescriptor];
+  if (!sigil) {
+    throw new Error(
+      `Unknown entityDescriptor=${entityDescriptor} has no sigil. This is an error with the Matrix Public Archive itself (please open an issue).`
+    );
+  }
+
+  return `${sigil}${roomIdOrAliasWithoutSigil}`;
+}
 
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
@@ -75,14 +100,12 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
+router.use(redirectToCorrectArchiveUrlIfBadSigil);
+
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    const roomIdOrAlias = req.params.roomIdOrAlias;
-    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
-    if (!isValidAlias) {
-      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
-    }
+    const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     // In case we're joining a new room for the first time,
     // let's avoid redirecting to our join event by getting
@@ -91,12 +114,12 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
     // Find the closest day to today with messages
     const { originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
-      roomId: roomIdOrAlias,
+      roomId,
       ts: dateBeforeJoin,
       direction: 'b',
     });
@@ -107,7 +130,10 @@ router.get(
     // Redirect to a day with messages
     res.redirect(
       matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
-        viaServers: req.query.via,
+        // We can avoid passing along the `via` query parameter because we already
+        // joined the room above (see `ensureRoomJoined`).
+        //
+        //viaServers: req.query.via,
       })
     );
   })
@@ -125,21 +151,21 @@ router.get(
 router.get(
   '/jump',
   asyncHandler(async function (req, res) {
-    const roomIdOrAlias = req.params.roomIdOrAlias;
-    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
-    if (!isValidAlias) {
-      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
-    }
+    const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     const ts = parseInt(req.query.ts, 10);
     assert(!Number.isNaN(ts), '?ts query parameter must be a number');
     const dir = req.query.dir;
     assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
 
+    // We have to wait for the room join to happen first before we can use the jump to
+    // date endpoint
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+
     // Find the closest day to today with messages
     const { originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
-      roomId: roomIdOrAlias,
+      roomId,
       ts: ts,
       direction: dir,
     });
@@ -160,11 +186,7 @@ router.get(
   '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
   timeoutMiddleware,
   asyncHandler(async function (req, res) {
-    const roomIdOrAlias = req.params.roomIdOrAlias;
-    const isValidAlias = roomIdOrAlias.startsWith('!') || roomIdOrAlias.startsWith('#');
-    if (!isValidAlias) {
-      throw new StatusError(404, `Invalid alias given: ${roomIdOrAlias}`);
-    }
+    const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     const archiveMessageLimit = config.get('archiveMessageLimit');
     assert(archiveMessageLimit);
@@ -206,18 +228,18 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
-      fetchRoomData(matrixAccessToken, roomIdOrAlias),
+      fetchRoomData(matrixAccessToken, roomId),
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
       fetchEventsFromTimestampBackwards({
         accessToken: matrixAccessToken,
-        roomId: roomIdOrAlias,
+        roomId,
         ts: toTimestamp,
         // We fetch one more than the `archiveMessageLimit` so that we can see
         // there are too many messages from the given day. If we have over the
@@ -256,7 +278,7 @@ router.get(
       // need to look at the oldest event in the chronological list.
       //
       // XXX: In the future when we also fetch events from days after, we will
-      // need next day check.
+      // need to change this next day check.
       events[0].origin_server_ts >= fromTimestamp
     ) {
       res.send('TODO: Redirect user to smaller hour range');
@@ -273,7 +295,15 @@ router.get(
       {
         fromTimestamp,
         toTimestamp,
-        roomData,
+        roomData: {
+          ...roomData,
+          // The `canonicalAlias` will take precedence over the `roomId` when present so we only
+          // want to use it if that's what the user originally browsed to. We shouldn't
+          // try to switch someone over to the room alias if they browsed from the room
+          // ID or vice versa.
+          canonicalAlias:
+            roomIdOrAlias === roomData.canonicalAlias ? roomData.canonicalAlias : undefined,
+        },
         events,
         stateEventMap,
         shouldIndex,

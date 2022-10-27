@@ -124,6 +124,23 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
   return roomId;
 }
 
+async function getCanonicalAlias({ client, roomId }) {
+  const stateCanonicalAliasRes = await fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/m.room.canonical_alias`
+    ),
+    {
+      accessToken: client.accessToken,
+    }
+  );
+
+  const canonicalAlias = stateCanonicalAliasRes.alias;
+  assert(canonicalAlias, `getCanonicalAlias() did not return canonicalAlias as expected`);
+
+  return canonicalAlias;
+}
+
 async function joinRoom({ client, roomId, viaServers }) {
   let qs = new URLSearchParams();
   if (viaServers) {
@@ -138,7 +155,7 @@ async function joinRoom({ client, roomId, viaServers }) {
 
   const joinRoomUrl = urlJoin(
     client.homeserverUrl,
-    `/_matrix/client/v3/join/${roomId}?${qs.toString()}`
+    `/_matrix/client/v3/join/${encodeURIComponent(roomId)}?${qs.toString()}`
   );
   const joinRoomResponse = await fetchEndpointAsJson(joinRoomUrl, {
     method: 'POST',
@@ -174,12 +191,16 @@ async function sendEvent({ client, roomId, eventType, stateKey, content, timesta
   if (stateKey) {
     url = urlJoin(
       client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${roomId}/state/${eventType}/${stateKey}?${qs.toString()}`
+      `/_matrix/client/v3/rooms/${encodeURIComponent(
+        roomId
+      )}/state/${eventType}/${stateKey}?${qs.toString()}`
     );
   } else {
     url = urlJoin(
       client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${roomId}/send/${eventType}/${getTxnId()}?${qs.toString()}`
+      `/_matrix/client/v3/rooms/${encodeURIComponent(
+        roomId
+      )}/send/${eventType}/${getTxnId()}?${qs.toString()}`
     );
   }
 
@@ -309,6 +330,7 @@ module.exports = {
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
+  getCanonicalAlias,
   joinRoom,
   sendEvent,
   sendMessage,

@@ -2,7 +2,7 @@
 
 const { ViewModel } = require('hydrogen-view-sdk');
 
-class DeveloperOptionsViewModel extends ViewModel {
+class ModalViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const { title, contentViewModel, closeCallback, open = false } = options;
@@ -35,4 +35,4 @@ class DeveloperOptionsViewModel extends ViewModel {
   }
 }
 
-module.exports = DeveloperOptionsViewModel;
+module.exports = ModalViewModel;

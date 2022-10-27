@@ -143,6 +143,7 @@ async function mountHydrogen() {
   const room = {
     name: roomData.name,
     id: roomData.id,
+    canonicalAlias: roomData.canonicalAlias,
     avatarUrl: roomData.avatarUrl,
     avatarColorId: roomData.id,
     mediaRepository: mediaRepository,
@@ -190,7 +191,8 @@ async function mountHydrogen() {
     // -1 so we're not at 00:00:00 of the next day
     origin_server_ts: toTimestamp - 1,
     content: {
-      daySummaryKind: daySummaryKind,
+      canonicalAlias: roomData.canonicalAlias,
+      daySummaryKind,
       // The timestamp from the URL that was originally visited
       dayTimestamp: fromTimestamp,
       // The end of the range to use as a jumping off point to the next activity
@@ -326,7 +328,7 @@ async function mountHydrogen() {
         },
         tag.a(
           {
-            href: matrixPublicArchiveURLCreator.permalinkForRoomId(roomData.id),
+            href: matrixPublicArchiveURLCreator.permalinkForRoom(roomData.id),
             rel: 'noopener',
             target: '_blank',
           },

@@ -33,10 +33,13 @@ class NotEnoughEventsFromDaySummaryTileViewModel extends SimpleTile {
   }
 
   get jumpToNextActivityUrl() {
-    return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(this._entry.roomId, {
-      ts: this.rangeEndTimestamp,
-      dir: 'f',
-    });
+    return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
+      this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
+      {
+        ts: this.rangeEndTimestamp,
+        dir: 'f',
+      }
+    );
   }
 }
 
