@@ -14,6 +14,7 @@ const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
 const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
+const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 
@@ -162,19 +163,51 @@ router.get(
     // date endpoint
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
+    let originServerTs;
+    let eventIdForTimestamp;
     // Find the closest day to today with messages
-    const { originServerTs } = await timestampToEvent({
+    ({ event_id: eventIdForTimestamp, originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
       roomId,
       ts: ts,
       direction: dir,
-    });
+    }));
+
+    // The goal is to go forward 100 messages, so that when we view the room at that
+    // point going backwards 100 message, we end up at the perfect sam continuation spot
+    // in the room.
+    //
+    // XXX: This is flawed in the fact that when we go `/messages?dir=b` it could
+    // backfill messages which will fill up the response before we perfectly connect and
+    // continue from the position they were jumping from before. When `/messages?dir=f`
+    // backfills, we won't have this problem anymore because any messages backfilled in
+    // the forwards direction would be picked up the same going backwards.
+    if (dir === 'f') {
+      // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
+      // then start the scroll from the top of the page so they can continue.
+      const archiveMessageLimit = config.get('archiveMessageLimit');
+      const messageResData = await getMessagesResponseFromEventId({
+        accessToken: matrixAccessToken,
+        roomId,
+        eventId: eventIdForTimestamp,
+        dir: 'f',
+        limit: archiveMessageLimit,
+      });
+
+      originServerTs = messageResData.chunk[messageResData.chunk.length - 1]?.origin_server_ts;
+    }
+
     if (!originServerTs) {
-      throw new StatusError(404, 'Unable to find day with history');
+      throw new StatusError(
+        404,
+        "Unable to find day with history. This probably means that there isn't more history in this direction."
+      );
     }
 
     // Redirect to a day with messages
     res.redirect(
+      // TODO: Add query parameter that causes the client to start the scroll at the top
+      // when jumping forwards so they can continue reading where they left off.
       matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs))
     );
   })

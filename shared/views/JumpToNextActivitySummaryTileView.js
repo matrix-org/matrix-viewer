@@ -2,7 +2,7 @@
 
 const { TemplateView } = require('hydrogen-view-sdk');
 
-class NotEnoughEventsFromDaySummaryTileView extends TemplateView {
+class JumpToNextActivitySummaryTileView extends TemplateView {
   render(t, vm) {
     const kind = vm.daySummaryKind;
     let selectedDayString = 'the day you selected';
@@ -18,12 +18,12 @@ class NotEnoughEventsFromDaySummaryTileView extends TemplateView {
     } else if (kind === 'some-events-in-day') {
       daySummaryMessage = null;
     } else {
-      throw new Error(`Unknown kind=${kind} passed to NotEnoughEventsFromDaySummaryTileView`);
+      throw new Error(`Unknown kind=${kind} passed to JumpToNextActivitySummaryTileView`);
     }
 
     return t.div(
       {
-        className: 'NotEnoughEventsFromDaySummaryTileView',
+        className: 'JumpToNextActivitySummaryTileView',
         'data-event-id': vm.eventId,
       },
       [
@@ -32,7 +32,7 @@ class NotEnoughEventsFromDaySummaryTileView extends TemplateView {
           (t /*, vm*/) =>
             t.p(
               {
-                className: 'NotEnoughEventsFromDaySummaryTileView_summaryMessage',
+                className: 'JumpToNextActivitySummaryTileView_summaryMessage',
                 'data-testid': `not-enough-events-summary-kind-${kind}`,
               },
               daySummaryMessage
@@ -40,14 +40,14 @@ class NotEnoughEventsFromDaySummaryTileView extends TemplateView {
         ),
         t.a(
           {
-            className: 'NotEnoughEventsFromDaySummaryTileView_nextActivityLink',
+            className: 'JumpToActivitySummaryTileView_activityLink',
             href: vm.jumpToNextActivityUrl,
           },
           [
             'Jump to the next activity in the room',
             t.svg(
               {
-                className: 'NotEnoughEventsFromDaySummaryTileView_nextActivityIcon',
+                className: 'JumpToActivitySummaryTileView_activityIcon',
                 xmlns: 'http://www.w3.org/2000/svg',
                 width: '16',
                 height: '16',
@@ -68,4 +68,4 @@ class NotEnoughEventsFromDaySummaryTileView extends TemplateView {
   }
 }
 
-module.exports = NotEnoughEventsFromDaySummaryTileView;
+module.exports = JumpToNextActivitySummaryTileView;

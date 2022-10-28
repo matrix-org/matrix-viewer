@@ -170,8 +170,6 @@ async function mountHydrogen() {
     ...stateEventMap,
   };
 
-  // Add a summary item to the bottom of the timeline that explains if we found
-  // events on the day requested.
   const hasEventsFromGivenDay = events[events.length - 1]?.origin_server_ts >= fromTimestamp;
   let daySummaryKind;
   if (events.length === 0) {
@@ -181,9 +179,35 @@ async function mountHydrogen() {
   } else if (!hasEventsFromGivenDay) {
     daySummaryKind = 'no-events-in-day';
   }
+
+  // Add a summary item to the top of the timeline that allows you to jump to more
+  // previous activity. Also explain that you might have hit the beginning of the room.
+  //
+  // As long as there are events shown, have a button to jump to more previous activity
+  if (daySummaryKind !== 'no-events-at-all') {
+    events.unshift({
+      event_id: getFakeEventId(),
+      type: 'org.matrix.archive.jump_to_previous_activity_summary',
+      room_id: roomData.id,
+      // Even though this isn't used for sort, just using the time where the event
+      // would logically be (at the start of the day)
+      origin_server_ts: events[0].origin_server_ts - 1,
+      content: {
+        canonicalAlias: roomData.canonicalAlias,
+        // The start of the range to use as a jumping off point to the previous activity
+        rangeStartTimestamp: events[0].origin_server_ts - 1,
+        // This is a bit cheating but I don't know how else to pass this kind of
+        // info to the Tile viewmodel
+        basePath: config.basePath,
+      },
+    });
+  }
+
+  // Add a summary item to the bottom of the timeline that explains if we found events
+  // on the day requested. Also allow the user to jump to the next activity in the room.
   events.push({
     event_id: getFakeEventId(),
-    type: 'org.matrix.archive.not_enough_events_from_day_summary',
+    type: 'org.matrix.archive.jump_to_next_activity_summary',
     room_id: roomData.id,
     // Even though this isn't used for sort, just using the time where the event
     // would logically be.

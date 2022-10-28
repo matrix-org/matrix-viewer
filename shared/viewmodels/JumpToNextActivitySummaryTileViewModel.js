@@ -5,7 +5,7 @@ const { SimpleTile } = require('hydrogen-view-sdk');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const assert = require('../lib/assert');
 
-class NotEnoughEventsFromDaySummaryTileViewModel extends SimpleTile {
+class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
   constructor(entry, options) {
     super(entry, options);
     this._entry = entry;
@@ -16,7 +16,7 @@ class NotEnoughEventsFromDaySummaryTileViewModel extends SimpleTile {
   }
 
   get shape() {
-    return 'org.matrix.archive.not_enough_events_from_day_summary:shape';
+    return 'org.matrix.archive.jump_to_next_activity_summary:shape';
   }
 
   get daySummaryKind() {
@@ -43,4 +43,4 @@ class NotEnoughEventsFromDaySummaryTileViewModel extends SimpleTile {
   }
 }
 
-module.exports = NotEnoughEventsFromDaySummaryTileViewModel;
+module.exports = JumpToNextActivitySummaryTileViewModel;
