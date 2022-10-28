@@ -1,4 +1,4 @@
-# Matrix public archive
+# Matrix Public Archive
 
 **NB: This project is very much a work-in-progress (WIP)!** Undocumented
 config/secrets, using a draft branch of Hydrogen, etc.
@@ -45,6 +45,8 @@ $ npm install
 $ cp config/config.default.json config/config.user-overrides.json
 
 $ npm run start-dev
+# To enable tracing, add the `--tracing` flag
+$ npm run start-dev -- --tracing
 ```
 
 ## Development
