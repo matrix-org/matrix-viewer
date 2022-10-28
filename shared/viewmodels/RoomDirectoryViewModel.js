@@ -35,6 +35,8 @@ class RoomDirectoryViewModel extends ViewModel {
     this._homeserverName = homeserverName;
     this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
 
+    this._isPageRedirectingFromUrlHash = false;
+
     this._pageSearchParameters = pageSearchParameters;
     // Default to what the page started with
     this._searchTerm = pageSearchParameters.searchTerm;
@@ -104,6 +106,15 @@ class RoomDirectoryViewModel extends ViewModel {
 
   setShouldShowAddServerModal(shouldShowAddServerModal) {
     this.homeserverSelectionModalViewModel.setOpen(shouldShowAddServerModal);
+  }
+
+  setPageRedirectingFromUrlHash(newValue) {
+    this._isPageRedirectingFromUrlHash = newValue;
+    this.emitChange('isPageRedirectingFromUrlHash');
+  }
+
+  get isPageRedirectingFromUrlHash() {
+    return this._isPageRedirectingFromUrlHash;
   }
 
   get homeserverUrl() {
@@ -266,7 +277,7 @@ class RoomDirectoryViewModel extends ViewModel {
     const deduplicatedHomeserverList = Object.keys(deduplicatedHomeserverMap);
 
     this._availableHomeserverList = deduplicatedHomeserverList;
-    this.emit('availableHomeserverList');
+    this.emitChange('availableHomeserverList');
   }
 
   get availableHomeserverList() {
