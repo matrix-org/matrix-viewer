@@ -249,6 +249,17 @@ router.get(
     const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
       parseArchiveRangeFromReq(req);
 
+    // Just 404 if anyone is trying to view the future, no need to waste resources on that
+    const nowTs = Date.now();
+    if (fromTimestamp > nowTs) {
+      throw new StatusError(
+        404,
+        `You can't view the history of a room on a future day (${new Date(
+          fromTimestamp
+        ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
+      );
+    }
+
     // If the hourRange is defined, we force the range to always be 1 hour. If
     // the format isn't correct, redirect to the correct hour range
     if (hourRange && toHour !== fromHour + 1) {
