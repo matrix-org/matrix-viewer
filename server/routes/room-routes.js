@@ -166,7 +166,7 @@ router.get(
     let originServerTs;
     let eventIdForTimestamp;
     // Find the closest day to today with messages
-    ({ event_id: eventIdForTimestamp, originServerTs } = await timestampToEvent({
+    ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
       roomId,
       ts: ts,
