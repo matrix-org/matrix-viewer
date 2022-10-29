@@ -10,6 +10,7 @@ const StatusError = require('../lib/status-error');
 const timeoutMiddleware = require('./timeout-middleware');
 const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
+const { HTTPResponseError } = require('../lib/fetch-endpoint');
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
@@ -165,43 +166,59 @@ router.get(
 
     let originServerTs;
     let eventIdForTimestamp;
-    // Find the closest day to today with messages
-    ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
-      accessToken: matrixAccessToken,
-      roomId,
-      ts: ts,
-      direction: dir,
-    }));
 
-    // The goal is to go forward 100 messages, so that when we view the room at that
-    // point going backwards 100 message, we end up at the perfect sam continuation spot
-    // in the room.
-    //
-    // XXX: This is flawed in the fact that when we go `/messages?dir=b` it could
-    // backfill messages which will fill up the response before we perfectly connect and
-    // continue from the position they were jumping from before. When `/messages?dir=f`
-    // backfills, we won't have this problem anymore because any messages backfilled in
-    // the forwards direction would be picked up the same going backwards.
-    if (dir === 'f') {
-      // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
-      // then start the scroll from the top of the page so they can continue.
-      const archiveMessageLimit = config.get('archiveMessageLimit');
-      const messageResData = await getMessagesResponseFromEventId({
+    try {
+      // Find the closest day to today with messages
+      ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
         accessToken: matrixAccessToken,
         roomId,
-        eventId: eventIdForTimestamp,
-        dir: 'f',
-        limit: archiveMessageLimit,
-      });
+        ts: ts,
+        direction: dir,
+      }));
 
-      originServerTs = messageResData.chunk[messageResData.chunk.length - 1]?.origin_server_ts;
+      // The goal is to go forward 100 messages, so that when we view the room at that
+      // point going backwards 100 message, we end up at the perfect sam continuation spot
+      // in the room.
+      //
+      // XXX: This is flawed in the fact that when we go `/messages?dir=b` it could
+      // backfill messages which will fill up the response before we perfectly connect and
+      // continue from the position they were jumping from before. When `/messages?dir=f`
+      // backfills, we won't have this problem anymore because any messages backfilled in
+      // the forwards direction would be picked up the same going backwards.
+      if (dir === 'f') {
+        // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
+        // then start the scroll from the top of the page so they can continue.
+        const archiveMessageLimit = config.get('archiveMessageLimit');
+        const messageResData = await getMessagesResponseFromEventId({
+          accessToken: matrixAccessToken,
+          roomId,
+          eventId: eventIdForTimestamp,
+          dir: 'f',
+          limit: archiveMessageLimit,
+        });
+
+        originServerTs = messageResData.chunk[messageResData.chunk.length - 1]?.origin_server_ts;
+      }
+    } catch (err) {
+      const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
+      // Only throw if it's something other than a 404 error. 404 errors are fine, they
+      // just mean there is no more messages to paginate in that room.
+      if (!is404Error) {
+        throw err;
+      }
     }
 
+    // If we can't find any more messages to paginate to, just progress the date by a
+    // day in whatever direction they wanted to go so we can display the empty view for
+    // that day.
     if (!originServerTs) {
-      throw new StatusError(
-        404,
-        "Unable to find day with history. This probably means that there isn't more history in this direction."
-      );
+      const tsDate = new Date(ts);
+      const yyyy = tsDate.getUTCFullYear();
+      const mm = tsDate.getUTCMonth();
+      const dd = tsDate.getUTCDate();
+
+      const newDayDelta = dir === 'f' ? 1 : -1;
+      originServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
     }
 
     // Redirect to a day with messages
