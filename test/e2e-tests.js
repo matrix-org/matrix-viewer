@@ -658,7 +658,7 @@ describe('matrix-public-archive', () => {
       describe('Jump forwards and backwards', () => {
         let client;
         let roomId;
-        let previousDayToEventMap = new Map();
+        let previousDayToEventMap;
         beforeEach(async () => {
           // Set this low so we can easily create more than the limit
           config.set('archiveMessageLimit', 3);
@@ -676,6 +676,7 @@ describe('matrix-public-archive', () => {
           // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
           // [day 1]     [day 2]     [day 3]     [day 4]
           // [1st page         ]     [2nd page         ]
+          previousDayToEventMap = new Map();
           for (let i = 1; i < 5; i++) {
             // The date should be just past midnight so we don't run into inclusive
             // bounds showing messages from more days than we expect in the tests.
@@ -769,7 +770,79 @@ describe('matrix-public-archive', () => {
           ]);
         });
 
-        it('can jump backward to the previous activity');
+        it('can jump backward to the previous activity', async () => {
+          // `previousDayToEventMap` maps each day to the events in that day (2 events
+          // per day). The page limit is 3 but each page will show 4 messages because we
+          // fetch one extra to determine overflow.
+          //
+          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
+          // [day 1]     [day 2]     [day 3]     [day 4]
+          // [2nd page         ]     [1st page         ]
+          const previousArchiveDates = Array.from(previousDayToEventMap.keys());
+          assert.strictEqual(
+            previousArchiveDates.length,
+            4,
+            `This test expects to work with 4 days of history, each with 2 messages and a page limit of 3 messages previousArchiveDates=${previousArchiveDates}`
+          );
+
+          // Fetch messages for the 1st page (day 4 backwards)
+          const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
+            roomId,
+            previousArchiveDates[3]
+          );
+          // Set this for debugging if the test fails here
+          archiveUrl = firstPageArchiveUrl;
+          const firstPageArchivePageHtml = await fetchEndpointAsText(firstPageArchiveUrl);
+          const firstPageDom = parseHTML(firstPageArchivePageHtml);
+
+          const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
+            .map((eventEl) => {
+              return eventEl.getAttribute('data-event-id');
+            })
+            .filter((eventId) => {
+              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
+              return eventId.startsWith('$');
+            });
+
+          // Assert that the first page contains 4 events (day 4 and day 3)
+          assert.deepEqual(eventIdsOnFirstPage, [
+            // All of day 3
+            ...previousDayToEventMap.get(previousArchiveDates[2]),
+            // All of day 4
+            ...previousDayToEventMap.get(previousArchiveDates[3]),
+          ]);
+
+          // Follow the previous activity link. Aka, fetch messages for the 2nd page (day 2
+          // backwards, seamless continuation from the 1st page).
+          const previousActivityLinkEl = firstPageDom.document.querySelector(
+            '[data-testid="jump-to-previous-activity-link"]'
+          );
+          const previousActivityLink = previousActivityLinkEl.getAttribute('href');
+          // Set this for debugging if the test fails here
+          archiveUrl = previousActivityLink;
+          const previousActivityArchivePageHtml = await fetchEndpointAsText(previousActivityLink);
+          const previousActivityDom = parseHTML(previousActivityArchivePageHtml);
+
+          // Assert that it's a smooth continuation to more messages with no overlap
+          const eventIdsOnPreviousDay = [
+            ...previousActivityDom.document.querySelectorAll(`[data-event-id]`),
+          ]
+            .map((eventEl) => {
+              return eventEl.getAttribute('data-event-id');
+            })
+            .filter((eventId) => {
+              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
+              return eventId.startsWith('$');
+            });
+
+          // Assert that the 2nd page contains 4 events (day 2 and day 1)
+          assert.deepEqual(eventIdsOnPreviousDay, [
+            // All of day 1
+            ...previousDayToEventMap.get(previousArchiveDates[0]),
+            // All of day 2
+            ...previousDayToEventMap.get(previousArchiveDates[1]),
+          ]);
+        });
 
         it('shows empty view when there is no more previous activity');
       });
