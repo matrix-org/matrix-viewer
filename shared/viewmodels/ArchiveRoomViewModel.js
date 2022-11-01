@@ -39,8 +39,6 @@ class ArchiveRoomViewModel extends ViewModel {
     const navigation = this.navigation;
     const urlCreator = this.urlCreator;
 
-    this._roomDirectoryUrl = this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
-
     this._roomAvatarViewModel = new AvatarViewModel({
       homeserverUrlToPullMediaFrom: homeserverUrl,
       avatarUrl: this._room.avatarUrl,
@@ -212,7 +210,7 @@ class ArchiveRoomViewModel extends ViewModel {
   }
 
   get roomDirectoryUrl() {
-    return this._roomDirectoryUrl;
+    return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
   }
 
   get roomPermalink() {
