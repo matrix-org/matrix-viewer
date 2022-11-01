@@ -1,6 +1,15 @@
 'use strict';
 
-const { ViewModel, setupLightboxNavigation } = require('hydrogen-view-sdk');
+const {
+  ViewModel,
+  setupLightboxNavigation,
+  TilesCollection,
+  Timeline,
+  FragmentIdComparer,
+  EventEntry,
+  encodeKey,
+  encodeEventIdKey,
+} = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
@@ -9,30 +18,103 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
 const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
+const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarViewModel');
+const {
+  customTileClassForEntry,
+} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
+
+let txnCount = 0;
+function getFakeEventId() {
+  txnCount++;
+  return `fake-event-id-${new Date().getTime()}--${txnCount}`;
+}
+
+let eventIndexCounter = 0;
+const fragmentIdComparer = new FragmentIdComparer([]);
+function makeEventEntryFromEventJson(eventJson, memberEvent) {
+  assert(eventJson);
+
+  const roomId = eventJson.roomId;
+  const eventIndex = eventIndexCounter;
+  const eventEntry = new EventEntry(
+    {
+      fragmentId: 0,
+      eventIndex: eventIndex, // TODO: What should this be?
+      roomId,
+      event: eventJson,
+      displayName: memberEvent && memberEvent.content && memberEvent.content.displayname,
+      avatarUrl: memberEvent && memberEvent.content && memberEvent.content.avatar_url,
+      key: encodeKey(roomId, 0, eventIndex),
+      eventIdKey: encodeEventIdKey(roomId, eventJson.event_id),
+    },
+    fragmentIdComparer
+  );
+
+  eventIndexCounter++;
+
+  return eventEntry;
+}
 
 class ArchiveRoomViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { roomViewModel, room, fromDate, eventEntriesByEventId, shouldIndex, basePath } = options;
-    assert(roomViewModel);
+    const {
+      homeserverUrl,
+      room,
+      dayTimestampFrom,
+      dayTimestampTo,
+      events,
+      stateEventMap,
+      shouldIndex,
+      basePath,
+    } = options;
+    assert(homeserverUrl);
     assert(room);
-    assert(fromDate);
+    assert(dayTimestampFrom);
+    assert(dayTimestampTo);
+    assert(events);
+    assert(stateEventMap);
     assert(shouldIndex !== undefined);
-    assert(eventEntriesByEventId);
+    assert(events);
 
     this._room = room;
-    this._eventEntriesByEventId = eventEntriesByEventId;
+    this._dayTimestampFrom = dayTimestampFrom;
+    this._dayTimestampTo = dayTimestampTo;
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+    this._basePath = basePath;
 
     const navigation = this.navigation;
     const urlCreator = this.urlCreator;
 
+    // Setup events and tiles necessary to render
+    const eventsToDisplay = this._addJumpSummaryEvents(events);
+    const { eventEntriesByEventId, tiles } = this._createHydrogenTilesFromEvents({
+      room: this._room,
+      events: eventsToDisplay,
+      stateEventMap,
+    });
+    this._eventEntriesByEventId = eventEntriesByEventId;
+
+    this._roomAvatarViewModel = new AvatarViewModel({
+      homeserverUrlToPullMediaFrom: homeserverUrl,
+      avatarUrl: this._room.avatarUrl,
+      avatarTitle: this._room.name || this._room.canonicalAlias || this._room.id,
+      avatarLetterString:
+        this._room.name ||
+        // Strip the `#` off the alias
+        this._room.canonicalAlias?.[1] ||
+        // Strip the `!` off the room_id
+        this._room.id?.[1],
+      entityId: this._room.id,
+    });
+
+    const initialDate = new Date(dayTimestampFrom);
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
-      activeDate: fromDate,
+      activeDate: initialDate,
       // The month displayed in the calendar
-      calendarDate: fromDate,
+      calendarDate: initialDate,
       room,
       basePath,
     });
@@ -55,7 +137,12 @@ class ArchiveRoomViewModel extends ViewModel {
       })
     );
 
-    this.roomViewModel = roomViewModel;
+    this._timelineViewModel = {
+      showJumpDown: false,
+      setVisibleTileRange: () => {},
+      tiles,
+    };
+
     // FIXME: Do we have to fake this?
     this.rightPanelModel = {
       navigation,
@@ -136,6 +223,10 @@ class ArchiveRoomViewModel extends ViewModel {
     handleLightBoxNavigationChange(initialLightBoxEventId);
   }
 
+  get timelineViewModel() {
+    return this._timelineViewModel;
+  }
+
   setShouldShowDeveloperOptions(shouldShowDeveloperOptions) {
     this._developerOptionsModalViewModel.setOpen(shouldShowDeveloperOptions);
   }
@@ -174,6 +265,170 @@ class ArchiveRoomViewModel extends ViewModel {
         new Date(currentTopPositionEventEntry.timestamp)
       ) + window.location.hash
     );
+  }
+
+  get dayTimestampFrom() {
+    return this._dayTimestampFrom;
+  }
+
+  get roomDirectoryUrl() {
+    return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
+  }
+
+  get roomPermalink() {
+    return this._matrixPublicArchiveURLCreator.permalinkForRoom(this._room.id);
+  }
+
+  get roomName() {
+    return this._room.name;
+  }
+
+  get roomAvatarViewModel() {
+    return this._roomAvatarViewModel;
+  }
+
+  openRightPanel() {
+    let path = this.navigation.path.until('room');
+    path = path.with(this.navigation.segment('right-panel', true));
+    path = path.with(this.navigation.segment('change-dates', true));
+    this.navigation.applyPath(path);
+  }
+
+  // Add the placeholder events which render the "Jump to previous/next activity" links
+  // in the timeline
+  _addJumpSummaryEvents(inputEventList) {
+    const events = [...inputEventList];
+
+    const hasEventsFromGivenDay =
+      events[events.length - 1]?.origin_server_ts >= this._dayTimestampFrom;
+    let daySummaryKind;
+    if (events.length === 0) {
+      daySummaryKind = 'no-events-at-all';
+    } else if (hasEventsFromGivenDay) {
+      daySummaryKind = 'some-events-in-day';
+    } else if (!hasEventsFromGivenDay) {
+      daySummaryKind = 'no-events-in-day';
+    }
+
+    // Add a summary item to the top of the timeline that allows you to jump to more
+    // previous activity. Also explain that you might have hit the beginning of the room.
+    //
+    // As long as there are events shown, have a button to jump to more previous activity
+    if (daySummaryKind !== 'no-events-at-all') {
+      events.unshift({
+        event_id: getFakeEventId(),
+        type: 'org.matrix.archive.jump_to_previous_activity_summary',
+        room_id: this._room.id,
+        // Even though this isn't used for sort, just using the time where the event
+        // would logically be (at the start of the day)
+        origin_server_ts: events[0].origin_server_ts - 1,
+        content: {
+          canonicalAlias: this._room.canonicalAlias,
+          // The start of the range to use as a jumping off point to the previous activity
+          rangeStartTimestamp: events[0].origin_server_ts - 1,
+          // This is a bit cheating but I don't know how else to pass this kind of
+          // info to the Tile viewmodel
+          basePath: this._basePath,
+        },
+      });
+    }
+
+    // Add a summary item to the bottom of the timeline that explains if we found events
+    // on the day requested. Also allow the user to jump to the next activity in the room.
+    events.push({
+      event_id: getFakeEventId(),
+      type: 'org.matrix.archive.jump_to_next_activity_summary',
+      room_id: this._room.id,
+      // Even though this isn't used for sort, just using the time where the event
+      // would logically be.
+      //
+      // -1 so we're not at 00:00:00 of the next day
+      origin_server_ts: this._dayTimestampTo - 1,
+      content: {
+        canonicalAlias: this._room.canonicalAlias,
+        daySummaryKind,
+        // The timestamp from the URL that was originally visited
+        dayTimestamp: this._dayTimestampFrom,
+        // The end of the range to use as a jumping off point to the next activity
+        rangeEndTimestamp: this._dayTimestampTo,
+        // This is a bit cheating but I don't know how else to pass this kind of
+        // info to the Tile viewmodel
+        basePath: this._basePath,
+      },
+    });
+
+    return events;
+  }
+
+  // A bunch of Hydrogen boilerplate to convert the events JSON into some `tiles` we can
+  // use with the `TimelineView`
+  _createHydrogenTilesFromEvents({ room, events, stateEventMap }) {
+    // We use the timeline to setup the relations between entries
+    const timeline = new Timeline({
+      roomId: room.id,
+      fragmentIdComparer: fragmentIdComparer,
+      clock: this.platform.clock,
+      logger: this.platform.logger,
+    });
+
+    // Something we can modify with new state updates as we see them
+    const workingStateEventMap = {
+      ...stateEventMap,
+    };
+
+    const eventEntries = events.map((event) => {
+      if (event.type === 'm.room.member') {
+        workingStateEventMap[event.state_key] = event;
+      }
+
+      const memberEvent = workingStateEventMap[event.user_id];
+      return makeEventEntryFromEventJson(event, memberEvent);
+    });
+    //console.log('eventEntries', eventEntries.length);
+
+    // Map of `event_id` to `EventEntry`
+    const eventEntriesByEventId = eventEntries.reduce((currentMap, eventEntry) => {
+      currentMap[eventEntry.id] = eventEntry;
+      return currentMap;
+    }, {});
+
+    // We have to use `timeline._setupEntries([])` because it sets
+    // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
+    // to request remote things.
+    timeline._setupEntries([]);
+    // Make it safe to iterate a derived observable collection
+    timeline.entries.subscribe({ onAdd: () => null, onUpdate: () => null });
+    // We use the timeline to setup the relations between entries
+    timeline.addEntries(eventEntries);
+
+    //console.log('timeline.entries', timeline.entries.length, timeline.entries);
+
+    const tiles = new TilesCollection(timeline.entries, {
+      tileClassForEntry: customTileClassForEntry,
+      platform: this.platform,
+      navigation: this.navigation,
+      urlCreator: this.urlCreator,
+      timeline,
+      roomVM: {
+        room,
+      },
+    });
+    // Trigger `onSubscribeFirst` -> `tiles._populateTiles()` so it creates a tile
+    // for each entry to display. This way we can also call `tile.notifyVisible()`
+    // on each tile so that the tile creation doesn't happen later when the
+    // `TilesListView` is mounted and subscribes which is a bit out of our
+    // control.
+    tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
+
+    // Make the lazy-load images appear
+    for (const tile of tiles) {
+      tile.notifyVisible();
+    }
+
+    return {
+      tiles,
+      eventEntriesByEventId,
+    };
   }
 }
 

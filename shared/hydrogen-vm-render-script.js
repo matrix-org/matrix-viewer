@@ -11,29 +11,15 @@ const {
   MediaRepository,
   createNavigation,
   createRouter,
-  tag,
 
   RetainedObservableValue,
   PowerLevels,
-
-  TilesCollection,
-  FragmentIdComparer,
-  EventEntry,
-  encodeKey,
-  encodeEventIdKey,
-  Timeline,
-  ViewModel,
-  RoomViewModel,
 } = require('hydrogen-view-sdk');
 
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
 const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
-const {
-  customTileClassForEntry,
-} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -52,14 +38,6 @@ assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
 
-const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
-
-let txnCount = 0;
-function getFakeEventId() {
-  txnCount++;
-  return `fake-event-id-${new Date().getTime()}--${txnCount}`;
-}
-
 function addSupportClasses() {
   const input = document.createElement('input');
   input.type = 'month';
@@ -67,31 +45,6 @@ function addSupportClasses() {
 
   // Signal `<input type="month">` support to our CSS
   document.body.classList.toggle('fallback-input-month', !isMonthTypeSupported);
-}
-
-let eventIndexCounter = 0;
-const fragmentIdComparer = new FragmentIdComparer([]);
-function makeEventEntryFromEventJson(eventJson, memberEvent) {
-  assert(eventJson);
-
-  const eventIndex = eventIndexCounter;
-  const eventEntry = new EventEntry(
-    {
-      fragmentId: 0,
-      eventIndex: eventIndex, // TODO: What should this be?
-      roomId: roomData.id,
-      event: eventJson,
-      displayName: memberEvent && memberEvent.content && memberEvent.content.displayname,
-      avatarUrl: memberEvent && memberEvent.content && memberEvent.content.avatar_url,
-      key: encodeKey(roomData.id, 0, eventIndex),
-      eventIdKey: encodeEventIdKey(roomData.id, eventJson.event_id),
-    },
-    fragmentIdComparer
-  );
-
-  eventIndexCounter++;
-
-  return eventEntry;
 }
 
 supressBlankAnchorsReloadingThePage();
@@ -128,14 +81,6 @@ async function mountHydrogen() {
   // page don't say `undefined`.
   urlRouter.attach();
 
-  // We use the timeline to setup the relations between entries
-  const timeline = new Timeline({
-    roomId: roomData.id,
-    fragmentIdComparer: fragmentIdComparer,
-    clock: platform.clock,
-    logger: platform.logger,
-  });
-
   const mediaRepository = new MediaRepository({
     homeserver: config.matrixServerUrl,
   });
@@ -146,6 +91,7 @@ async function mountHydrogen() {
     canonicalAlias: roomData.canonicalAlias,
     avatarUrl: roomData.avatarUrl,
     avatarColorId: roomData.id,
+    // Hydrogen options used by the event TilesCollection (roomVM)
     mediaRepository: mediaRepository,
     // Based on https://github.com/vector-im/hydrogen-web/blob/5f9cfffa3b547991b665f57a8bf715270a1b2ef1/src/matrix/room/BaseRoom.js#L480
     observePowerLevels: async function () {
@@ -165,208 +111,22 @@ async function mountHydrogen() {
     },
   };
 
-  // Something we can modify with new state updates as we see them
-  const workingStateEventMap = {
-    ...stateEventMap,
-  };
-
-  const hasEventsFromGivenDay = events[events.length - 1]?.origin_server_ts >= fromTimestamp;
-  let daySummaryKind;
-  if (events.length === 0) {
-    daySummaryKind = 'no-events-at-all';
-  } else if (hasEventsFromGivenDay) {
-    daySummaryKind = 'some-events-in-day';
-  } else if (!hasEventsFromGivenDay) {
-    daySummaryKind = 'no-events-in-day';
-  }
-
-  // Add a summary item to the top of the timeline that allows you to jump to more
-  // previous activity. Also explain that you might have hit the beginning of the room.
-  //
-  // As long as there are events shown, have a button to jump to more previous activity
-  if (daySummaryKind !== 'no-events-at-all') {
-    events.unshift({
-      event_id: getFakeEventId(),
-      type: 'org.matrix.archive.jump_to_previous_activity_summary',
-      room_id: roomData.id,
-      // Even though this isn't used for sort, just using the time where the event
-      // would logically be (at the start of the day)
-      origin_server_ts: events[0].origin_server_ts - 1,
-      content: {
-        canonicalAlias: roomData.canonicalAlias,
-        // The start of the range to use as a jumping off point to the previous activity
-        rangeStartTimestamp: events[0].origin_server_ts - 1,
-        // This is a bit cheating but I don't know how else to pass this kind of
-        // info to the Tile viewmodel
-        basePath: config.basePath,
-      },
-    });
-  }
-
-  // Add a summary item to the bottom of the timeline that explains if we found events
-  // on the day requested. Also allow the user to jump to the next activity in the room.
-  events.push({
-    event_id: getFakeEventId(),
-    type: 'org.matrix.archive.jump_to_next_activity_summary',
-    room_id: roomData.id,
-    // Even though this isn't used for sort, just using the time where the event
-    // would logically be.
-    //
-    // -1 so we're not at 00:00:00 of the next day
-    origin_server_ts: toTimestamp - 1,
-    content: {
-      canonicalAlias: roomData.canonicalAlias,
-      daySummaryKind,
-      // The timestamp from the URL that was originally visited
-      dayTimestamp: fromTimestamp,
-      // The end of the range to use as a jumping off point to the next activity
-      rangeEndTimestamp: toTimestamp,
-      // This is a bit cheating but I don't know how else to pass this kind of
-      // info to the Tile viewmodel
-      basePath: config.basePath,
-    },
-  });
-
-  const eventEntries = events.map((event) => {
-    if (event.type === 'm.room.member') {
-      workingStateEventMap[event.state_key] = event;
-    }
-
-    const memberEvent = workingStateEventMap[event.user_id];
-    return makeEventEntryFromEventJson(event, memberEvent);
-  });
-  //console.log('eventEntries', eventEntries.length);
-
-  // Map of `event_id` to `EventEntry`
-  const eventEntriesByEventId = eventEntries.reduce((currentMap, eventEntry) => {
-    currentMap[eventEntry.id] = eventEntry;
-    return currentMap;
-  }, {});
-
-  // We have to use `timeline._setupEntries([])` because it sets
-  // `this._allEntries` in `Timeline` and we don't want to use `timeline.load()`
-  // to request remote things.
-  timeline._setupEntries([]);
-  // Make it safe to iterate a derived observable collection
-  timeline.entries.subscribe({ onAdd: () => null, onUpdate: () => null });
-  // We use the timeline to setup the relations between entries
-  timeline.addEntries(eventEntries);
-
-  //console.log('timeline.entries', timeline.entries.length, timeline.entries);
-
-  const tiles = new TilesCollection(timeline.entries, {
-    tileClassForEntry: customTileClassForEntry,
-    platform,
-    navigation,
-    urlCreator: urlRouter,
-    timeline,
-    roomVM: {
-      room,
-    },
-  });
-  // Trigger `onSubscribeFirst` -> `tiles._populateTiles()` so it creates a tile
-  // for each entry to display. This way we can also call `tile.notifyVisible()`
-  // on each tile so that the tile creation doesn't happen later when the
-  // `TilesListView` is mounted and subscribes which is a bit out of our
-  // control.
-  tiles.subscribe({ onAdd: () => null, onUpdate: () => null });
-
-  // Make the lazy-load images appear
-  for (const tile of tiles) {
-    tile.notifyVisible();
-  }
-
-  const timelineViewModel = {
-    showJumpDown: false,
-    setVisibleTileRange: () => {},
-    tiles,
-  };
-
-  const roomViewModel = new RoomViewModel({
-    room,
-    // This is an arbitrary string (doesn't need to match anything and it shouldn't)
-    ownUserId: 'xxx-ownUserId',
-    platform,
-    urlCreator: urlRouter,
-    navigation,
-  });
-
-  roomViewModel.openRightPanel = function () {
-    let path = this.navigation.path.until('room');
-    path = path.with(this.navigation.segment('right-panel', true));
-    path = path.with(this.navigation.segment('change-dates', true));
-    this.navigation.applyPath(path);
-  };
-
-  roomViewModel.roomDirectoryUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
-
-  Object.defineProperty(roomViewModel, 'timelineViewModel', {
-    get() {
-      return timelineViewModel;
-    },
-  });
-
   const archiveRoomViewModel = new ArchiveRoomViewModel({
     // Hydrogen options
+    platform: platform,
     navigation: navigation,
     urlCreator: urlRouter,
     history: archiveHistory,
     // Our options
-    roomViewModel,
+    homeserverUrl: config.matrixServerUrl,
     room,
-    fromDate: new Date(fromTimestamp),
-    eventEntriesByEventId,
+    // The timestamp from the URL that was originally visited
+    dayTimestampFrom: fromTimestamp,
+    dayTimestampTo: toTimestamp,
+    events,
+    stateEventMap,
     shouldIndex,
     basePath: config.basePath,
-  });
-
-  // Create a custom disabled composer view that shows our archive message.
-  class DisabledArchiveComposerViewModel extends ViewModel {
-    constructor(options) {
-      super(options);
-
-      // Whenever the `archiveRoomViewModel.currentTopPositionEventEntry`
-      // changes, re-render the composer view with the updated date.
-      archiveRoomViewModel.on('change', (changedProps) => {
-        if (changedProps === 'currentTopPositionEventEntry') {
-          this.emitChange();
-        }
-      });
-    }
-
-    get kind() {
-      return 'disabled';
-    }
-
-    get description() {
-      return [
-        (/*vm*/) => {
-          const activeDate = new Date(
-            // If the date from our `archiveRoomViewModel` is available, use that
-            archiveRoomViewModel?.currentTopPositionEventEntry?.timestamp ||
-              // Otherwise, use our initial `fromTimestamp`
-              fromTimestamp
-          );
-          const dateString = activeDate.toISOString().split('T')[0];
-          return `You're viewing an archive of events from ${dateString}. Use a `;
-        },
-        tag.a(
-          {
-            href: matrixPublicArchiveURLCreator.permalinkForRoom(roomData.id),
-            rel: 'noopener',
-            target: '_blank',
-          },
-          ['Matrix client']
-        ),
-        ` to start chatting in this room.`,
-      ];
-    }
-  }
-  const disabledArchiveComposerViewModel = new DisabledArchiveComposerViewModel({});
-  Object.defineProperty(roomViewModel, 'composerViewModel', {
-    get() {
-      return disabledArchiveComposerViewModel;
-    },
   });
 
   // ---------------------------------------------------------------------
