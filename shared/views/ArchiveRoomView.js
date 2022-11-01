@@ -83,7 +83,7 @@ class RoomHeaderView extends TemplateView {
 }
 
 class DisabledComposerView extends TemplateView {
-  render(t, vm) {
+  render(t /*, vm*/) {
     return t.div({ className: 'DisabledComposerView' }, [
       t.h3([
         t.map(
