@@ -695,11 +695,13 @@ describe('matrix-public-archive', () => {
         });
 
         it('can jump forward to the next activity', async () => {
-          // `previousDayToEventMap` maps each day to the events in that day (2 events per day)
+          // `previousDayToEventMap` maps each day to the events in that day (2 events
+          // per day). The page limit is 3 but each page will show 4 messages because we
+          // fetch one extra to determine overflow.
           //
           // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
           // [day 1]     [day 2]     [day 3]     [day 4]
-          //       [1st page   ]     [2nd page   ]
+          // [1st page         ]     [2nd page         ]
           const previousArchiveDates = Array.from(previousDayToEventMap.keys());
           assert.strictEqual(
             previousArchiveDates.length,
@@ -719,21 +721,26 @@ describe('matrix-public-archive', () => {
 
           const eventIdsOnPreviousDay = [
             ...previousDayDom.document.querySelectorAll(`[data-event-id]`),
-          ].map((eventEl) => {
-            return eventEl.getAttribute('data-event-id');
-          });
+          ]
+            .map((eventEl) => {
+              return eventEl.getAttribute('data-event-id');
+            })
+            .filter((eventId) => {
+              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
+              return eventId.startsWith('$');
+            });
 
           // Assert that the first page contains 3 events (day 2 and a little bit of day 1)
           assert.deepEqual(eventIdsOnPreviousDay, [
-            // A little of bit Day 1
-            previousDayToEventMap.get(previousArchiveDates[0])[1],
+            // All of day 1
+            ...previousDayToEventMap.get(previousArchiveDates[0]),
             // All of day 2
             ...previousDayToEventMap.get(previousArchiveDates[1]),
           ]);
 
           // Follow the next activity link
           const nextActivityLinkEl = previousDayDom.document.querySelector(
-            '[data-test-id="jump-to-next-activity-link"]'
+            '[data-testid="jump-to-next-activity-link"]'
           );
           const nextActivityLink = nextActivityLinkEl.getAttribute('href');
 
@@ -745,16 +752,21 @@ describe('matrix-public-archive', () => {
           // Assert that it's a smooth continuation to more messages with no overlap
           const eventIdsOnNextDay = [
             ...nextActivityDom.document.querySelectorAll(`[data-event-id]`),
-          ].map((eventEl) => {
-            return eventEl.getAttribute('data-event-id');
-          });
+          ]
+            .map((eventEl) => {
+              return eventEl.getAttribute('data-event-id');
+            })
+            .filter((eventId) => {
+              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
+              return eventId.startsWith('$');
+            });
 
           // Assert that the 2nd page contains 3 events (day 3 and a little bit of day 4)
           assert.deepEqual(eventIdsOnNextDay, [
             // All of day 3
             ...previousDayToEventMap.get(previousArchiveDates[2]),
-            // A little of bit Day 4
-            previousDayToEventMap.get(previousArchiveDates[3])[0],
+            // All of day 4
+            ...previousDayToEventMap.get(previousArchiveDates[3]),
           ]);
         });
 
