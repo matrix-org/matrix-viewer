@@ -24,7 +24,8 @@ const {
   createMessagesInRoom,
   updateProfile,
   uploadContent,
-} = require('./client-utils');
+} = require('./lib/client-utils');
+const TestError = require('./lib/test-error');
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
@@ -111,7 +112,8 @@ describe('matrix-public-archive', () => {
     // Use a fixed date at the start of the UTC day so that the tests are
     // consistent. Otherwise, the tests could fail when they start close to
     // midnight and it rolls over to the next day.
-    const archiveDate = new Date(Date.UTC(2022, 0, 3));
+    // January 15th, 2022
+    const archiveDate = new Date(Date.UTC(2022, 0, 15));
     let archiveUrl;
     let numMessagesSent = 0;
     afterEach(() => {
@@ -592,7 +594,6 @@ describe('matrix-public-archive', () => {
         const surroundEventIds = await createMessagesInRoom({
           client,
           roomId: roomId,
-          // This is larger than the `archiveMessageLimit` we set
           numMessages: 2,
           prefix: 'events in room',
           timestamp: previousArchiveDate.getTime(),
@@ -602,7 +603,6 @@ describe('matrix-public-archive', () => {
         const eventIdsOnDay = await createMessagesInRoom({
           client,
           roomId: roomId,
-          // This is larger than the `archiveMessageLimit` we set
           numMessages: 2,
           prefix: 'events in room',
           timestamp: archiveDate.getTime(),
@@ -623,6 +623,144 @@ describe('matrix-public-archive', () => {
           }),
           expectedEventIdsToBeDisplayed
         );
+      });
+
+      it('404 when trying to view a future day', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
+
+        try {
+          const TWO_DAY_MS = 2 * 24 * 60 * 60 * 1000;
+          await fetchEndpointAsText(
+            matrixPublicArchiveURLCreator.archiveUrlForDate(
+              roomId,
+              new Date(Date.now() + TWO_DAY_MS)
+            )
+          );
+          assert.fail(
+            new TestError(
+              `We expect the request to fail with a 404 since you can't view the future in the archive but it succeeded`
+            )
+          );
+        } catch (err) {
+          if (err instanceof TestError) {
+            throw err;
+          }
+
+          assert.strictEqual(
+            err?.response?.status,
+            404,
+            `Expected err.response.status=${err?.response?.status} to be 404 but error was: ${err.stack}`
+          );
+        }
+      });
+
+      describe('Jump forwards and backwards', () => {
+        let client;
+        let roomId;
+        let previousDayToEventMap = new Map();
+        beforeEach(async () => {
+          // Set this low so we can easily create more than the limit
+          config.set('archiveMessageLimit', 3);
+
+          client = await getTestClientForHs(testMatrixServerUrl1);
+          roomId = await createTestRoom(client);
+
+          // Create enough surround messages on previous days that overflow the page limit
+          // but don't overflow the limit on a single day basis.
+          //
+          // We create 4 days of messages so we can see a seamless continuation from
+          // page1 to page2.
+          //
+          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
+          // [day 1]     [day 2]     [day 3]     [day 4]
+          //       [1st page   ]     [2nd page   ]
+          for (let i = 1; i < 5; i++) {
+            // The date should be just past midnight so we don't run into inclusive
+            // bounds showing messages from more days than we expect in the tests.
+            const previousArchiveDate = new Date(Date.UTC(2022, 0, i, 1, 0, 0, 1));
+            assert(
+              previousArchiveDate < archiveDate,
+              `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
+            );
+            const eventIds = await createMessagesInRoom({
+              client,
+              roomId,
+              numMessages: 2,
+              prefix: 'events in room',
+              timestamp: previousArchiveDate.getTime(),
+            });
+            previousDayToEventMap.set(previousArchiveDate, eventIds);
+          }
+        });
+
+        it('can jump forward to the next activity', async () => {
+          // `previousDayToEventMap` maps each day to the events in that day (2 events per day)
+          //
+          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
+          // [day 1]     [day 2]     [day 3]     [day 4]
+          //       [1st page   ]     [2nd page   ]
+          const previousArchiveDates = Array.from(previousDayToEventMap.keys());
+          assert.strictEqual(
+            previousArchiveDates.length,
+            4,
+            `This test expects to work with 4 days of history, each with 2 messages and a page limit of 3 messages previousArchiveDates=${previousArchiveDates}`
+          );
+
+          // Fetch messages for the 1st page (day 2 backwards)
+          const previousDayArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
+            roomId,
+            previousArchiveDates[1]
+          );
+          // Set this for debugging if the test fails here
+          archiveUrl = previousDayArchiveUrl;
+          const previousDayArchivePageHtml = await fetchEndpointAsText(previousDayArchiveUrl);
+          const previousDayDom = parseHTML(previousDayArchivePageHtml);
+
+          const eventIdsOnPreviousDay = [
+            ...previousDayDom.document.querySelectorAll(`[data-event-id]`),
+          ].map((eventEl) => {
+            return eventEl.getAttribute('data-event-id');
+          });
+
+          // Assert that the first page contains 3 events (day 2 and a little bit of day 1)
+          assert.deepEqual(eventIdsOnPreviousDay, [
+            // A little of bit Day 1
+            previousDayToEventMap.get(previousArchiveDates[0])[1],
+            // All of day 2
+            ...previousDayToEventMap.get(previousArchiveDates[1]),
+          ]);
+
+          // Follow the next activity link
+          const nextActivityLinkEl = previousDayDom.document.querySelector(
+            '[data-test-id="jump-to-next-activity-link"]'
+          );
+          const nextActivityLink = nextActivityLinkEl.getAttribute('href');
+
+          // Set this for debugging if the test fails here
+          archiveUrl = nextActivityLink;
+          const nextActivityArchivePageHtml = await fetchEndpointAsText(nextActivityLink);
+          const nextActivityDom = parseHTML(nextActivityArchivePageHtml);
+
+          // Assert that it's a smooth continuation to more messages with no overlap
+          const eventIdsOnNextDay = [
+            ...nextActivityDom.document.querySelectorAll(`[data-event-id]`),
+          ].map((eventEl) => {
+            return eventEl.getAttribute('data-event-id');
+          });
+
+          // Assert that the 2nd page contains 3 events (day 3 and a little bit of day 4)
+          assert.deepEqual(eventIdsOnNextDay, [
+            // All of day 3
+            ...previousDayToEventMap.get(previousArchiveDates[2]),
+            // A little of bit Day 4
+            previousDayToEventMap.get(previousArchiveDates[3])[0],
+          ]);
+        });
+
+        it('can jump backward to the previous activity');
+
+        it('shows empty view when there is no more previous activity');
       });
     });
 
@@ -734,10 +872,19 @@ describe('matrix-public-archive', () => {
           archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
           await fetchEndpointAsText(archiveUrl);
           assert.fail(
-            'We expect the request to fail with a 403 since the archive should not be able to view a private room'
+            new TestError(
+              'We expect the request to fail with a 403 since the archive should not be able to view a private room  but it succeeded'
+            )
           );
         } catch (err) {
-          assert.strictEqual(err.response.status, 403);
+          if (err instanceof TestError) {
+            throw err;
+          }
+          assert.strictEqual(
+            err.response.status,
+            403,
+            `Expected err.response.status=${err?.response?.status} to be 403 but error was: ${err.stack}`
+          );
         }
       });
 
@@ -782,8 +929,8 @@ describe('matrix-public-archive', () => {
       const controller = new AbortController();
       const { signal } = controller;
 
-      // We have to use this over `fetch` because `fetch` does not allow us to manually
-      // follow redirects and get the resultant URL, see
+      // We have to use this sometimes over `fetch` because `fetch` does not allow us to
+      // manually follow redirects and get the resultant URL, see
       // https://github.com/whatwg/fetch/issues/763
       function httpRequest(url) {
         return new Promise((resolve, reject) => {

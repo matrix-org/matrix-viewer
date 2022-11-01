@@ -14,6 +14,7 @@ class JumpToPreviousActivitySummaryTileView extends TemplateView {
           {
             className: 'JumpToActivitySummaryTileView_activityLink',
             href: vm.jumpToPreviousActivityUrl,
+            'data-testid': 'jump-to-previous-activity-link',
           },
           [
             'Jump to previous activity in the room',
