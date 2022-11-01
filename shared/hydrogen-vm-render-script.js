@@ -11,7 +11,6 @@ const {
   MediaRepository,
   createNavigation,
   createRouter,
-  tag,
 
   RetainedObservableValue,
   PowerLevels,
@@ -22,11 +21,8 @@ const {
   encodeKey,
   encodeEventIdKey,
   Timeline,
-  ViewModel,
-  RoomViewModel,
 } = require('hydrogen-view-sdk');
 
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
@@ -51,8 +47,6 @@ const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
-
-const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
 
 let txnCount = 0;
 function getFakeEventId() {
@@ -258,91 +252,20 @@ async function mountHydrogen() {
     tiles,
   };
 
-  const roomViewModel = new RoomViewModel({
-    room,
-    // This is an arbitrary string (doesn't need to match anything and it shouldn't)
-    ownUserId: 'xxx-ownUserId',
-    platform,
-    urlCreator: urlRouter,
-    navigation,
-  });
-
-  roomViewModel.openRightPanel = function () {
-    let path = this.navigation.path.until('room');
-    path = path.with(this.navigation.segment('right-panel', true));
-    path = path.with(this.navigation.segment('change-dates', true));
-    this.navigation.applyPath(path);
-  };
-
-  roomViewModel.roomDirectoryUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
-
-  Object.defineProperty(roomViewModel, 'timelineViewModel', {
-    get() {
-      return timelineViewModel;
-    },
-  });
-
   const archiveRoomViewModel = new ArchiveRoomViewModel({
     // Hydrogen options
     navigation: navigation,
     urlCreator: urlRouter,
     history: archiveHistory,
     // Our options
-    roomViewModel,
+    homeserverUrl: config.matrixServerUrl,
+    timelineViewModel,
     room,
-    fromDate: new Date(fromTimestamp),
+    // The timestamp from the URL that was originally visited
+    dayTimestamp: fromTimestamp,
     eventEntriesByEventId,
     shouldIndex,
     basePath: config.basePath,
-  });
-
-  // Create a custom disabled composer view that shows our archive message.
-  class DisabledArchiveComposerViewModel extends ViewModel {
-    constructor(options) {
-      super(options);
-
-      // Whenever the `archiveRoomViewModel.currentTopPositionEventEntry`
-      // changes, re-render the composer view with the updated date.
-      archiveRoomViewModel.on('change', (changedProps) => {
-        if (changedProps === 'currentTopPositionEventEntry') {
-          this.emitChange();
-        }
-      });
-    }
-
-    get kind() {
-      return 'disabled';
-    }
-
-    get description() {
-      return [
-        (/*vm*/) => {
-          const activeDate = new Date(
-            // If the date from our `archiveRoomViewModel` is available, use that
-            archiveRoomViewModel?.currentTopPositionEventEntry?.timestamp ||
-              // Otherwise, use our initial `fromTimestamp`
-              fromTimestamp
-          );
-          const dateString = activeDate.toISOString().split('T')[0];
-          return `You're viewing an archive of events from ${dateString}. Use a `;
-        },
-        tag.a(
-          {
-            href: matrixPublicArchiveURLCreator.permalinkForRoom(roomData.id),
-            rel: 'noopener',
-            target: '_blank',
-          },
-          ['Matrix client']
-        ),
-        ` to start chatting in this room.`,
-      ];
-    }
-  }
-  const disabledArchiveComposerViewModel = new DisabledArchiveComposerViewModel({});
-  Object.defineProperty(roomViewModel, 'composerViewModel', {
-    get() {
-      return disabledArchiveComposerViewModel;
-    },
   });
 
   // ---------------------------------------------------------------------

@@ -9,18 +9,29 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
 const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
+const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarViewModel');
 
 class ArchiveRoomViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { roomViewModel, room, fromDate, eventEntriesByEventId, shouldIndex, basePath } = options;
-    assert(roomViewModel);
+    const {
+      homeserverUrl,
+      timelineViewModel,
+      room,
+      dayTimestamp,
+      eventEntriesByEventId,
+      shouldIndex,
+      basePath,
+    } = options;
+    assert(homeserverUrl);
+    assert(timelineViewModel);
     assert(room);
-    assert(fromDate);
+    assert(dayTimestamp);
     assert(shouldIndex !== undefined);
     assert(eventEntriesByEventId);
 
     this._room = room;
+    this._dayTimestamp = dayTimestamp;
     this._eventEntriesByEventId = eventEntriesByEventId;
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
@@ -28,11 +39,27 @@ class ArchiveRoomViewModel extends ViewModel {
     const navigation = this.navigation;
     const urlCreator = this.urlCreator;
 
+    this._roomDirectoryUrl = this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
+
+    this._roomAvatarViewModel = new AvatarViewModel({
+      homeserverUrlToPullMediaFrom: homeserverUrl,
+      avatarUrl: this._room.avatarUrl,
+      avatarTitle: this._room.name || this._room.canonicalAlias || this._room.id,
+      avatarLetterString:
+        this._room.name ||
+        // Strip the `#` off the alias
+        this._room.canonicalAlias?.[1] ||
+        // Strip the `!` off the room_id
+        this._room.id?.[1],
+      entityId: this._room.id,
+    });
+
+    const initialDate = new Date(dayTimestamp);
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
-      activeDate: fromDate,
+      activeDate: initialDate,
       // The month displayed in the calendar
-      calendarDate: fromDate,
+      calendarDate: initialDate,
       room,
       basePath,
     });
@@ -55,7 +82,7 @@ class ArchiveRoomViewModel extends ViewModel {
       })
     );
 
-    this.roomViewModel = roomViewModel;
+    this._timelineViewModel = timelineViewModel;
     // FIXME: Do we have to fake this?
     this.rightPanelModel = {
       navigation,
@@ -136,6 +163,10 @@ class ArchiveRoomViewModel extends ViewModel {
     handleLightBoxNavigationChange(initialLightBoxEventId);
   }
 
+  get timelineViewModel() {
+    return this._timelineViewModel;
+  }
+
   setShouldShowDeveloperOptions(shouldShowDeveloperOptions) {
     this._developerOptionsModalViewModel.setOpen(shouldShowDeveloperOptions);
   }
@@ -174,6 +205,33 @@ class ArchiveRoomViewModel extends ViewModel {
         new Date(currentTopPositionEventEntry.timestamp)
       ) + window.location.hash
     );
+  }
+
+  get dayTimestamp() {
+    return this._dayTimestamp;
+  }
+
+  get roomDirectoryUrl() {
+    return this._roomDirectoryUrl;
+  }
+
+  get roomPermalink() {
+    return this._matrixPublicArchiveURLCreator.permalinkForRoom(this._room.id);
+  }
+
+  get roomName() {
+    return this._room.name;
+  }
+
+  get roomAvatarViewModel() {
+    return this._roomAvatarViewModel;
+  }
+
+  openRightPanel() {
+    let path = this.navigation.path.until('room');
+    path = path.with(this.navigation.segment('right-panel', true));
+    path = path.with(this.navigation.segment('change-dates', true));
+    this.navigation.applyPath(path);
   }
 }
 
