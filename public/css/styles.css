@@ -55,6 +55,15 @@ summary {
   min-width: 0;
 }
 
+.ArchiveRoomView_mainArea {
+  grid-area: middle;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
 .RoomHeader_actionButton {
   display: inline-flex;
   justify-content: center;
@@ -73,6 +82,19 @@ summary {
 /* No need to close the right-panel when it's always visible at desktop widths */
 .RightPanelView_buttons .close {
   display: none;
+}
+
+.ArchiveRoomView_mainBody {
+  flex: 1 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.ArchiveRoomView_mainBody > .Timeline {
+  flex: 1 0;
 }
 
 @media screen and (max-width: 800px) {
@@ -95,7 +117,7 @@ summary {
       'right' 1fr /
       1fr;
   }
-  .ArchiveRoomView.right-shown .middle {
+  .ArchiveRoomView.right-shown .ArchiveRoomView_mainArea {
     display: none;
   }
   /* And show the button to open the right-panel on mobile */

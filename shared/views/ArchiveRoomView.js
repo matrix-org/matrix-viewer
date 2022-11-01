@@ -3,7 +3,7 @@
 const {
   TemplateView,
   AvatarView,
-  RoomView,
+  TimelineView,
   RightPanelView,
   LightboxView,
 } = require('hydrogen-view-sdk');
@@ -43,8 +43,8 @@ class RoomHeaderView extends TemplateView {
           ),
         ]
       ),
-      t.view(new AvatarView(vm, 32)),
-      t.div({ className: 'room-description' }, [t.h2((vm) => vm.name)]),
+      t.view(new AvatarView(vm.roomAvatarViewModel, 32)),
+      t.div({ className: 'room-description' }, [t.h2((vm) => vm.roomName)]),
       t.button(
         {
           className: 'button-utility RoomHeader_actionButton RoomHeader_changeDatesButton',
@@ -82,6 +82,37 @@ class RoomHeaderView extends TemplateView {
   }
 }
 
+class DisabledComposerView extends TemplateView {
+  render(t /*, vm*/) {
+    return t.div({ className: 'DisabledComposerView' }, [
+      t.h3([
+        t.map(
+          (vm) => vm.currentTopPositionEventEntry,
+          (_currentTopPositionEventEntry, t, vm) => {
+            const activeDate = new Date(
+              // If the date from our `archiveRoomViewModel` is available, use that
+              vm?.currentTopPositionEventEntry?.timestamp ||
+                // Otherwise, use our initial `dayTimestamp`
+                vm.dayTimestamp
+            );
+            const dateString = activeDate.toISOString().split('T')[0];
+            return t.span(`You're viewing an archive of events from ${dateString}. Use a `);
+          }
+        ),
+        t.a(
+          {
+            href: (vm) => vm.roomPermalink,
+            rel: 'noopener',
+            target: '_blank',
+          },
+          ['Matrix client']
+        ),
+        ` to start chatting in this room.`,
+      ]),
+    ]);
+  }
+}
+
 class ArchiveRoomView extends TemplateView {
   render(t, vm) {
     const rootElement = t.div(
@@ -112,11 +143,13 @@ class ArchiveRoomView extends TemplateView {
             });
           }
         ),
-        t.view(
-          new RoomView(vm.roomViewModel, customViewClassForTile, {
-            RoomHeaderView,
-          })
-        ),
+        t.main({ className: 'ArchiveRoomView_mainArea' }, [
+          t.view(new RoomHeaderView(vm)),
+          t.main({ className: 'ArchiveRoomView_mainBody' }, [
+            t.view(new TimelineView(vm.timelineViewModel, customViewClassForTile)),
+            t.view(new DisabledComposerView(vm)),
+          ]),
+        ]),
         t.view(new RightPanelView(vm.rightPanelModel)),
         t.mapView(
           (vm) => vm.lightboxViewModel,
