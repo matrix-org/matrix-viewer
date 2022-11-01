@@ -843,8 +843,6 @@ describe('matrix-public-archive', () => {
             ...previousDayToEventMap.get(previousArchiveDates[1]),
           ]);
         });
-
-        it('shows empty view when there is no more previous activity');
       });
     });
 
