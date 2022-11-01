@@ -84,17 +84,21 @@ class RoomHeaderView extends TemplateView {
 
 class DisabledComposerView extends TemplateView {
   render(t, vm) {
-    const activeDate = new Date(
-      // If the date from our `archiveRoomViewModel` is available, use that
-      vm?.currentTopPositionEventEntry?.timestamp ||
-        // Otherwise, use our initial `dayTimestamp`
-        vm.dayTimestamp
-    );
-    const dateString = activeDate.toISOString().split('T')[0];
-
     return t.div({ className: 'DisabledComposerView' }, [
       t.h3([
-        `You're viewing an archive of events from ${dateString}. Use a `,
+        t.map(
+          (vm) => vm.currentTopPositionEventEntry,
+          (_currentTopPositionEventEntry, t, vm) => {
+            const activeDate = new Date(
+              // If the date from our `archiveRoomViewModel` is available, use that
+              vm?.currentTopPositionEventEntry?.timestamp ||
+                // Otherwise, use our initial `dayTimestamp`
+                vm.dayTimestamp
+            );
+            const dateString = activeDate.toISOString().split('T')[0];
+            return t.span(`You're viewing an archive of events from ${dateString}. Use a `);
+          }
+        ),
         t.a(
           {
             href: (vm) => vm.roomPermalink,
