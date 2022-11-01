@@ -730,7 +730,7 @@ describe('matrix-public-archive', () => {
               return eventId.startsWith('$');
             });
 
-          // Assert that the first page contains 3 events (day 2 and a little bit of day 1)
+          // Assert that the first page contains 4 events (day 2 and day 1)
           assert.deepEqual(eventIdsOnPreviousDay, [
             // All of day 1
             ...previousDayToEventMap.get(previousArchiveDates[0]),
@@ -738,12 +738,12 @@ describe('matrix-public-archive', () => {
             ...previousDayToEventMap.get(previousArchiveDates[1]),
           ]);
 
-          // Follow the next activity link
+          // Follow the next activity link. Aka, fetch messages for the 2nd page (day 3
+          // onwards, seamless continuation from the 1st page).
           const nextActivityLinkEl = previousDayDom.document.querySelector(
             '[data-testid="jump-to-next-activity-link"]'
           );
           const nextActivityLink = nextActivityLinkEl.getAttribute('href');
-
           // Set this for debugging if the test fails here
           archiveUrl = nextActivityLink;
           const nextActivityArchivePageHtml = await fetchEndpointAsText(nextActivityLink);
@@ -761,7 +761,7 @@ describe('matrix-public-archive', () => {
               return eventId.startsWith('$');
             });
 
-          // Assert that the 2nd page contains 3 events (day 3 and a little bit of day 4)
+          // Assert that the 2nd page contains 4 events (day 3 and day 4)
           assert.deepEqual(eventIdsOnNextDay, [
             // All of day 3
             ...previousDayToEventMap.get(previousArchiveDates[2]),
