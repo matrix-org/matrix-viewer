@@ -91,6 +91,7 @@ async function mountHydrogen() {
     canonicalAlias: roomData.canonicalAlias,
     avatarUrl: roomData.avatarUrl,
     avatarColorId: roomData.id,
+    // Hydrogen options used by the event TilesCollection (roomVM)
     mediaRepository: mediaRepository,
     // Based on https://github.com/vector-im/hydrogen-web/blob/5f9cfffa3b547991b665f57a8bf715270a1b2ef1/src/matrix/room/BaseRoom.js#L480
     observePowerLevels: async function () {
