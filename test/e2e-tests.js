@@ -510,7 +510,7 @@ describe('matrix-public-archive', () => {
         const expectedEventIdsToBeDisplayed = [eventId];
 
         // Visit the archive on the day ahead of where there are messages
-        const visitArchiveDate = new Date(Date.UTC(2022, 0, 5));
+        const visitArchiveDate = new Date(Date.UTC(2022, 0, 20));
         assert(
           visitArchiveDate > archiveDate,
           'The date we visit the archive (`visitArchiveDate`) should be after where the messages were sent (`archiveDate`)'
