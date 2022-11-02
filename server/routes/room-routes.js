@@ -159,6 +159,7 @@ router.get(
     assert(!Number.isNaN(ts), '?ts query parameter must be a number');
     const dir = req.query.dir;
     assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
+    const scrollStartPosition = req.query.continue;
 
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint
@@ -225,7 +226,9 @@ router.get(
     res.redirect(
       // TODO: Add query parameter that causes the client to start the scroll at the top
       // when jumping forwards so they can continue reading where they left off.
-      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs))
+      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
+        scrollStartPosition,
+      })
     );
   })
 );

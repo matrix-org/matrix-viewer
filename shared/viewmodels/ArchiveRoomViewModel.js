@@ -56,6 +56,7 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
 }
 
 class ArchiveRoomViewModel extends ViewModel {
+  // eslint-disable-next-line max-statements
   constructor(options) {
     super(options);
     const {
@@ -63,6 +64,7 @@ class ArchiveRoomViewModel extends ViewModel {
       room,
       dayTimestampFrom,
       dayTimestampTo,
+      scrollStartPosition,
       events,
       stateEventMap,
       shouldIndex,
@@ -80,6 +82,7 @@ class ArchiveRoomViewModel extends ViewModel {
     this._room = room;
     this._dayTimestampFrom = dayTimestampFrom;
     this._dayTimestampTo = dayTimestampTo;
+    this._scrollStartPosition = scrollStartPosition === 'top' ? 'top' : 'bottom';
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
     this._basePath = basePath;
@@ -245,6 +248,10 @@ class ArchiveRoomViewModel extends ViewModel {
 
   get currentTopPositionEventEntry() {
     return this._currentTopPositionEventEntry;
+  }
+
+  get scrollStartPosition() {
+    return this._scrollStartPosition;
   }
 
   get shouldShowRightPanel() {
