@@ -2,9 +2,9 @@
 
 const assert = require('assert');
 const urlJoin = require('url-join');
-const { fetchEndpointAsJson, fetchEndpoint } = require('../server/lib/fetch-endpoint');
+const { fetchEndpointAsJson, fetchEndpoint } = require('../../server/lib/fetch-endpoint');
 
-const config = require('../server/lib/config');
+const config = require('../../server/lib/config');
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');

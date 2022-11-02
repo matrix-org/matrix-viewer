@@ -1,11 +1,10 @@
 'use strict';
 
 const assert = require('assert');
-const urlJoin = require('url-join');
-
-const { fetchEndpointAsJson } = require('../fetch-endpoint');
-const timestampToEvent = require('./timestamp-to-event');
 const { traceFunction } = require('../../tracing/trace-utilities');
+
+const timestampToEvent = require('./timestamp-to-event');
+const getMessagesResponseFromEventId = require('./get-messages-response-from-event-id');
 
 const config = require('../config');
 const matrixServerUrl = config.get('matrixServerUrl');
@@ -62,38 +61,14 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
     };
   }
 
-  // We only use this endpoint to get a pagination token we can use with
-  // `/messages`.
-  //
-  // We add `limit=0` here because we want to grab the pagination token right
-  // (before/after) the event.
-  //
-  // Add `filter={"lazy_load_members":true}` so that this endpoint responds
-  // without timing out by returning just the state for the sender of the
-  // included event. Otherwise, the homeserver returns all state in the room at
-  // that point in time which in big rooms, can be 100k member events that we
-  // don't care about anyway. Synapse seems to timeout at about the ~5k state
-  // event mark.
-  const contextEndpoint = urlJoin(
-    matrixServerUrl,
-    `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(
-      eventIdForTimestamp
-    )}?limit=0&filter={"lazy_load_members":true}`
-  );
-  const contextResData = await fetchEndpointAsJson(contextEndpoint, {
+  const messageResData = await getMessagesResponseFromEventId({
     accessToken,
-  });
-
-  // Add `filter={"lazy_load_members":true}` to only get member state events for
-  // the messages included in the response
-  const messagesEndpoint = urlJoin(
-    matrixServerUrl,
-    `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/messages?dir=b&from=${encodeURIComponent(
-      contextResData.end
-    )}&limit=${limit}&filter={"lazy_load_members":true}`
-  );
-  const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
-    accessToken,
+    roomId,
+    eventId: eventIdForTimestamp,
+    // We go backwards because that's the direction that backfills events (Synapse
+    // doesn't backfill in the forward direction)
+    dir: 'b',
+    limit,
   });
 
   const stateEventMap = {};

@@ -284,31 +284,47 @@ summary {
 
 /* Some custom timeline, tiles stuff */
 
-.NotEnoughEventsFromDaySummaryTileView {
-  margin-top: 40px;
-  padding: 20px 12px;
+.JumpToPreviousActivitySummaryTileView,
+.JumpToNextActivitySummaryTileView {
+  padding: calc(20px - 1em) 0;
 
   background: rgba(46, 48, 51, 0.1);
   border-top: 1px solid rgba(46, 48, 51, 0.38);
+  border-bottom: 1px solid rgba(46, 48, 51, 0.38);
 }
 
-.NotEnoughEventsFromDaySummaryTileView_summaryMessage {
-  margin-top: 0;
+.JumpToPreviousActivitySummaryTileView {
+  /* no margin so it's easier to notice when you scroll up */
+}
+
+.JumpToNextActivitySummaryTileView {
+  margin-top: 40px;
+}
+
+.JumpToNextActivitySummaryTileView_summaryMessage {
+  margin-top: 1em;
+  margin-left: 12px;
+  margin-bottom: 0;
+  margin-right: 12px;
+
   font-size: 1.17em;
 }
 
-.NotEnoughEventsFromDaySummaryTileView_nextActivityLink {
+.JumpToActivitySummaryTileView_activityLink {
+  display: inline-block;
+  padding: 1em 12px;
+
   text-decoration: none;
   font-weight: bold;
 }
 
-.NotEnoughEventsFromDaySummaryTileView_nextActivityLink:hover,
-.NotEnoughEventsFromDaySummaryTileView_nextActivityLink:focus {
+.JumpToActivitySummaryTileView_activityLink:hover,
+.JumpToActivitySummaryTileView_activityLink:focus {
   color: #0098d4;
   text-decoration: underline;
 }
 
-.NotEnoughEventsFromDaySummaryTileView_nextActivityIcon {
+.JumpToActivitySummaryTileView_activityIcon {
   margin-left: 1ch;
   vertical-align: bottom;
 }

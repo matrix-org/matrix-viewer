@@ -65,7 +65,7 @@ class URLCreator {
     return `${urlJoin(this._basePath, `${urlPath}`)}${qsToUrlPiece(qs)}`;
   }
 
-  archiveUrlForDate(roomIdOrAlias, date, { viaServers = [] } = {}) {
+  archiveUrlForDate(roomIdOrAlias, date, { viaServers = [], scrollStartPosition } = {}) {
     assert(roomIdOrAlias);
     assert(date);
 
@@ -73,6 +73,9 @@ class URLCreator {
     [].concat(viaServers).forEach((viaServer) => {
       qs.append('via', viaServer);
     });
+    if (scrollStartPosition) {
+      qs.append('continue', scrollStartPosition);
+    }
 
     const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
 
@@ -83,7 +86,15 @@ class URLCreator {
     return `${urlJoin(this._basePath, `${urlPath}/date/${urlDate}`)}${qsToUrlPiece(qs)}`;
   }
 
-  archiveJumpUrlForRoom(roomIdOrAlias, { ts, dir }) {
+  archiveJumpUrlForRoom(
+    roomIdOrAlias,
+    {
+      ts,
+      dir,
+      // where the scroll position should continue from ['top'|'bottom']
+      scrollStartPosition,
+    }
+  ) {
     assert(roomIdOrAlias);
     assert(ts);
     assert(dir);
@@ -91,6 +102,9 @@ class URLCreator {
     let qs = new URLSearchParams();
     qs.append('ts', ts);
     qs.append('dir', dir);
+    if (scrollStartPosition) {
+      qs.append('continue', scrollStartPosition);
+    }
 
     const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
 

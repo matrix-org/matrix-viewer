@@ -56,6 +56,7 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
 }
 
 class ArchiveRoomViewModel extends ViewModel {
+  // eslint-disable-next-line max-statements
   constructor(options) {
     super(options);
     const {
@@ -63,6 +64,7 @@ class ArchiveRoomViewModel extends ViewModel {
       room,
       dayTimestampFrom,
       dayTimestampTo,
+      scrollStartPosition,
       events,
       stateEventMap,
       shouldIndex,
@@ -80,6 +82,7 @@ class ArchiveRoomViewModel extends ViewModel {
     this._room = room;
     this._dayTimestampFrom = dayTimestampFrom;
     this._dayTimestampTo = dayTimestampTo;
+    this._scrollStartPosition = scrollStartPosition === 'top' ? 'top' : 'bottom';
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
     this._basePath = basePath;
@@ -247,6 +250,10 @@ class ArchiveRoomViewModel extends ViewModel {
     return this._currentTopPositionEventEntry;
   }
 
+  get scrollStartPosition() {
+    return this._scrollStartPosition;
+  }
+
   get shouldShowRightPanel() {
     return this._shouldShowRightPanel;
   }
@@ -298,8 +305,7 @@ class ArchiveRoomViewModel extends ViewModel {
   // in the timeline
   _addJumpSummaryEvents(inputEventList) {
     const events = [...inputEventList];
-    // Add a summary item to the bottom of the timeline that explains if we found
-    // events on the day requested.
+
     const hasEventsFromGivenDay =
       events[events.length - 1]?.origin_server_ts >= this._dayTimestampFrom;
     let daySummaryKind;
@@ -310,9 +316,35 @@ class ArchiveRoomViewModel extends ViewModel {
     } else if (!hasEventsFromGivenDay) {
       daySummaryKind = 'no-events-in-day';
     }
+
+    // Add a summary item to the top of the timeline that allows you to jump to more
+    // previous activity. Also explain that you might have hit the beginning of the room.
+    //
+    // As long as there are events shown, have a button to jump to more previous activity
+    if (daySummaryKind !== 'no-events-at-all') {
+      events.unshift({
+        event_id: getFakeEventId(),
+        type: 'org.matrix.archive.jump_to_previous_activity_summary',
+        room_id: this._room.id,
+        // Even though this isn't used for sort, just using the time where the event
+        // would logically be (at the start of the day)
+        origin_server_ts: events[0].origin_server_ts - 1,
+        content: {
+          canonicalAlias: this._room.canonicalAlias,
+          // The start of the range to use as a jumping off point to the previous activity
+          rangeStartTimestamp: events[0].origin_server_ts - 1,
+          // This is a bit cheating but I don't know how else to pass this kind of
+          // info to the Tile viewmodel
+          basePath: this._basePath,
+        },
+      });
+    }
+
+    // Add a summary item to the bottom of the timeline that explains if we found events
+    // on the day requested. Also allow the user to jump to the next activity in the room.
     events.push({
       event_id: getFakeEventId(),
-      type: 'org.matrix.archive.not_enough_events_from_day_summary',
+      type: 'org.matrix.archive.jump_to_next_activity_summary',
       room_id: this._room.id,
       // Even though this isn't used for sort, just using the time where the event
       // would logically be.

@@ -66,6 +66,7 @@ async function fetchEndpointAsJson(endpoint, options) {
 }
 
 module.exports = {
+  HTTPResponseError,
   fetchEndpoint,
   fetchEndpointAsText,
   fetchEndpointAsJson,
