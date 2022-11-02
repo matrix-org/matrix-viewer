@@ -264,14 +264,6 @@ class ArchiveRoomViewModel extends ViewModel {
 
     // Update the calendar
     this._calendarViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
-
-    // Update the URL
-    this.history.replaceUrlSilently(
-      this._matrixPublicArchiveURLCreator.archiveUrlForDate(
-        this._room.canonicalAlias || this._room.id,
-        new Date(currentTopPositionEventEntry.timestamp)
-      ) + window.location.hash
-    );
   }
 
   get dayTimestampFrom() {
