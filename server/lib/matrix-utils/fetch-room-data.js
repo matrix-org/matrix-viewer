@@ -61,27 +61,32 @@ async function fetchRoomData(accessToken, roomId) {
 
   let name;
   if (stateNameResDataOutcome.reason === undefined) {
-    name = stateNameResDataOutcome.value.name;
+    const { data } = stateNameResDataOutcome.value;
+    name = data.name;
   }
 
   let canonicalAlias;
   if (stateCanonicalAliasResDataOutcome.reason === undefined) {
-    canonicalAlias = stateCanonicalAliasResDataOutcome.value.alias;
+    const { data } = stateCanonicalAliasResDataOutcome.value;
+    canonicalAlias = data.alias;
   }
 
   let avatarUrl;
   if (stateAvatarResDataOutcome.reason === undefined) {
-    avatarUrl = stateAvatarResDataOutcome.value.url;
+    const { data } = stateAvatarResDataOutcome.value;
+    avatarUrl = data.url;
   }
 
   let historyVisibility;
   if (stateHistoryVisibilityResDataOutcome.reason === undefined) {
-    historyVisibility = stateHistoryVisibilityResDataOutcome.value.history_visibility;
+    const { data } = stateHistoryVisibilityResDataOutcome.value;
+    historyVisibility = data.history_visibility;
   }
 
   let joinRule;
   if (stateJoinRulesResDataOutcome.reason === undefined) {
-    joinRule = stateJoinRulesResDataOutcome.value.join_rule;
+    const { data } = stateJoinRulesResDataOutcome.value;
+    joinRule = data.join_rule;
   }
 
   return {

@@ -43,10 +43,7 @@ async function fetchEndpoint(endpoint, options = {}) {
 async function fetchEndpointAsText(endpoint, options) {
   const res = await fetchEndpoint(endpoint, options);
   const data = await res.text();
-  return {
-    data,
-    res,
-  };
+  return { data, res };
 }
 
 async function fetchEndpointAsJson(endpoint, options) {
@@ -65,7 +62,7 @@ async function fetchEndpointAsJson(endpoint, options) {
 
   const res = await fetchEndpoint(endpoint, opts);
   const data = await res.json();
-  return data;
+  return { data, res };
 }
 
 module.exports = {
