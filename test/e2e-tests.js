@@ -190,7 +190,7 @@ describe('matrix-public-archive', () => {
         assert.strictEqual(eventIds.length, 3);
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -358,7 +358,7 @@ describe('matrix-public-archive', () => {
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
 
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -445,7 +445,7 @@ describe('matrix-public-archive', () => {
           viaServers: [HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2]],
         });
 
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -477,7 +477,7 @@ describe('matrix-public-archive', () => {
 
         // Visit `/:roomIdOrAlias` and expect to be redirected to the last day with events
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -516,7 +516,7 @@ describe('matrix-public-archive', () => {
           'The date we visit the archive (`visitArchiveDate`) should be after where the messages were sent (`archiveDate`)'
         );
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, visitArchiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -545,7 +545,7 @@ describe('matrix-public-archive', () => {
         // We purposely send no events in the room
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -574,7 +574,7 @@ describe('matrix-public-archive', () => {
         });
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         assert.match(archivePageHtml, /TODO: Redirect user to smaller hour range/);
       });
@@ -609,7 +609,7 @@ describe('matrix-public-archive', () => {
         });
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -718,7 +718,7 @@ describe('matrix-public-archive', () => {
           );
           // Set this for debugging if the test fails here
           archiveUrl = firstPageArchiveUrl;
-          const firstPageArchivePageHtml = await fetchEndpointAsText(firstPageArchiveUrl);
+          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
           const firstPageDom = parseHTML(firstPageArchivePageHtml);
 
           const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
@@ -746,7 +746,7 @@ describe('matrix-public-archive', () => {
           const nextActivityLink = nextActivityLinkEl.getAttribute('href');
           // Set this for debugging if the test fails here
           archiveUrl = nextActivityLink;
-          const nextActivityArchivePageHtml = await fetchEndpointAsText(nextActivityLink);
+          const { data: nextActivityArchivePageHtml } = await fetchEndpointAsText(nextActivityLink);
           const nextActivityDom = parseHTML(nextActivityArchivePageHtml);
 
           // Assert that it's a smooth continuation to more messages with no overlap
@@ -792,7 +792,7 @@ describe('matrix-public-archive', () => {
           );
           // Set this for debugging if the test fails here
           archiveUrl = firstPageArchiveUrl;
-          const firstPageArchivePageHtml = await fetchEndpointAsText(firstPageArchiveUrl);
+          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
           const firstPageDom = parseHTML(firstPageArchivePageHtml);
 
           const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
@@ -820,7 +820,9 @@ describe('matrix-public-archive', () => {
           const previousActivityLink = previousActivityLinkEl.getAttribute('href');
           // Set this for debugging if the test fails here
           archiveUrl = previousActivityLink;
-          const previousActivityArchivePageHtml = await fetchEndpointAsText(previousActivityLink);
+          const { data: previousActivityArchivePageHtml } = await fetchEndpointAsText(
+            previousActivityLink
+          );
           const previousActivityDom = parseHTML(previousActivityArchivePageHtml);
 
           // Assert that it's a smooth continuation to more messages with no overlap
@@ -868,7 +870,7 @@ describe('matrix-public-archive', () => {
 
         // Browse the room directory without search to see many rooms
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
-        const roomDirectoryPageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryPageHtml } = await fetchEndpointAsText(archiveUrl);
         const dom = parseHTML(roomDirectoryPageHtml);
 
         const roomsOnPageWithoutSearch = [
@@ -882,7 +884,7 @@ describe('matrix-public-archive', () => {
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
           searchTerm: roomPlanetPrefix,
         });
-        const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         const roomsOnPageWithSearch = [
@@ -919,7 +921,7 @@ describe('matrix-public-archive', () => {
           homeserver: HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2],
           searchTerm: roomPlanetPrefix,
         });
-        const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         // Make sure the `?homserver` is selected in the homeserver selector `<select>`
@@ -975,7 +977,7 @@ describe('matrix-public-archive', () => {
         const roomId = await createTestRoom(client);
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -994,7 +996,7 @@ describe('matrix-public-archive', () => {
         });
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 

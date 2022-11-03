@@ -43,7 +43,7 @@ async function fetchEndpoint(endpoint, options = {}) {
 async function fetchEndpointAsText(endpoint, options) {
   const res = await fetchEndpoint(endpoint, options);
   const data = await res.text();
-  return data;
+  return { data, res };
 }
 
 async function fetchEndpointAsJson(endpoint, options) {
