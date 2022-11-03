@@ -152,6 +152,7 @@ router.get(
 
 router.get(
   '/jump',
+  // eslint-disable-next-line max-statements
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
@@ -159,16 +160,15 @@ router.get(
     assert(!Number.isNaN(ts), '?ts query parameter must be a number');
     const dir = req.query.dir;
     assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
-    const scrollStartPosition = req.query.continue;
 
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
     let originServerTs;
-    let eventIdForTimestamp;
-
+    let scrollStartEventId;
     try {
+      let eventIdForTimestamp;
       // Find the closest day to today with messages
       ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
         accessToken: matrixAccessToken,
@@ -178,14 +178,15 @@ router.get(
       }));
 
       // The goal is to go forward 100 messages, so that when we view the room at that
-      // point going backwards 100 message, we end up at the perfect sam continuation spot
-      // in the room.
+      // point going backwards 100 messages, we end up at the perfect sam continuation
+      // spot in the room.
       //
-      // XXX: This is flawed in the fact that when we go `/messages?dir=b` it could
-      // backfill messages which will fill up the response before we perfectly connect and
-      // continue from the position they were jumping from before. When `/messages?dir=f`
-      // backfills, we won't have this problem anymore because any messages backfilled in
-      // the forwards direction would be picked up the same going backwards.
+      // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
+      // could backfill messages which will fill up the response before we perfectly
+      // connect and continue from the position they were jumping from before. When
+      // `/messages?dir=f` backfills, we won't have this problem anymore because any
+      // messages backfilled in the forwards direction would be picked up the same going
+      // backwards.
       if (dir === 'f') {
         // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
         // then start the scroll from the top of the page so they can continue.
@@ -198,7 +199,31 @@ router.get(
           limit: archiveMessageLimit,
         });
 
-        originServerTs = messageResData.chunk[messageResData.chunk.length - 1]?.origin_server_ts;
+        if (!messageResData.chunk?.length) {
+          throw new StatusError(
+            404,
+            `/messages response didn't contain any more messages to jump to`
+          );
+        }
+
+        const timestampOfLastMessage =
+          messageResData.chunk[messageResData.chunk.length - 1].origin_server_ts;
+        const dateOfLastMessage = new Date(timestampOfLastMessage);
+
+        // Back track from the last message timestamp to the date boundary. This will
+        // gurantee some overlap with the previous page we jumped from so we don't lose
+        // any messages in the gap.
+        const utcMidnightOfDayBefore = Date.UTC(
+          dateOfLastMessage.getUTCFullYear(),
+          dateOfLastMessage.getUTCMonth(),
+          dateOfLastMessage.getUTCDate()
+        );
+        // We minus 1 from UTC midnight to get to the day before
+        const endOfDayBeforeDate = new Date(utcMidnightOfDayBefore - 1);
+
+        originServerTs = endOfDayBeforeDate;
+        // Start the scroll at the next event from where they jumped from (seamless navigation)
+        scrollStartEventId = eventIdForTimestamp;
       }
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
@@ -227,7 +252,7 @@ router.get(
       // TODO: Add query parameter that causes the client to start the scroll at the top
       // when jumping forwards so they can continue reading where they left off.
       matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
-        scrollStartPosition,
+        scrollStartEventId,
       })
     );
   })

@@ -115,6 +115,7 @@ class DisabledComposerView extends TemplateView {
 
 class ArchiveRoomView extends TemplateView {
   render(t, vm) {
+    console.log('vm.scrollStartEventId', vm.scrollStartEventId);
     const rootElement = t.div(
       {
         className: {
@@ -149,7 +150,9 @@ class ArchiveRoomView extends TemplateView {
             t.view(
               new TimelineView(vm.timelineViewModel, {
                 viewClassForTile: customViewClassForTile,
-                stickToBottom: vm.scrollStartPosition === 'bottom',
+                stickToBottom: !vm.scrollStartEventId,
+                anchorPosition: vm.scrollStartEventId ? 'top' : 'bottom',
+                initialAnchorEventId: vm.scrollStartEventId,
               })
             ),
             t.view(new DisabledComposerView(vm)),
