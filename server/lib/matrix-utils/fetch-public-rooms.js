@@ -23,7 +23,7 @@ async function fetchPublicRooms(accessToken, { server, searchTerm, paginationTok
     `_matrix/client/v3/publicRooms?${qs.toString()}`
   );
 
-  const publicRoomsRes = await fetchEndpointAsJson(publicRoomsEndpoint, {
+  const { data: publicRoomsRes } = await fetchEndpointAsJson(publicRoomsEndpoint, {
     method: 'POST',
     body: {
       include_all_networks: true,

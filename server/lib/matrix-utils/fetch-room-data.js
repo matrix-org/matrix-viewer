@@ -36,11 +36,11 @@ async function fetchRoomData(accessToken, roomId) {
   );
 
   const [
-    stateNameResDataOutcome,
-    stateCanonicalAliasResDataOutcome,
-    stateAvatarResDataOutcome,
-    stateHistoryVisibilityResDataOutcome,
-    stateJoinRulesResDataOutcome,
+    { data: stateNameResDataOutcome },
+    { data: stateCanonicalAliasResDataOutcome },
+    { data: stateAvatarResDataOutcome },
+    { data: stateHistoryVisibilityResDataOutcome },
+    { data: stateJoinRulesResDataOutcome },
   ] = await Promise.allSettled([
     fetchEndpointAsJson(stateNameEndpoint, {
       accessToken,

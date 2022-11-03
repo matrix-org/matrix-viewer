@@ -62,7 +62,7 @@ async function fetchEndpointAsJson(endpoint, options) {
 
   const res = await fetchEndpoint(endpoint, opts);
   const data = await res.json();
-  return data;
+  return { data, res };
 }
 
 module.exports = {

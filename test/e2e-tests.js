@@ -83,7 +83,7 @@ describe('matrix-public-archive', () => {
         hs1Client.homeserverUrl,
         `_matrix/client/r0/rooms/${hs2RoomId}/messages?limit=5&dir=b&filter={"types":["m.room.message"]}`
       );
-      const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
+      const { data: messageResData } = await fetchEndpointAsJson(messagesEndpoint, {
         accessToken: hs1Client.accessToken,
       });
 
