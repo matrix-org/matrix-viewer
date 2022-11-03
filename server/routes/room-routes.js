@@ -212,6 +212,13 @@ router.get(
         // Back track from the last message timestamp to the date boundary. This will
         // gurantee some overlap with the previous page we jumped from so we don't lose
         // any messages in the gap.
+        //
+        // XXX: This date boundary logic may need to change once we introduce hour
+        // chunks or time slices. For example if we reached into the next day but it has
+        // too many messages to show for a given page, we would want to back track until
+        // a suitable time slice boundary. Maybe we need to add a new URL parameter here
+        // `?time-slice=true` to indicate that it's okay to break it up by time slice
+        // based on previously having to view by time slice. We wouldn't want to give
         const utcMidnightOfDayBefore = Date.UTC(
           dateOfLastMessage.getUTCFullYear(),
           dateOfLastMessage.getUTCMonth(),
