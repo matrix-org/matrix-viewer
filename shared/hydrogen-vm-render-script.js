@@ -56,7 +56,7 @@ async function mountHydrogen() {
   const appElement = document.querySelector('#app');
 
   const qs = new URLSearchParams(window?.location?.search);
-  const scrollStartPosition = qs.get('continue');
+  const scrollStartEventId = qs.get('at');
 
   const platformConfig = {};
   const assetPaths = {};
@@ -126,7 +126,7 @@ async function mountHydrogen() {
     // The timestamp from the URL that was originally visited
     dayTimestampFrom: fromTimestamp,
     dayTimestampTo: toTimestamp,
-    scrollStartPosition,
+    scrollStartEventId,
     events,
     stateEventMap,
     shouldIndex,

@@ -146,12 +146,7 @@ class ArchiveRoomView extends TemplateView {
         t.main({ className: 'ArchiveRoomView_mainArea' }, [
           t.view(new RoomHeaderView(vm)),
           t.main({ className: 'ArchiveRoomView_mainBody' }, [
-            t.view(
-              new TimelineView(vm.timelineViewModel, {
-                viewClassForTile: customViewClassForTile,
-                stickToBottom: vm.scrollStartPosition === 'bottom',
-              })
-            ),
+            t.view(new TimelineView(vm.timelineViewModel, customViewClassForTile)),
             t.view(new DisabledComposerView(vm)),
           ]),
         ]),
