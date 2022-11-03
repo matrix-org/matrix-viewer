@@ -38,7 +38,6 @@ class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
       {
         ts: this.rangeEndTimestamp,
         dir: 'f',
-        scrollStartPosition: 'top',
       }
     );
   }

@@ -64,7 +64,7 @@ class ArchiveRoomViewModel extends ViewModel {
       room,
       dayTimestampFrom,
       dayTimestampTo,
-      scrollStartPosition,
+      scrollStartEventId,
       events,
       stateEventMap,
       shouldIndex,
@@ -82,7 +82,6 @@ class ArchiveRoomViewModel extends ViewModel {
     this._room = room;
     this._dayTimestampFrom = dayTimestampFrom;
     this._dayTimestampTo = dayTimestampTo;
-    this._scrollStartPosition = scrollStartPosition === 'top' ? 'top' : 'bottom';
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
     this._basePath = basePath;
@@ -142,9 +141,17 @@ class ArchiveRoomViewModel extends ViewModel {
 
     this._timelineViewModel = {
       showJumpDown: false,
-      setVisibleTileRange: () => {},
+      setVisibleTileRange() {},
       tiles,
+      // This will cause the event ID to be scrolled into view
+      get eventIdHighlighted() {
+        return scrollStartEventId;
+      },
     };
+    // Set the event highlight
+    if (scrollStartEventId) {
+      eventEntriesByEventId[scrollStartEventId].setIsHighlighted(true);
+    }
 
     // FIXME: Do we have to fake this?
     this.rightPanelModel = {
@@ -248,10 +255,6 @@ class ArchiveRoomViewModel extends ViewModel {
 
   get currentTopPositionEventEntry() {
     return this._currentTopPositionEventEntry;
-  }
-
-  get scrollStartPosition() {
-    return this._scrollStartPosition;
   }
 
   get shouldShowRightPanel() {
