@@ -28,7 +28,7 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
       eventId
     )}?limit=0&filter={"lazy_load_members":true}`
   );
-  const contextResData = await fetchEndpointAsJson(contextEndpoint, {
+  const { data: contextResData } = await fetchEndpointAsJson(contextEndpoint, {
     accessToken,
   });
 
@@ -42,7 +42,7 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
       contextResData.end
     )}&limit=${limit}&filter={"lazy_load_members":true}`
   );
-  const messageResData = await fetchEndpointAsJson(messagesEndpoint, {
+  const { data: messageResData } = await fetchEndpointAsJson(messagesEndpoint, {
     accessToken,
   });
 

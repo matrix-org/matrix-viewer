@@ -22,7 +22,7 @@ async function timestampToEvent({ accessToken, roomId, ts, direction }) {
       roomId
     )}/timestamp_to_event?ts=${encodeURIComponent(ts)}&dir=${encodeURIComponent(direction)}`
   );
-  const timestampToEventResData = await fetchEndpointAsJson(timestampToEventEndpoint, {
+  const { data: timestampToEventResData } = await fetchEndpointAsJson(timestampToEventEndpoint, {
     accessToken,
   });
 

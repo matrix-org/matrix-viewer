@@ -30,7 +30,7 @@ function slugify(inputText) {
 }
 
 async function ensureUserRegistered({ matrixServerUrl, username }) {
-  const registerResponse = await fetchEndpointAsJson(
+  const { data: registerResponse } = await fetchEndpointAsJson(
     urlJoin(matrixServerUrl, '/_matrix/client/v3/register'),
     {
       method: 'POST',
@@ -60,7 +60,7 @@ async function getTestClientForAs() {
 async function getTestClientForHs(testMatrixServerUrl) {
   // Register the virtual user
   const username = `user-t${new Date().getTime()}-r${Math.floor(Math.random() * 1000000000)}`;
-  const registerResponse = await fetchEndpointAsJson(
+  const { data: registerResponse } = await fetchEndpointAsJson(
     urlJoin(testMatrixServerUrl, '/_matrix/client/v3/register'),
     {
       method: 'POST',
@@ -95,7 +95,7 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
   const roomName = overrideCreateOptions.name || 'the hangout spot';
   const roomAlias = slugify(roomName + getTxnId());
 
-  const createRoomResponse = await fetchEndpointAsJson(
+  const { data: createRoomResponse } = await fetchEndpointAsJson(
     urlJoin(client.homeserverUrl, `/_matrix/client/v3/createRoom?${qs.toString()}`),
     {
       method: 'POST',
@@ -125,7 +125,7 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
 }
 
 async function getCanonicalAlias({ client, roomId }) {
-  const stateCanonicalAliasRes = await fetchEndpointAsJson(
+  const { data: stateCanonicalAliasRes } = await fetchEndpointAsJson(
     urlJoin(
       client.homeserverUrl,
       `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/m.room.canonical_alias`
@@ -157,7 +157,7 @@ async function joinRoom({ client, roomId, viaServers }) {
     client.homeserverUrl,
     `/_matrix/client/v3/join/${encodeURIComponent(roomId)}?${qs.toString()}`
   );
-  const joinRoomResponse = await fetchEndpointAsJson(joinRoomUrl, {
+  const { data: joinRoomResponse } = await fetchEndpointAsJson(joinRoomUrl, {
     method: 'POST',
     accessToken: client.accessToken,
   });
@@ -204,7 +204,7 @@ async function sendEvent({ client, roomId, eventType, stateKey, content, timesta
     );
   }
 
-  const sendResponse = await fetchEndpointAsJson(url, {
+  const { data: sendResponse } = await fetchEndpointAsJson(url, {
     method: 'PUT',
     body: content,
     accessToken: client.accessToken,

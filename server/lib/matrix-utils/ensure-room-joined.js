@@ -21,7 +21,7 @@ async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = []) {
     `_matrix/client/r0/join/${encodeURIComponent(roomIdOrAlias)}?${qs.toString()}`
   );
   try {
-    const joinData = await fetchEndpointAsJson(joinEndpoint, {
+    const { data: joinData } = await fetchEndpointAsJson(joinEndpoint, {
       method: 'POST',
       accessToken,
     });
