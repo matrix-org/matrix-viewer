@@ -190,7 +190,7 @@ describe('matrix-public-archive', () => {
         assert.strictEqual(eventIds.length, 3);
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -358,7 +358,7 @@ describe('matrix-public-archive', () => {
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
 
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -445,7 +445,7 @@ describe('matrix-public-archive', () => {
           viaServers: [HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2]],
         });
 
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -477,7 +477,7 @@ describe('matrix-public-archive', () => {
 
         // Visit `/:roomIdOrAlias` and expect to be redirected to the last day with events
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -516,7 +516,7 @@ describe('matrix-public-archive', () => {
           'The date we visit the archive (`visitArchiveDate`) should be after where the messages were sent (`archiveDate`)'
         );
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, visitArchiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -545,7 +545,7 @@ describe('matrix-public-archive', () => {
         // We purposely send no events in the room
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -574,7 +574,7 @@ describe('matrix-public-archive', () => {
         });
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         assert.match(archivePageHtml, /TODO: Redirect user to smaller hour range/);
       });
@@ -609,7 +609,7 @@ describe('matrix-public-archive', () => {
         });
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -661,7 +661,7 @@ describe('matrix-public-archive', () => {
         let previousDayToEventMap;
         beforeEach(async () => {
           // Set this low so we can easily create more than the limit
-          config.set('archiveMessageLimit', 3);
+          config.set('archiveMessageLimit', 4);
 
           client = await getTestClientForHs(testMatrixServerUrl1);
           roomId = await createTestRoom(client);
@@ -670,12 +670,12 @@ describe('matrix-public-archive', () => {
           // but don't overflow the limit on a single day basis.
           //
           // We create 4 days of messages so we can see a seamless continuation from
-          // page1 to page2. The page limit is 3 but each page will show 4 messages
-          // because we fetch one extra to determine overflow.
+          // page1 to page2. The page limit is 4 but each page will show up-to 5
+          // messages because we fetch one extra to determine overflow.
           //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
-          // [day 1]     [day 2]     [day 3]     [day 4]
-          // [1st page         ]     [2nd page         ]
+          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+          //
           previousDayToEventMap = new Map();
           for (let i = 1; i < 5; i++) {
             // The date should be just past midnight so we don't run into inclusive
@@ -688,7 +688,7 @@ describe('matrix-public-archive', () => {
             const eventIds = await createMessagesInRoom({
               client,
               roomId,
-              numMessages: 2,
+              numMessages: 3,
               prefix: `day ${i} - events in room`,
               timestamp: previousArchiveDate.getTime(),
             });
@@ -697,28 +697,41 @@ describe('matrix-public-archive', () => {
         });
 
         it('can jump forward to the next activity', async () => {
-          // `previousDayToEventMap` maps each day to the events in that day (2 events
-          // per day). The page limit is 3 but each page will show 4 messages because we
+          // Test to make sure we can jump from the 1st page to the 2nd page forwards.
+          //
+          // `previousDayToEventMap` maps each day to the events in that day (3 events
+          // per day). The page limit is 4 but each page will show 5 messages because we
           // fetch one extra to determine overflow.
           //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
-          // [day 1]     [day 2]     [day 3]     [day 4]
-          // [1st page         ]     [2nd page         ]
+          // In order to jump from the 1st page to the 2nd, we first jump forward 4
+          // messages, then back-track to the first date boundary which is day 3. We do
+          // this so that we don't start from day 4 backwards which would miss messages
+          // because there are more than 5 messages in between day 4 and day 2.
+          //
+          // Even though there is overlap between the pages, our scroll continues from
+          // the event where the 1st page starts.
+          //
+          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+          //       [1st page               ]
+          //                               |--jump-fwd-4-messages-->|
+          //                         [2nd page               ]
           const previousArchiveDates = Array.from(previousDayToEventMap.keys());
           assert.strictEqual(
             previousArchiveDates.length,
             4,
-            `This test expects to work with 4 days of history, each with 2 messages and a page limit of 3 messages previousArchiveDates=${previousArchiveDates}`
+            `This test expects to work with 4 days of history, each with 3 messages and a page limit of 4 messages previousArchiveDates=${previousArchiveDates}`
           );
 
           // Fetch messages for the 1st page (day 2 backwards)
+          const day2Date = previousArchiveDates[1];
           const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
             roomId,
-            previousArchiveDates[1]
+            day2Date
           );
           // Set this for debugging if the test fails here
           archiveUrl = firstPageArchiveUrl;
-          const firstPageArchivePageHtml = await fetchEndpointAsText(firstPageArchiveUrl);
+          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
           const firstPageDom = parseHTML(firstPageArchivePageHtml);
 
           const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
@@ -730,26 +743,37 @@ describe('matrix-public-archive', () => {
               return eventId.startsWith('$');
             });
 
-          // Assert that the first page contains 4 events (day 2 and day 1)
+          // Assert that the first page contains 5 events (day 2 and day 1)
           assert.deepEqual(eventIdsOnFirstPage, [
-            // All of day 1
-            ...previousDayToEventMap.get(previousArchiveDates[0]),
+            // Some of day 1
+            ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-2),
             // All of day 2
             ...previousDayToEventMap.get(previousArchiveDates[1]),
           ]);
 
-          // Follow the next activity link. Aka, fetch messages for the 2nd page (day 3
-          // onwards, seamless continuation from the 1st page).
+          // Follow the next activity link. Aka, fetch messages for the 2nd page
           const nextActivityLinkEl = firstPageDom.document.querySelector(
             '[data-testid="jump-to-next-activity-link"]'
           );
           const nextActivityLink = nextActivityLinkEl.getAttribute('href');
           // Set this for debugging if the test fails here
           archiveUrl = nextActivityLink;
-          const nextActivityArchivePageHtml = await fetchEndpointAsText(nextActivityLink);
+          const { data: nextActivityArchivePageHtml, res: nextActivityRes } =
+            await fetchEndpointAsText(nextActivityLink);
           const nextActivityDom = parseHTML(nextActivityArchivePageHtml);
 
-          // Assert that it's a smooth continuation to more messages with no overlap
+          // Assert that it's a smooth continuation to more messages
+          //
+          // First by checking where the scroll is going to start from
+          const urlObj = new URL(nextActivityRes.url, basePath);
+          const qs = new URLSearchParams(urlObj.search);
+          assert.strictEqual(
+            qs.get('at'),
+            // Continuing from the first event of day 3
+            previousDayToEventMap.get(previousArchiveDates[2])[0]
+          );
+
+          // Then check the events are on the page correctly
           const eventIdsOnNextDay = [
             ...nextActivityDom.document.querySelectorAll(`[data-event-id]`),
           ]
@@ -761,38 +785,46 @@ describe('matrix-public-archive', () => {
               return eventId.startsWith('$');
             });
 
-          // Assert that the 2nd page contains 4 events (day 3 and day 4)
+          // Assert that the 2nd page contains 5 events (day 3 and day 2)
           assert.deepEqual(eventIdsOnNextDay, [
+            // Some of day 2
+            ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-2),
             // All of day 3
             ...previousDayToEventMap.get(previousArchiveDates[2]),
-            // All of day 4
-            ...previousDayToEventMap.get(previousArchiveDates[3]),
           ]);
         });
 
         it('can jump backward to the previous activity', async () => {
-          // `previousDayToEventMap` maps each day to the events in that day (2 events
-          // per day). The page limit is 3 but each page will show 4 messages because we
+          // Test to make sure we can jump from the 1st page to the 2nd page backwards
+          //
+          // `previousDayToEventMap` maps each day to the events in that day (3 events
+          // per day). The page limit is 4 but each page will show 5 messages because we
           // fetch one extra to determine overflow.
           //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8
-          // [day 1]     [day 2]     [day 3]     [day 4]
-          // [2nd page         ]     [1st page         ]
+          // The 2nd page continues from the *day* where the 1st page starts. Even
+          // though there is overlap between the pages, our scroll continues from the
+          // event where the 1st page starts.
+          //
+          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+          //                         [1st page               ]
+          //       [2nd page               ]
           const previousArchiveDates = Array.from(previousDayToEventMap.keys());
           assert.strictEqual(
             previousArchiveDates.length,
             4,
-            `This test expects to work with 4 days of history, each with 2 messages and a page limit of 3 messages previousArchiveDates=${previousArchiveDates}`
+            `This test expects to work with 4 days of history, each with 3 messages and a page limit of 4 messages previousArchiveDates=${previousArchiveDates}`
           );
 
-          // Fetch messages for the 1st page (day 4 backwards)
+          // Fetch messages for the 1st page (day 3 backwards)
+          const day3Date = previousArchiveDates[2];
           const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
             roomId,
-            previousArchiveDates[3]
+            day3Date
           );
           // Set this for debugging if the test fails here
           archiveUrl = firstPageArchiveUrl;
-          const firstPageArchivePageHtml = await fetchEndpointAsText(firstPageArchiveUrl);
+          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
           const firstPageDom = parseHTML(firstPageArchivePageHtml);
 
           const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
@@ -804,26 +836,37 @@ describe('matrix-public-archive', () => {
               return eventId.startsWith('$');
             });
 
-          // Assert that the first page contains 4 events (day 4 and day 3)
+          // Assert that the first page contains 4 events (day 3 and day 2)
           assert.deepEqual(eventIdsOnFirstPage, [
+            // Some of day 2
+            ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-2),
             // All of day 3
             ...previousDayToEventMap.get(previousArchiveDates[2]),
-            // All of day 4
-            ...previousDayToEventMap.get(previousArchiveDates[3]),
           ]);
 
-          // Follow the previous activity link. Aka, fetch messages for the 2nd page (day 2
-          // backwards, seamless continuation from the 1st page).
+          // Follow the previous activity link
           const previousActivityLinkEl = firstPageDom.document.querySelector(
             '[data-testid="jump-to-previous-activity-link"]'
           );
           const previousActivityLink = previousActivityLinkEl.getAttribute('href');
           // Set this for debugging if the test fails here
           archiveUrl = previousActivityLink;
-          const previousActivityArchivePageHtml = await fetchEndpointAsText(previousActivityLink);
+          const { data: previousActivityArchivePageHtml, res: previousActivityRes } =
+            await fetchEndpointAsText(previousActivityLink);
           const previousActivityDom = parseHTML(previousActivityArchivePageHtml);
 
-          // Assert that it's a smooth continuation to more messages with no overlap
+          // Assert that it's a smooth continuation to more messages
+          //
+          // First by checking where the scroll is going to start from
+          const urlObj = new URL(previousActivityRes.url, basePath);
+          const qs = new URLSearchParams(urlObj.search);
+          assert.strictEqual(
+            qs.get('at'),
+            // Continuing from the first event of day 2
+            previousDayToEventMap.get(previousArchiveDates[1])[0]
+          );
+
+          // Then check the events are on the page correctly
           const eventIdsOnPreviousDay = [
             ...previousActivityDom.document.querySelectorAll(`[data-event-id]`),
           ]
@@ -838,7 +881,7 @@ describe('matrix-public-archive', () => {
           // Assert that the 2nd page contains 4 events (day 2 and day 1)
           assert.deepEqual(eventIdsOnPreviousDay, [
             // All of day 1
-            ...previousDayToEventMap.get(previousArchiveDates[0]),
+            ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-2),
             // All of day 2
             ...previousDayToEventMap.get(previousArchiveDates[1]),
           ]);
@@ -868,7 +911,7 @@ describe('matrix-public-archive', () => {
 
         // Browse the room directory without search to see many rooms
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
-        const roomDirectoryPageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryPageHtml } = await fetchEndpointAsText(archiveUrl);
         const dom = parseHTML(roomDirectoryPageHtml);
 
         const roomsOnPageWithoutSearch = [
@@ -882,7 +925,7 @@ describe('matrix-public-archive', () => {
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
           searchTerm: roomPlanetPrefix,
         });
-        const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         const roomsOnPageWithSearch = [
@@ -919,7 +962,7 @@ describe('matrix-public-archive', () => {
           homeserver: HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2],
           searchTerm: roomPlanetPrefix,
         });
-        const roomDirectoryWithSearchPageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         // Make sure the `?homserver` is selected in the homeserver selector `<select>`
@@ -975,7 +1018,7 @@ describe('matrix-public-archive', () => {
         const roomId = await createTestRoom(client);
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 
@@ -994,7 +1037,7 @@ describe('matrix-public-archive', () => {
         });
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const archivePageHtml = await fetchEndpointAsText(archiveUrl);
+        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
         const dom = parseHTML(archivePageHtml);
 

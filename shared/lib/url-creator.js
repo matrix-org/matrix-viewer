@@ -74,7 +74,7 @@ class URLCreator {
       qs.append('via', viaServer);
     });
     if (scrollStartEventId) {
-      qs.append('continue', scrollStartEventId);
+      qs.append('at', scrollStartEventId);
     }
 
     const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);

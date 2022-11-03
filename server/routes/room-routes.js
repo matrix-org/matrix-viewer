@@ -165,10 +165,9 @@ router.get(
     // date endpoint
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
+    let eventIdForTimestamp;
     let originServerTs;
-    let scrollStartEventId;
     try {
-      let eventIdForTimestamp;
       // Find the closest day to today with messages
       ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
         accessToken: matrixAccessToken,
@@ -222,8 +221,6 @@ router.get(
         const endOfDayBeforeDate = new Date(utcMidnightOfDayBefore - 1);
 
         originServerTs = endOfDayBeforeDate;
-        // Start the scroll at the next event from where they jumped from (seamless navigation)
-        scrollStartEventId = eventIdForTimestamp;
       }
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
@@ -252,7 +249,8 @@ router.get(
       // TODO: Add query parameter that causes the client to start the scroll at the top
       // when jumping forwards so they can continue reading where they left off.
       matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
-        scrollStartEventId,
+        // Start the scroll at the next event from where they jumped from (seamless navigation)
+        scrollStartEventId: eventIdForTimestamp,
       })
     );
   })
