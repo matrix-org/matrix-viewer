@@ -23,7 +23,12 @@ class JumpToNextActivitySummaryTileView extends TemplateView {
 
     return t.div(
       {
-        className: 'JumpToNextActivitySummaryTileView',
+        className: {
+          JumpToNextActivitySummaryTileView: true,
+          // Used by page loaded JavaScript to quickly jump the scroll viewport down
+          // while we wait for the rest of the JavaScript to load.
+          'js-bottom-scroll-handle': true,
+        },
         'data-event-id': vm.eventId,
       },
       [

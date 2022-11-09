@@ -420,6 +420,7 @@ router.get(
         title: `${roomData.name} - Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl],
         scripts: [jsBundleUrl],
+        locationHref: urlJoin(basePath, req.originalUrl),
         shouldIndex,
         cspNonce: res.locals.cspNonce,
       }

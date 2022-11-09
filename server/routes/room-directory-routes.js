@@ -93,6 +93,7 @@ router.get(
         title: `Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
         scripts: [jsBundleUrl],
+        locationHref: urlJoin(basePath, req.originalUrl),
         shouldIndex,
         cspNonce: res.locals.cspNonce,
       }

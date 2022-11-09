@@ -26,6 +26,12 @@ async function renderHydrogenVmRenderScriptToPageHtml(
     pageOptions,
   });
 
+  // Serialize the state for when we run the Hydrogen render again client-side to
+  // re-hydrate the DOM
+  const serializedMatrixPublicArchiveContext = JSON.stringify({
+    ...vmRenderContext,
+  });
+
   const serializableSpans = getSerializableSpans();
   const serializedSpans = JSON.stringify(serializableSpans);
 
@@ -51,6 +57,31 @@ async function renderHydrogenVmRenderScriptToPageHtml(
         </head>
         <body>
           ${hydrogenHtmlOutput}
+
+          <script type="text/javascript" nonce="${pageOptions.cspNonce}">
+            console.log('wee');
+            const qs = new URLSearchParams(window?.location?.search);
+            const scrollStartEventId = qs.get('at');
+
+            if (scrollStartEventId) {
+              const eventElement = document.querySelector(\`[data-event-id="\${scrollStartEventId}"]\`);
+              requestAnimationFrame(() => {
+                console.log('woo event');
+                eventElement.scrollIntoView({ block: 'center' });
+              });
+            } else  {
+              const bottomHandleElement = document.querySelector('.js-bottom-scroll-handle');
+              requestAnimationFrame(() => {
+                console.log('woo bottom');
+                bottomHandleElement.scrollIntoView({ block: 'end' });
+              });
+            }
+          </script>
+
+          <script type="text/javascript" nonce="${pageOptions.cspNonce}">
+            window.matrixPublicArchiveContext = ${safeJson(serializedMatrixPublicArchiveContext)}
+          </script>
+
           ${pageOptions.scripts
             .map(
               (scriptUrl) =>
