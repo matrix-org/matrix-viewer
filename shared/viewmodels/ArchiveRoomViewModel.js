@@ -150,7 +150,7 @@ class ArchiveRoomViewModel extends ViewModel {
     };
     // Set the event highlight
     if (scrollStartEventId) {
-      eventEntriesByEventId[scrollStartEventId].setIsHighlighted(true);
+      eventEntriesByEventId[scrollStartEventId]?.setIsHighlighted(true);
     }
 
     // FIXME: Do we have to fake this?
