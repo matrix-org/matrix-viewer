@@ -59,20 +59,20 @@ async function renderHydrogenVmRenderScriptToPageHtml(
           ${hydrogenHtmlOutput}
 
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
-            const qs = new URLSearchParams(window?.location?.search);
-            const scrollStartEventId = qs.get('at');
+const qs = new URLSearchParams(window?.location?.search);
+const atEventId = qs.get('at');
 
-            if (scrollStartEventId) {
-              const eventElement = document.querySelector(\`[data-event-id="\${scrollStartEventId}"]\`);
-              requestAnimationFrame(() => {
-                eventElement.scrollIntoView({ block: 'center' });
-              });
-            } else  {
-              const bottomHandleElement = document.querySelector('.js-bottom-scroll-handle');
-              requestAnimationFrame(() => {
-                bottomHandleElement.scrollIntoView({ block: 'end' });
-              });
-            }
+if (atEventId) {
+  const el = document.querySelector(\`[data-event-id="\${atEventId}"]\`);
+  requestAnimationFrame(() => {
+    el.scrollIntoView({ block: 'center' });
+  });
+} else {
+  const el = document.querySelector('.js-bottom-scroll-handle');
+  requestAnimationFrame(() => {
+    el.scrollIntoView({ block: 'end' });
+  });
+}
           </script>
 
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
