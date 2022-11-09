@@ -8,7 +8,11 @@
   "archiveMessageLimit": 100,
   "requestTimeoutMs": 25000,
   "logOutputFromChildProcesses": false,
+  //"stopSearchEngineIndexing": true,
+  // Tracing
   //"jaegerTracesEndpoint": "http://localhost:14268/api/traces",
+
+  // Testing
   "testMatrixServerUrl1": "http://localhost:11008/",
   "testMatrixServerUrl2": "http://localhost:12008/",
 
