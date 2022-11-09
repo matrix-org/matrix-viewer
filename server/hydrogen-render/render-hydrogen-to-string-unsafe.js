@@ -70,10 +70,9 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
 
   const { dom, vmContext } = createDomAndSetupVmContext();
 
+  // A small `window.location` stub
   if (!dom.window.location) {
-    const href = renderOptions.pageOptions.locationHref;
-    console.log('href', href);
-    const locationUrl = new URL(href);
+    const locationUrl = new URL(renderOptions.pageOptions.locationHref);
     dom.window.location = {};
     [
       'hash',
