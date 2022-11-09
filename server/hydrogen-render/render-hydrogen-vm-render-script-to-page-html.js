@@ -68,7 +68,6 @@ async function renderHydrogenVmRenderScriptToPageHtml(
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
 const qs = new URLSearchParams(window?.location?.search);
 const atEventId = qs.get('at');
-
 if (atEventId) {
   const el = document.querySelector(\`[data-event-id="\${atEventId}"]\`);
   requestAnimationFrame(() => {
