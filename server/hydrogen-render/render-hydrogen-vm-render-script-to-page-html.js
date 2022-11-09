@@ -74,7 +74,7 @@ if (atEventId) {
     el && el.scrollIntoView({ block: 'center' });
   });
 } else {
-  const el = document.querySelector('.js-bottom-scroll-handle');
+  const el = document.querySelector('.js-bottom-scroll-anchor');
   requestAnimationFrame(() => {
     el && el.scrollIntoView({ block: 'end' });
   });
