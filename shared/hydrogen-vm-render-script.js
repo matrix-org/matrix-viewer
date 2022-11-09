@@ -51,11 +51,6 @@ supressBlankAnchorsReloadingThePage();
 
 // eslint-disable-next-line max-statements
 async function mountHydrogen() {
-  // TODO: Remove
-  await new Promise((resolve) => {
-    setTimeout(resolve, 2000);
-  });
-
   console.log('Mounting Hydrogen...');
   console.time('Completed mounting Hydrogen');
   const appElement = document.querySelector('#app');

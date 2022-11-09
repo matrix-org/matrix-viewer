@@ -59,20 +59,17 @@ async function renderHydrogenVmRenderScriptToPageHtml(
           ${hydrogenHtmlOutput}
 
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
-            console.log('wee');
             const qs = new URLSearchParams(window?.location?.search);
             const scrollStartEventId = qs.get('at');
 
             if (scrollStartEventId) {
               const eventElement = document.querySelector(\`[data-event-id="\${scrollStartEventId}"]\`);
               requestAnimationFrame(() => {
-                console.log('woo event');
                 eventElement.scrollIntoView({ block: 'center' });
               });
             } else  {
               const bottomHandleElement = document.querySelector('.js-bottom-scroll-handle');
               requestAnimationFrame(() => {
-                console.log('woo bottom');
                 bottomHandleElement.scrollIntoView({ block: 'end' });
               });
             }
