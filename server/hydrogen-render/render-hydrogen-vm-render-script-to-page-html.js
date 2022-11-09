@@ -57,7 +57,14 @@ async function renderHydrogenVmRenderScriptToPageHtml(
         </head>
         <body>
           ${hydrogenHtmlOutput}
-
+          
+          ${
+            /**
+             * This inline snippet is used in to scroll the Hydrogen timeline to the
+             * right place immediately when the page loads instead of waiting for
+             * Hydrogen to load, hydrate and finally scroll.
+             */ ''
+          }
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
 const qs = new URLSearchParams(window?.location?.search);
 const atEventId = qs.get('at');
