@@ -18,6 +18,7 @@ const matrixServerName = config.get('matrixServerName');
 assert(matrixServerName);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
+const stopSearchEngineIndexing = config.get('stopSearchEngineIndexing');
 
 const router = express.Router({
   caseSensitive: true,
@@ -56,6 +57,9 @@ router.get(
       roomFetchError = err;
     }
 
+    // We index the room directory unless the config says we shouldn't index anything
+    const shouldIndex = !stopSearchEngineIndexing;
+
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
@@ -89,6 +93,7 @@ router.get(
         title: `Matrix Public Archive`,
         styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
         scripts: [jsBundleUrl],
+        shouldIndex,
         cspNonce: res.locals.cspNonce,
       }
     );

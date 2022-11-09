@@ -26,6 +26,7 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
+const stopSearchEngineIndexing = config.get('stopSearchEngineIndexing');
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
@@ -270,6 +271,7 @@ router.get(
 router.get(
   '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
   timeoutMiddleware,
+  // eslint-disable-next-line max-statements
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
@@ -359,8 +361,14 @@ router.get(
       );
     }
 
-    // We only allow search engines to index `world_readable` rooms
-    const shouldIndex = roomData?.historyVisibility === `world_readable`;
+    // Default to no indexing (safe default)
+    let shouldIndex = false;
+    if (stopSearchEngineIndexing) {
+      shouldIndex = false;
+    } else {
+      // Otherwise we only allow search engines to index `world_readable` rooms
+      shouldIndex = roomData?.historyVisibility === `world_readable`;
+    }
 
     // If we have over the `archiveMessageLimit` number of messages fetching
     // from the given day, it's acceptable to have them be from surrounding
