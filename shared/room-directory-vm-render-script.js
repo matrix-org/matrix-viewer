@@ -82,7 +82,7 @@ async function mountHydrogen() {
   roomDirectoryViewModel = new RoomDirectoryViewModel({
     // Hydrogen options
     navigation: navigation,
-    urlCreator: urlRouter,
+    urlRouter: urlRouter,
     history: archiveHistory,
     // Our options
     homeserverUrl: config.matrixServerUrl,
