@@ -87,7 +87,7 @@ class ArchiveRoomViewModel extends ViewModel {
     this._basePath = basePath;
 
     const navigation = this.navigation;
-    const urlCreator = this.urlCreator;
+    const urlRouter = this.urlRouter;
 
     // Setup events and tiles necessary to render
     const eventsToDisplay = this._addJumpSummaryEvents(events);
@@ -163,7 +163,7 @@ class ArchiveRoomViewModel extends ViewModel {
         calendarViewModel: this._calendarViewModel,
         shouldIndex,
         get developerOptionsUrl() {
-          return urlCreator.urlForSegments([
+          return urlRouter.urlForSegments([
             navigation.segment('room', room.id),
             navigation.segment('developer-options'),
           ]);
@@ -409,7 +409,7 @@ class ArchiveRoomViewModel extends ViewModel {
       tileClassForEntry: customTileClassForEntry,
       platform: this.platform,
       navigation: this.navigation,
-      urlCreator: this.urlCreator,
+      urlRouter: this.urlRouter,
       timeline,
       roomVM: {
         room,

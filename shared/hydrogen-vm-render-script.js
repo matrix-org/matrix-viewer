@@ -118,7 +118,7 @@ async function mountHydrogen() {
     // Hydrogen options
     platform: platform,
     navigation: navigation,
-    urlCreator: urlRouter,
+    urlRouter: urlRouter,
     history: archiveHistory,
     // Our options
     homeserverUrl: config.matrixServerUrl,
