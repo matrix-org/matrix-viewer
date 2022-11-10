@@ -7,13 +7,13 @@ class RoomCardView extends TemplateView {
   render(t, vm) {
     const avatarViewModel = new AvatarViewModel({
       homeserverUrlToPullMediaFrom: vm.homeserverUrlToPullMediaFrom,
-      avatarUrl: vm.avatarUrl,
+      avatarUrl: vm.mxcAvatarUrl,
       avatarTitle: vm.name || vm.canonicalAlias || vm.roomId,
       avatarLetterString:
         vm.name ||
-        // Strip the `#` off the alias
+        // Skip to the first letter after the `#` sigil from the alias
         vm.canonicalAlias?.[1] ||
-        // Strip the `!` off the room_id
+        // Skip to the first letter after the `!` sigil from the room ID
         vm.roomId?.[1],
       entityId: vm.roomId,
     });

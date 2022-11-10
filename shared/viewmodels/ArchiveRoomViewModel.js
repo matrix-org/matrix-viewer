@@ -104,9 +104,9 @@ class ArchiveRoomViewModel extends ViewModel {
       avatarTitle: this._room.name || this._room.canonicalAlias || this._room.id,
       avatarLetterString:
         this._room.name ||
-        // Strip the `#` off the alias
+        // Skip to the first letter after the `#` sigil from the alias
         this._room.canonicalAlias?.[1] ||
-        // Strip the `!` off the room_id
+        // Skip to the first letter after the `!` sigil from the room ID
         this._room.id?.[1],
       entityId: this._room.id,
     });

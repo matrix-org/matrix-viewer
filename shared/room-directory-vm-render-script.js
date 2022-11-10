@@ -79,6 +79,7 @@ async function mountHydrogen() {
   // page don't say `undefined`.
   urlRouter.attach();
 
+  console.log('rooms', rooms);
   roomDirectoryViewModel = new RoomDirectoryViewModel({
     // Hydrogen options
     navigation: navigation,
