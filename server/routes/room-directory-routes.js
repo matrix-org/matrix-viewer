@@ -65,7 +65,6 @@ router.get(
     const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-directory.es.js');
 
-    console.log('server rooms', rooms);
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
       path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
       {
