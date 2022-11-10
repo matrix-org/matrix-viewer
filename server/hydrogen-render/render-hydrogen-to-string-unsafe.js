@@ -16,9 +16,7 @@ const vm = require('vm');
 const path = require('path');
 const { readFile } = require('fs').promises;
 const crypto = require('crypto');
-
 const { parseHTML } = require('linkedom');
-const safeJson = require('../lib/safe-json');
 
 // Setup the DOM context with any necessary shims/polyfills and ensure the VM
 // context global has everything that a normal document does so Hydrogen can
@@ -67,24 +65,36 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
   assert(renderOptions.vmRenderScriptFilePath);
   assert(renderOptions.vmRenderContext);
   assert(renderOptions.pageOptions);
+  assert(renderOptions.pageOptions.locationHref);
   assert(renderOptions.pageOptions.cspNonce);
 
   const { dom, vmContext } = createDomAndSetupVmContext();
+
+  // A small `window.location` stub
+  if (!dom.window.location) {
+    const locationUrl = new URL(renderOptions.pageOptions.locationHref);
+    dom.window.location = {};
+    [
+      'hash',
+      'host',
+      'hostname',
+      'href',
+      'origin',
+      'password',
+      'pathname',
+      'port',
+      'protocol',
+      'search',
+      'username',
+    ].forEach((key) => {
+      dom.window.location[key] = locationUrl[key];
+    });
+  }
 
   // Define this for the SSR context
   dom.window.matrixPublicArchiveContext = {
     ...renderOptions.vmRenderContext,
   };
-  // Serialize it for when we run this again client-side
-  const serializedContext = JSON.stringify(dom.window.matrixPublicArchiveContext);
-  dom.document.body.insertAdjacentHTML(
-    'beforeend',
-    `
-      <script type="text/javascript" nonce="${renderOptions.pageOptions.cspNonce}">
-        window.matrixPublicArchiveContext = ${safeJson(serializedContext)}
-      </script>
-      `
-  );
 
   const vmRenderScriptFilePath = renderOptions.vmRenderScriptFilePath;
   const hydrogenRenderScriptCode = await readFile(vmRenderScriptFilePath, 'utf8');
