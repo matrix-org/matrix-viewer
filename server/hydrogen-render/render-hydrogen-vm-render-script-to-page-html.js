@@ -48,6 +48,8 @@ async function renderHydrogenVmRenderScriptToPageHtml(
           <meta name="viewport" content="width=device-width, initial-scale=1">
           ${maybeNoIndexHtml}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
+          <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+          <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
           ${pageOptions.styles
             .map(
               (styleUrl) =>
