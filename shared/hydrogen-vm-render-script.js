@@ -6,20 +6,13 @@
 // Data is passed in via `window.matrixPublicArchiveContext`
 
 const assert = require('matrix-public-archive-shared/lib/assert');
-const {
-  Platform,
-  MediaRepository,
-  createNavigation,
-  createRouter,
-
-  RetainedObservableValue,
-  PowerLevels,
-} = require('hydrogen-view-sdk');
+const { Platform, MediaRepository, createNavigation, createRouter } = require('hydrogen-view-sdk');
 
 const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
 const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
+const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
 
 const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
 assert(fromTimestamp);
@@ -98,19 +91,7 @@ async function mountHydrogen() {
     mediaRepository: mediaRepository,
     // Based on https://github.com/vector-im/hydrogen-web/blob/5f9cfffa3b547991b665f57a8bf715270a1b2ef1/src/matrix/room/BaseRoom.js#L480
     observePowerLevels: async function () {
-      let powerLevelsObservable = this._powerLevelsObservable;
-      if (!powerLevelsObservable) {
-        const powerLevels = new PowerLevels({
-          powerLevelEvent: {},
-          ownUserId: 'xxx-ownUserId',
-          membership: null,
-        });
-        powerLevelsObservable = new RetainedObservableValue(powerLevels, () => {
-          this._powerLevels = null;
-        });
-        this._powerLevelsObservable = powerLevelsObservable;
-      }
-      return powerLevelsObservable;
+      return stubPowerLevelsObservable;
     },
   };
 

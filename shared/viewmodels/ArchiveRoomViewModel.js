@@ -22,6 +22,7 @@ const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarV
 const {
   customTileClassForEntry,
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
+const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
 
 let txnCount = 0;
 function getFakeEventId() {
@@ -371,6 +372,7 @@ class ArchiveRoomViewModel extends ViewModel {
       fragmentIdComparer: fragmentIdComparer,
       clock: this.platform.clock,
       logger: this.platform.logger,
+      powerLevelsObservable: stubPowerLevelsObservable,
     });
 
     // Something we can modify with new state updates as we see them
