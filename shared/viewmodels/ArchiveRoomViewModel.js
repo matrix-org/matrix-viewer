@@ -16,6 +16,7 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
+const TimeSelectorViewModel = require('matrix-public-archive-shared/viewmodels/TimeSelectorViewModel');
 const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarViewModel');
@@ -122,6 +123,8 @@ class ArchiveRoomViewModel extends ViewModel {
       basePath,
     });
 
+    this._timeSelectorViewModel = new TimeSelectorViewModel({});
+
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
       this.childOptions({
         /* any explicit options */
@@ -162,6 +165,7 @@ class ArchiveRoomViewModel extends ViewModel {
         type: 'custom',
         customView: RightPanelContentView,
         calendarViewModel: this._calendarViewModel,
+        timeSelectorViewModel: this._timeSelectorViewModel,
         shouldIndex,
         get developerOptionsUrl() {
           return urlRouter.urlForSegments([

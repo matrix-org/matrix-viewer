@@ -49,6 +49,11 @@ function getLocaleTimeStringFromDate(inputDate) {
 }
 
 class TimeSelectorView extends TemplateView {
+  constructor(vm) {
+    super(vm);
+    this._vm = vm;
+  }
+
   render(t, vm) {
     // Create a locally unique ID so all of the input labels correspond to only this <input>
     const inputUniqueId = `time-input-${Math.floor(Math.random() * 1000000000)}`;
@@ -84,16 +89,40 @@ class TimeSelectorView extends TemplateView {
             id: inputUniqueId,
           }),
         ]),
-        t.main({ className: 'TimeSelectorView_scrubber' }, [
-          t.ul(
-            { className: 'TimeSelectorView_dial' },
-            hourIncrementStrings.map((hourIncrementString) => {
-              return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
-                t.div({ className: 'TimeSelectorView_incrementLabelText' }, hourIncrementString),
-              ]);
-            })
-          ),
-        ]),
+        t.main(
+          {
+            className: {
+              TimeSelectorView_scrubber: true,
+              'is-dragging': (vm) => vm.isDragging,
+              'js-scrubber': true,
+            },
+            onMousedown: (event) => {
+              this.onMousedown(event);
+            },
+            onMouseup: (event) => {
+              this.onMouseup(event);
+            },
+            onMousemove: (event) => {
+              this.onMousemove(event);
+            },
+            onMouseleave: (event) => {
+              this.onMouseleave(event);
+            },
+            onWheel: (event) => {
+              this.onWheel(event);
+            },
+          },
+          [
+            t.ul(
+              { className: 'TimeSelectorView_dial' },
+              hourIncrementStrings.map((hourIncrementString) => {
+                return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
+                  t.div({ className: 'TimeSelectorView_incrementLabelText' }, hourIncrementString),
+                ]);
+              })
+            ),
+          ]
+        ),
         t.footer({ className: 'TimeSelectorView_footer' }, [
           t.label({ for: inputUniqueId }, [
             t.time(
@@ -110,6 +139,70 @@ class TimeSelectorView extends TemplateView {
         ]),
       ]
     );
+  }
+
+  get scrubberNode() {
+    return this.root().querySelector('.js-scrubber');
+  }
+
+  onMousedown(event) {
+    this._vm.setIsDragging(true);
+    this._vm.setDragPositionX(event.pageX);
+  }
+
+  onMouseup(event) {
+    this._vm.setIsDragging(false);
+    this.startMomentumTracking();
+  }
+
+  onMousemove(event) {
+    if (this._vm.isDragging) {
+      const delta = event.pageX - this._vm.dragPositionX;
+      console.log('delta', delta);
+
+      this.scrubberNode.scrollLeft = this.scrubberNode.scrollLeft - delta;
+      this._vm.setVelocityX(delta);
+
+      // Ignore momentum for delta's of 1px
+      this._vm.setDragPositionX(event.pageX > 1 ? event.pageX : 0);
+    }
+  }
+
+  onMouseleave(event) {
+    this._vm.setIsDragging(false);
+  }
+
+  onWheel(event) {
+    this._vm.setVelocityX(0);
+    this.cancelMomentumTracking();
+  }
+
+  startMomentumTracking() {
+    this.cancelMomentumTracking();
+    const momentumRafId = requestAnimationFrame(this.momentumLoop.bind(this));
+    this._vm.setMomentumRafId(momentumRafId);
+  }
+
+  cancelMomentumTracking() {
+    cancelAnimationFrame(this._vm.momentumRafId);
+  }
+
+  momentumLoop() {
+    const velocityXAtStartOfLoop = this._vm.velocityX;
+    // Apply the momentum movement to the scroll
+    this.scrubberNode.scrollLeft -= velocityXAtStartOfLoop * 2;
+
+    const DAMPING_FACTOR = 0.95;
+    const DEADZONE = 0.5;
+
+    // Scrub off some momentum each run of the loop (friction)
+    const newVelocityX = velocityXAtStartOfLoop * DAMPING_FACTOR;
+    if (Math.abs(newVelocityX) > DEADZONE) {
+      const momentumRafId = requestAnimationFrame(this.momentumLoop.bind(this));
+      this._vm.setMomentumRafId(momentumRafId);
+    }
+
+    this._vm.setVelocityX(newVelocityX);
   }
 }
 

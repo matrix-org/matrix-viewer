@@ -292,6 +292,9 @@ summary {
 }
 
 .TimeSelectorView {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .TimeSelectorView_header {
@@ -361,11 +364,43 @@ summary {
   --tick-width: 1px;
   --tick-major-height: 12px;
   --tick-minor-height: 6px;
+  --tick-detail-height: 3px;
 
-  overflow-x: scroll;
-  overflow-y: hidden;
+  overflow-x: auto;
+  /* Hide scrollbar in Firefox. We want scroll but no scrollbar so mobile and touchpad
+  people can still scroll */
+  scrollbar-width: none;
+
+  position: relative;
   display: flex;
   width: 100%;
+  max-width: 600px;
+  cursor: grab;
+}
+
+.TimeSelectorView_scrubber::-webkit-scrollbar {
+  /* Hide scrollbar in Safari and Chrome. We want scroll but no scrollbar so mobile and touchpad
+  people can still scroll */
+  display: none;
+}
+
+.TimeSelectorView_scrubber.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.TimeSelectorView_scrubber::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 100%;
+
+  transform: translateX(-50%);
+
+  border: 1px solid #f00;
+  border-radius: 8px;
+  box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2);
 }
 
 .TimeSelectorView_dial {
@@ -378,10 +413,20 @@ summary {
 
   list-style: none;
 
-  background-image: linear-gradient(90deg, currentcolor var(--tick-width), transparent 0);
-  background-repeat: repeat-x;
-  background-size: 12px var(--tick-minor-height);
-  background-position: bottom left;
+  /* prettier-ignore */
+  background-image:
+    /* Ticks every 10 mins */
+    linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
+    /* Ticks every 5 mins */
+    linear-gradient(90deg, rgba(46, 47, 50, 0.4) var(--tick-width), transparent 0);
+  background-repeat: repeat-x, repeat-x;
+  /* prettier-ignore */
+  background-size:
+    /* Ticks every 10 mins */
+    10px var(--tick-minor-height),
+    /* Ticks every 5 mins */
+    5px var(--tick-detail-height);
+  background-position: bottom left, bottom left;
 }
 
 .TimeSelectorView_incrementLabel {
