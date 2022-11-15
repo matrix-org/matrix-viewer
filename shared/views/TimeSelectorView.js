@@ -2,7 +2,9 @@
 
 const { TemplateView } = require('hydrogen-view-sdk');
 
-function getTwentyFourHourDateStringFromDate(inputDate) {
+const TOTAL_MS_IN_ONE_DAY = 24 * 60 * 60 * 1000;
+
+function getTwentyFourHourDateStringFromDate(inputDate, preferredPrecision = 'minutes') {
   const date = new Date(inputDate);
 
   const formatValue = (input) => {
@@ -22,14 +24,14 @@ function getTwentyFourHourDateStringFromDate(inputDate) {
 
   // Prevent extra precision if it's not needed.
   // This way there won't be an extra time control to worry about for users in most cases.
-  if (second !== 0) {
+  if (preferredPrecision === 'seconds') {
     twentyFourHourDateString += `:${formatValue(second)}`;
   }
 
   return twentyFourHourDateString;
 }
 
-function getLocaleTimeStringFromDate(inputDate) {
+function getLocaleTimeStringFromDate(inputDate, preferredPrecision = 'minutes') {
   const date = new Date(inputDate);
 
   const dateTimeFormatOptions = {
@@ -39,7 +41,7 @@ function getLocaleTimeStringFromDate(inputDate) {
 
   // Prevent extra precision if it's not needed.
   // This way it will match the `<input type="time">` text/controls
-  if (date.getUTCSeconds() !== 0) {
+  if (preferredPrecision === 'seconds') {
     dateTimeFormatOptions.second = '2-digit';
   }
 
@@ -58,12 +60,6 @@ class TimeSelectorView extends TemplateView {
     // Create a locally unique ID so all of the input labels correspond to only this <input>
     const inputUniqueId = `time-input-${Math.floor(Math.random() * 1000000000)}`;
 
-    const todoTestDateStart = Date.UTC(2022, 2, 2, 14, 5);
-    const todoTestDateEnd = Date.UTC(2022, 2, 2, 16, 17);
-    const inputDateValue = getTwentyFourHourDateStringFromDate(todoTestDateStart);
-
-    const localTimeString = getLocaleTimeStringFromDate(todoTestDateStart);
-
     const hourIncrementStrings = [...Array(24).keys()].map((hourNumber) => {
       return {
         utc: new Date(Date.UTC(2022, 1, 1, hourNumber)).toLocaleTimeString([], {
@@ -78,8 +74,33 @@ class TimeSelectorView extends TemplateView {
 
     // TODO: Add magnifier bubble shadow around the range of messages in the timeline on
     // this page
-    const visibleRangeStartDate = todoTestDateStart;
-    const visibleRangeEndDate = todoTestDateEnd;
+    // const visibleRangeStartDate = todoTestDateStart;
+    // const visibleRangeEndDate = todoTestDateEnd;
+
+    // Set the scroll position
+    t.mapSideEffect(
+      (vm) => vm.activeDate,
+      (activeDate /*, _oldActiveDate*/) => {
+        // Get the timestamp from the beginning of whatever day the active day is set to
+        const startOfDayTimestamp = Date.UTC(
+          activeDate.getUTCFullYear(),
+          activeDate.getUTCMonth(),
+          activeDate.getUTCDate()
+        );
+
+        // Next, we'll find how many ms have elapsed so far in the day since the start of the day
+        const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
+        const ratio = msSoFarInDay / TOTAL_MS_IN_ONE_DAY;
+        console.log('ratio', ratio, ' - ', msSoFarInDay, TOTAL_MS_IN_ONE_DAY);
+
+        if (this.scrubberScrollNode) {
+          const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
+          const currentClientWidth = this.scrubberScrollNode.clientWidth;
+
+          this.scrubberScrollNode.scrollLeft = (currentScrollWidth - currentClientWidth) * ratio;
+        }
+      }
+    );
 
     return t.section(
       {
@@ -95,65 +116,79 @@ class TimeSelectorView extends TemplateView {
           ]),
           t.input({
             type: 'time',
-            value: inputDateValue,
+            value: (vm) =>
+              getTwentyFourHourDateStringFromDate(vm.activeDate, vm.preferredPrecision),
             className: 'TimeSelectorView_timeInput',
             id: inputUniqueId,
           }),
         ]),
-        t.main({ className: 'TimeSelectorView_scrubber' }, [
-          t.div(
-            {
-              className: {
-                TimeSelectorView_scrubberScrollWrapper: true,
-                'is-dragging': (vm) => vm.isDragging,
-                'js-scrubber': true,
+        t.main(
+          {
+            className: 'TimeSelectorView_scrubber',
+            // We'll hide this away for screen reader users because they should use the
+            // native `<input>` instead of this weird scrolling time scrubber thing
+            'aria-hidden': true,
+          },
+          [
+            t.div(
+              {
+                className: {
+                  TimeSelectorView_scrubberScrollWrapper: true,
+                  'is-dragging': (vm) => vm.isDragging,
+                  'js-scrubber': true,
+                },
+                onMousedown: (event) => {
+                  this.onMousedown(event);
+                },
+                onMouseup: (event) => {
+                  this.onMouseup(event);
+                },
+                onMousemove: (event) => {
+                  this.onMousemove(event);
+                },
+                onMouseleave: (event) => {
+                  this.onMouseleave(event);
+                },
+                onWheel: (event) => {
+                  this.onWheel(event);
+                },
+                onScroll: (event) => {
+                  this.onScroll(event);
+                },
               },
-              onMousedown: (event) => {
-                this.onMousedown(event);
-              },
-              onMouseup: (event) => {
-                this.onMouseup(event);
-              },
-              onMousemove: (event) => {
-                this.onMousemove(event);
-              },
-              onMouseleave: (event) => {
-                this.onMouseleave(event);
-              },
-              onWheel: (event) => {
-                this.onWheel(event);
-              },
-              onScroll: (event) => {
-                this.onScroll(event);
-              },
-            },
-            [
-              t.ul(
-                { className: 'TimeSelectorView_dial' },
-                hourIncrementStrings.map((hourIncrementStringData) => {
-                  return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
-                    t.div(
-                      { className: 'TimeSelectorView_incrementLabelText' },
-                      hourIncrementStringData.utc
-                    ),
-                    t.div(
-                      { className: 'TimeSelectorView_incrementLabelTextSecondary' },
-                      hourIncrementStringData.local
-                    ),
-                  ]);
-                })
-              ),
-            ]
-          ),
-        ]),
+              [
+                t.ul(
+                  { className: 'TimeSelectorView_dial' },
+                  hourIncrementStrings.map((hourIncrementStringData) => {
+                    return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
+                      t.div(
+                        { className: 'TimeSelectorView_incrementLabelText' },
+                        hourIncrementStringData.utc
+                      ),
+                      t.div(
+                        { className: 'TimeSelectorView_incrementLabelTextSecondary' },
+                        hourIncrementStringData.local
+                      ),
+                    ]);
+                  })
+                ),
+              ]
+            ),
+          ]
+        ),
         t.footer({ className: 'TimeSelectorView_footer' }, [
           t.label({ for: inputUniqueId }, [
             t.time(
               {
                 className: 'TimeSelectorView_secondaryTime',
-                datetime: new Date(todoTestDateStart).toISOString(),
+                datetime: (vm) => new Date(vm.activeDate).toISOString(),
               },
-              localTimeString
+              t.map(
+                (vm) => vm.activeDate,
+                (_activeDate, t, vm) => {
+                  return t.span(getLocaleTimeStringFromDate(vm.activeDate, vm.preferredPrecision));
+                }
+              )
             ),
           ]),
           t.label({ for: inputUniqueId }, [
@@ -164,19 +199,42 @@ class TimeSelectorView extends TemplateView {
     );
   }
 
-  get scrubberNode() {
-    return this.root().querySelector('.js-scrubber');
+  get scrubberScrollNode() {
+    if (!this._scrubberScrollNode) {
+      this._scrubberScrollNode = this.root()?.querySelector('.js-scrubber');
+    }
+
+    return this._scrubberScrollNode;
   }
 
   onScroll(/*event*/) {
-    const currentScrollLeft = this.scrubberNode.scrollLeft;
-    const currentScrollWidth = this.scrubberNode.scrollWidth;
-    const currentClientWidth = this.scrubberNode.clientWidth;
+    const currentScrollLeft = this.scrubberScrollNode.scrollLeft;
+    const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
+    const currentClientWidth = this.scrubberScrollNode.clientWidth;
 
-    // Ratio from 0-1 of how complete
+    // Ratio from 0-1 of how much has been scrolled in the scrubber (0 is the start of
+    // the day, 1 is the end of the day)
     const scrollRatio = currentScrollLeft / (currentScrollWidth - currentClientWidth);
 
-    console.log('TODO: scroll ratio', (scrollRatio * 24).toFixed(2), scrollRatio);
+    // Get the timestamp from the beginning of whatever day the active day is set to
+    const startOfDayTimestamp = Date.UTC(
+      this._vm.activeDate.getUTCFullYear(),
+      this._vm.activeDate.getUTCMonth(),
+      this._vm.activeDate.getUTCDate()
+    );
+    // Next, we'll derive how many ms in day are represented by that scroll position
+    const msSoFarInDay = scrollRatio * TOTAL_MS_IN_ONE_DAY;
+
+    // And craft a new date based on the scroll position
+    const newActiveDate = new Date(startOfDayTimestamp + msSoFarInDay);
+
+    console.log(
+      'TODO: scroll ratio',
+      (scrollRatio * 24).toFixed(2),
+      scrollRatio,
+      'newActiveDate',
+      newActiveDate
+    );
   }
 
   onMousedown(event) {
@@ -193,7 +251,7 @@ class TimeSelectorView extends TemplateView {
     if (this._vm.isDragging) {
       const delta = event.pageX - this._vm.dragPositionX;
 
-      this.scrubberNode.scrollLeft = this.scrubberNode.scrollLeft - delta;
+      this.scrubberScrollNode.scrollLeft = this.scrubberScrollNode.scrollLeft - delta;
       // Ignore momentum for delta's of 1px or below because slowly moving by 1px
       // shouldn't really have momentum. Imagine you're trying to precisely move to a
       // spot, you don't want it to move again after you let go.
@@ -225,7 +283,7 @@ class TimeSelectorView extends TemplateView {
   momentumLoop() {
     const velocityXAtStartOfLoop = this._vm.velocityX;
     // Apply the momentum movement to the scroll
-    this.scrubberNode.scrollLeft -= velocityXAtStartOfLoop * 2;
+    this.scrubberScrollNode.scrollLeft -= velocityXAtStartOfLoop * 2;
 
     const DAMPING_FACTOR = 0.95;
     const DEADZONE = 0.5;

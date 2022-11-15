@@ -123,7 +123,19 @@ class ArchiveRoomViewModel extends ViewModel {
       basePath,
     });
 
-    this._timeSelectorViewModel = new TimeSelectorViewModel({});
+    this._timeSelectorViewModel = new TimeSelectorViewModel({
+      // The time (within the given date) being displayed in the time scrubber.
+      activeDate: initialDate,
+      preferredPrecision: (() => {
+        // Prevent extra precision if it's not needed.
+        //
+        // We only need to show seconds if the current archive page is worried about seconds.
+        if (initialDate.getUTCSeconds() !== 0) {
+          return 'seconds';
+        }
+        return 'minutes';
+      })(),
+    });
 
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
       this.childOptions({
@@ -270,8 +282,9 @@ class ArchiveRoomViewModel extends ViewModel {
     this._currentTopPositionEventEntry = currentTopPositionEventEntry;
     this.emitChange('currentTopPositionEventEntry');
 
-    // Update the calendar
+    // Update the calendar and time scrubber
     this._calendarViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
+    this._timeSelectorViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
   }
 
   get dayTimestampFrom() {
