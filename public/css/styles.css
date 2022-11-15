@@ -1,3 +1,8 @@
+:root {
+  --primary-access-color: #0dbd8b;
+  --primary-access-color-hover: #0a8f69;
+}
+
 /* apply a natural box layout model to all elements, but allowing components to change */
 html {
   box-sizing: border-box;
@@ -270,16 +275,64 @@ summary {
 }
 
 .CalendarView_dayLink_active {
-  background-color: #0dbd8b;
+  background-color: var(--primary-access-color);
   color: #ffffff;
 }
 
 .CalendarView_dayLink_active:hover {
-  background-color: #0a8f69;
+  background-color: var(--primary-access-color-hover);
 }
 
 .CalendarView_dayLink_disabled {
   opacity: 0.5;
+}
+
+.TimeSelectorView {
+}
+
+.TimeSelectorView_header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.TimeSelectorView_primaryTimezoneLabel {
+  padding: 2px 12px;
+
+  background-color: var(--primary-access-color);
+  /* Always make a pill shape */
+  border-radius: 9999px;
+
+  color: #ffffff;
+}
+
+.TimeSelectorView_timeInput {
+  margin-top: 8px;
+
+  background: transparent;
+  border: 0;
+
+  color: var(--primary-access-color);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: bold;
+}
+
+/**
+ * The Chrome <input type="time"> has a little clock icon that makes the whole input
+ * appear off-center since we don't have any border/background on it. These styles just
+ * scoot the time text over to appear centered regardless of the icon.
+ */
+@supports selector(::-webkit-calendar-picker-indicator) {
+  .TimeSelectorView_timeInput {
+    margin-right: calc(-1.05em - 6px - 8px);
+  }
+
+  .TimeSelectorView_timeInput::-webkit-calendar-picker-indicator {
+    width: 1.05em;
+    padding: 3px;
+    margin-left: 8px;
+  }
 }
 
 /* Some custom timeline, tiles stuff */

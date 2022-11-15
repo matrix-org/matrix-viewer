@@ -3,6 +3,7 @@
 const { TemplateView } = require('hydrogen-view-sdk');
 
 const CalendarView = require('matrix-public-archive-shared/views/CalendarView');
+const TimeSelectorView = require('matrix-public-archive-shared/views/TimeSelectorView');
 const assert = require('matrix-public-archive-shared/lib/assert');
 
 class RightPanelContentView extends TemplateView {
@@ -20,7 +21,10 @@ class RightPanelContentView extends TemplateView {
         },
       },
       [
-        t.view(new CalendarView(vm.calendarViewModel)),
+        t.div({}, [
+          t.view(new CalendarView(vm.calendarViewModel)),
+          t.view(new TimeSelectorView(vm.timeSelectorViewModel)),
+        ]),
         t.div(
           {
             className: {
