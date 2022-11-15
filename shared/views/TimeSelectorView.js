@@ -18,15 +18,15 @@ function getTwentyFourHourDateStringFromDate(inputDate) {
   // getUTCSeconds() returns an integer between 0 and 59
   const second = date.getUTCSeconds();
 
-  let twentyFourHourDaetString = `${formatValue(hour)}:${formatValue(minute)}`;
+  let twentyFourHourDateString = `${formatValue(hour)}:${formatValue(minute)}`;
 
   // Prevent extra precision if it's not needed.
   // This way there won't be an extra time control to worry about for users in most cases.
   if (second !== 0) {
-    twentyFourHourDaetString += `:${formatValue(second)}`;
+    twentyFourHourDateString += `:${formatValue(second)}`;
   }
 
-  return twentyFourHourDaetString;
+  return twentyFourHourDateString;
 }
 
 function getLocaleTimeStringFromDate(inputDate) {
@@ -58,10 +58,11 @@ class TimeSelectorView extends TemplateView {
     // Create a locally unique ID so all of the input labels correspond to only this <input>
     const inputUniqueId = `time-input-${Math.floor(Math.random() * 1000000000)}`;
 
-    const todoTestDate = Date.UTC(2022, 2, 2, 14, 5);
-    const inputDateValue = getTwentyFourHourDateStringFromDate(todoTestDate);
+    const todoTestDateStart = Date.UTC(2022, 2, 2, 14, 5);
+    const todoTestDateEnd = Date.UTC(2022, 2, 2, 16, 17);
+    const inputDateValue = getTwentyFourHourDateStringFromDate(todoTestDateStart);
 
-    const localTimeString = getLocaleTimeStringFromDate(todoTestDate);
+    const localTimeString = getLocaleTimeStringFromDate(todoTestDateStart);
 
     const hourIncrementStrings = [...Array(24).keys()].map((hourNumber) => {
       return {
@@ -74,6 +75,11 @@ class TimeSelectorView extends TemplateView {
         }),
       };
     });
+
+    // TODO: Add magnifier bubble shadow around the range of messages in the timeline on
+    // this page
+    const visibleRangeStartDate = todoTestDateStart;
+    const visibleRangeEndDate = todoTestDateEnd;
 
     return t.section(
       {
@@ -117,6 +123,9 @@ class TimeSelectorView extends TemplateView {
               onWheel: (event) => {
                 this.onWheel(event);
               },
+              onScroll: (event) => {
+                this.onScroll(event);
+              },
             },
             [
               t.ul(
@@ -142,7 +151,7 @@ class TimeSelectorView extends TemplateView {
             t.time(
               {
                 className: 'TimeSelectorView_secondaryTime',
-                datetime: new Date(todoTestDate).toISOString(),
+                datetime: new Date(todoTestDateStart).toISOString(),
               },
               localTimeString
             ),
@@ -159,12 +168,23 @@ class TimeSelectorView extends TemplateView {
     return this.root().querySelector('.js-scrubber');
   }
 
+  onScroll(/*event*/) {
+    const currentScrollLeft = this.scrubberNode.scrollLeft;
+    const currentScrollWidth = this.scrubberNode.scrollWidth;
+    const currentClientWidth = this.scrubberNode.clientWidth;
+
+    // Ratio from 0-1 of how complete
+    const scrollRatio = currentScrollLeft / (currentScrollWidth - currentClientWidth);
+
+    console.log('TODO: scroll ratio', (scrollRatio * 24).toFixed(2), scrollRatio);
+  }
+
   onMousedown(event) {
     this._vm.setIsDragging(true);
     this._vm.setDragPositionX(event.pageX);
   }
 
-  onMouseup(event) {
+  onMouseup(/*event*/) {
     this._vm.setIsDragging(false);
     this.startMomentumTracking();
   }
@@ -172,21 +192,22 @@ class TimeSelectorView extends TemplateView {
   onMousemove(event) {
     if (this._vm.isDragging) {
       const delta = event.pageX - this._vm.dragPositionX;
-      console.log('delta', delta);
 
       this.scrubberNode.scrollLeft = this.scrubberNode.scrollLeft - delta;
-      this._vm.setVelocityX(delta);
+      // Ignore momentum for delta's of 1px or below because slowly moving by 1px
+      // shouldn't really have momentum. Imagine you're trying to precisely move to a
+      // spot, you don't want it to move again after you let go.
+      this._vm.setVelocityX(Math.abs(delta) > 1 ? delta : 0);
 
-      // Ignore momentum for delta's of 1px
-      this._vm.setDragPositionX(event.pageX > 1 ? event.pageX : 0);
+      this._vm.setDragPositionX(event.pageX);
     }
   }
 
-  onMouseleave(event) {
+  onMouseleave(/*event*/) {
     this._vm.setIsDragging(false);
   }
 
-  onWheel(event) {
+  onWheel(/*event*/) {
     this._vm.setVelocityX(0);
     this.cancelMomentumTracking();
   }

@@ -5,7 +5,12 @@ const { ViewModel } = require('hydrogen-view-sdk');
 class TimeSelectorViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    //const {} = options;
+    const { activeDate } = options;
+
+    // The day being displayed in the calendar.
+    // And we will choose a time within this day.
+    this._activeDate = activeDate;
+    // TODO: Add `activeDate` getters/setters and incorporate in the the view
 
     this._isDragging = false;
     this._dragPositionX = null;
