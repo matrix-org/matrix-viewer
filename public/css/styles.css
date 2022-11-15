@@ -1,6 +1,8 @@
 :root {
   --primary-access-color: #0dbd8b;
   --primary-access-color-hover: #0a8f69;
+
+  --text-color-rgb: 46, 47, 50;
 }
 
 /* apply a natural box layout model to all elements, but allowing components to change */
@@ -355,12 +357,15 @@ summary {
 }
 
 .TimeSelectorView_secondaryTime {
+  color: rgba(var(--text-color-rgb), 0.75);
   font-weight: bold;
 }
 
 .TimeSelectorView_secondaryTimezoneLabel {
   display: inline-block;
   margin-top: 6px;
+
+  color: rgba(var(--text-color-rgb), 0.75);
 }
 
 .TimeSelectorView_scrubber {
@@ -373,26 +378,36 @@ summary {
 .TimeSelectorView_scrubber::after {
   content: '';
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 50%;
-  width: 20px;
-  height: 100%;
+  width: 8px;
+  height: 32px;
 
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(-50%);
 
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  /* Draw some pointer triangles at our current scroll position */
+  /* prettier-ignore */
+  background-image:
+    /* Arrow pointing down at the top */
+    linear-gradient(to top right, transparent 50%, var(--primary-access-color) 0),
+    linear-gradient(to bottom right, var(--primary-access-color) 50%, transparent 0),
+    /* Arrow pointing up at the bottom */
+    linear-gradient(to bottom right, transparent 50%, rgba(var(--text-color-rgb), 0.2) 0),
+    linear-gradient(to top right, rgba(var(--text-color-rgb), 0.2) 50%, transparent 0);
+  background-size: 50% 4px;
+  background-repeat: no-repeat;
+  /* prettier-ignore */
+  background-position:
+    /* Arrow pointing down at the top */
+    left top, right top,
+    /* Arrow pointing up at the bottom */
+    left bottom, right bottom;
 
   /* The magnifier is just a visual thing, so don't mess with clicks or selection here */
   pointer-events: none;
 }
 
 .TimeSelectorView_scrubberScrollWrapper {
-  --tick-width: 1px;
-  --tick-major-height: 12px;
-  --tick-minor-height: 6px;
-  --tick-detail-height: 3px;
-
   overflow-x: auto;
   /* Hide scrollbar in Firefox. We want scroll but no scrollbar so mobile and touchpad
   people can still scroll */
@@ -415,8 +430,13 @@ summary {
 }
 
 .TimeSelectorView_dial {
+  --tick-width: 1px;
+  --tick-major-height: 20px;
+  --tick-minor-height: 10px;
+  --tick-detail-height: 3px;
+
   display: flex;
-  height: 60px;
+  height: 68px;
   margin: 0;
   padding: 0;
   /* Allow the dial to scroll to the ends with the start/end tick being in the middle */
@@ -424,24 +444,47 @@ summary {
 
   list-style: none;
 
+  /* Draw some tick marks along the dial */
   /* prettier-ignore */
   background-image:
     /* Ticks every hour */
     linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
+    /* Last hour tick */
+    linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
     /* Ticks every 10 mins */
     linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
     /* Ticks every 5 mins */
-    linear-gradient(90deg, rgba(46, 47, 50, 0.4) var(--tick-width), transparent 0);
-  background-repeat: repeat-x, repeat-x, repeat-x;
+    linear-gradient(90deg, rgba(var(--text-color-rgb), 0.4) var(--tick-width), transparent 0);
+  /* prettier-ignore */
+  background-repeat:
+  /* Ticks every hour */
+    repeat-x,
+    /* Last hour tick */
+    no-repeat,
+    /* Ticks every 10 mins */
+    repeat-x,
+    /* Ticks every 5 mins */
+    repeat-x;
   /* prettier-ignore */
   background-size:
     /* Ticks every hour */
     60px var(--tick-major-height),
+    /* Last hour tick */
+    var(--tick-width) var(--tick-major-height),
     /* Ticks every 10 mins */
     10px var(--tick-minor-height),
     /* Ticks every 5 mins */
     5px var(--tick-detail-height);
-  background-position: center left, center left, center left;
+  /* prettier-ignore */
+  background-position:
+    /* Ticks every hour */
+    center left,
+    /* Last hour tick */
+    center right,
+    /* Ticks every 10 mins */
+    center left,
+    /* Ticks every 5 mins */
+    center left;
 }
 
 .TimeSelectorView_incrementLabel {
@@ -458,8 +501,13 @@ summary {
   font-weight: bold;
 }
 
-.TimeSelectorView_incrementLabelText {
+.TimeSelectorView_incrementLabelText,
+.TimeSelectorView_incrementLabelTextSecondary {
   transform: translateX(-50%);
+}
+
+.TimeSelectorView_incrementLabelTextSecondary {
+  color: rgba(var(--text-color-rgb), 0.75);
 }
 
 /* Some custom timeline, tiles stuff */

@@ -128,7 +128,7 @@ class TimeSelectorView extends TemplateView {
                       hourIncrementStringData.utc
                     ),
                     t.div(
-                      { className: 'TimeSelectorView_incrementLabelText' },
+                      { className: 'TimeSelectorView_incrementLabelTextSecondary' },
                       hourIncrementStringData.local
                     ),
                   ]);
