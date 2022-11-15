@@ -54,6 +54,18 @@ class TimeSelectorView extends TemplateView {
   constructor(vm) {
     super(vm);
     this._vm = vm;
+
+    // Keep track of the position we started dragging from so we can derive the delta movement
+    this._dragPositionX = null;
+    // Keep track of the momentum velocity over time
+    this._velocityX = 0;
+    // Keep track of the requestAnimationFrame(...) ID so we can cancel it when necessary
+    this._momentumRafId = null;
+    // Keep track of when we should ignore scroll events from programmatic scroll
+    // position changes from the side-effect `activeDate` change. The scroll event
+    // handler is only meant to capture the user changing the scroll and therefore a new
+    // `activeDate` should be calculated.
+    this._ignoreNextScrollEvent = false;
   }
 
   render(t, vm) {
@@ -90,14 +102,30 @@ class TimeSelectorView extends TemplateView {
 
         // Next, we'll find how many ms have elapsed so far in the day since the start of the day
         const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
-        const ratio = msSoFarInDay / TOTAL_MS_IN_ONE_DAY;
-        console.log('ratio', ratio, ' - ', msSoFarInDay, TOTAL_MS_IN_ONE_DAY);
+        const timeInDayRatio = msSoFarInDay / TOTAL_MS_IN_ONE_DAY;
 
+        // Ignore scroll changes before the node is rendered to the page
         if (this.scrubberScrollNode) {
           const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
           const currentClientWidth = this.scrubberScrollNode.clientWidth;
 
-          this.scrubberScrollNode.scrollLeft = (currentScrollWidth - currentClientWidth) * ratio;
+          // Change the scroll position to the represented date
+          this.scrubberScrollNode.scrollLeft =
+            timeInDayRatio * (currentScrollWidth - currentClientWidth);
+
+          // We can't just keep track of the `scrollLeft` position and compare it in the
+          // scroll event handler because there are rounding differences (Chrome rounds
+          // any decimal down). `scrollLeft` normally rounds down to integers but gets
+          // wonky once you introduce display scaling and will give decimal values. And
+          // we don't want to lookup `scrollLeft` from the element after we just set it
+          // because that will cause a layout recalculation (thrashing) which isn't
+          // performant.
+          //
+          // So instead, we rely on ignoring the next scroll event that will be fired
+          // from scroll change just above. We know that all of the DOM event stuff all
+          // happens in the main thread so should be no races there and assume that
+          // there are not other changes to the scroll in this same loop.
+          this._ignoreNextScrollEvent = true;
         }
       }
     );
@@ -209,6 +237,18 @@ class TimeSelectorView extends TemplateView {
 
   onScroll(/*event*/) {
     const currentScrollLeft = this.scrubberScrollNode.scrollLeft;
+    // Ignore scroll events caused by programmatic scroll changes by the side-effect
+    // `activeDate` change.
+    //
+    // We don't need to recalculate the `activeDate` in the scroll handler here if we
+    // programmatically changed the scroll based on the updated `activeDate` we already
+    // know about.
+    if (this._ignoreNextScrollEvent) {
+      // Reset once we've seen a scroll event
+      this._ignoreNextScrollEvent = false;
+      return;
+    }
+
     const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
     const currentClientWidth = this.scrubberScrollNode.clientWidth;
 
@@ -239,7 +279,7 @@ class TimeSelectorView extends TemplateView {
 
   onMousedown(event) {
     this._vm.setIsDragging(true);
-    this._vm.setDragPositionX(event.pageX);
+    this._dragPositionX = event.pageX;
   }
 
   onMouseup(/*event*/) {
@@ -249,15 +289,15 @@ class TimeSelectorView extends TemplateView {
 
   onMousemove(event) {
     if (this._vm.isDragging) {
-      const delta = event.pageX - this._vm.dragPositionX;
+      const delta = event.pageX - this._dragPositionX;
 
       this.scrubberScrollNode.scrollLeft = this.scrubberScrollNode.scrollLeft - delta;
       // Ignore momentum for delta's of 1px or below because slowly moving by 1px
       // shouldn't really have momentum. Imagine you're trying to precisely move to a
       // spot, you don't want it to move again after you let go.
-      this._vm.setVelocityX(Math.abs(delta) > 1 ? delta : 0);
+      this._velocityX = Math.abs(delta) > 1 ? delta : 0;
 
-      this._vm.setDragPositionX(event.pageX);
+      this._dragPositionX = event.pageX;
     }
   }
 
@@ -266,24 +306,26 @@ class TimeSelectorView extends TemplateView {
   }
 
   onWheel(/*event*/) {
-    this._vm.setVelocityX(0);
+    this._velocityX = 0;
     this.cancelMomentumTracking();
   }
 
   startMomentumTracking() {
     this.cancelMomentumTracking();
     const momentumRafId = requestAnimationFrame(this.momentumLoop.bind(this));
-    this._vm.setMomentumRafId(momentumRafId);
+    this._momentumRafId = momentumRafId;
   }
 
   cancelMomentumTracking() {
-    cancelAnimationFrame(this._vm.momentumRafId);
+    cancelAnimationFrame(this._momentumRafId);
   }
 
   momentumLoop() {
-    const velocityXAtStartOfLoop = this._vm.velocityX;
+    const velocityXAtStartOfLoop = this._velocityX;
     // Apply the momentum movement to the scroll
-    this.scrubberScrollNode.scrollLeft -= velocityXAtStartOfLoop * 2;
+    const currentScrollLeft = this.scrubberScrollNode.scrollLeft;
+    const newScrollLeftPosition = currentScrollLeft - velocityXAtStartOfLoop * 2;
+    this.scrubberScrollNode.scrollLeft = newScrollLeftPosition;
 
     const DAMPING_FACTOR = 0.95;
     const DEADZONE = 0.5;
@@ -292,10 +334,10 @@ class TimeSelectorView extends TemplateView {
     const newVelocityX = velocityXAtStartOfLoop * DAMPING_FACTOR;
     if (Math.abs(newVelocityX) > DEADZONE) {
       const momentumRafId = requestAnimationFrame(this.momentumLoop.bind(this));
-      this._vm.setMomentumRafId(momentumRafId);
+      this._momentumRafId = momentumRafId;
     }
 
-    this._vm.setVelocityX(newVelocityX);
+    this._velocityX = newVelocityX;
   }
 }
 
