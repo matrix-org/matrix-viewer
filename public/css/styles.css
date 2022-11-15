@@ -142,6 +142,10 @@ summary {
   height: 100%;
 }
 
+.RightPanelContentView_mainContent > * + * {
+  margin-top: 1em;
+}
+
 .RightPanelContentView_footer {
   padding-left: 16px;
   padding-right: 16px;
@@ -307,10 +311,13 @@ summary {
 }
 
 .TimeSelectorView_timeInput {
-  margin-top: 8px;
+  margin-top: 6px;
+  padding: 2px 18px;
 
   background: transparent;
   border: 0;
+  /* Always make a pill shape */
+  border-radius: 9999px;
 
   color: var(--primary-access-color);
   font-family: inherit;
@@ -333,6 +340,21 @@ summary {
     padding: 3px;
     margin-left: 8px;
   }
+}
+
+.TimeSelectorView_footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.TimeSelectorView_secondaryTime {
+  font-weight: bold;
+}
+
+.TimeSelectorView_secondaryTimezoneLabel {
+  display: inline-block;
+  margin-top: 6px;
 }
 
 /* Some custom timeline, tiles stuff */

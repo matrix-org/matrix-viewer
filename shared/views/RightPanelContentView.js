@@ -16,28 +16,22 @@ class RightPanelContentView extends TemplateView {
 
     return t.div(
       {
-        className: {
-          RightPanelContentView: true,
-        },
+        className: 'RightPanelContentView',
       },
       [
-        t.div({}, [
+        t.div({ className: 'RightPanelContentView_mainContent' }, [
           t.view(new CalendarView(vm.calendarViewModel)),
           t.view(new TimeSelectorView(vm.timeSelectorViewModel)),
         ]),
-        t.div(
+        t.footer(
           {
-            className: {
-              RightPanelContentView_footer: true,
-            },
+            className: 'RightPanelContentView_footer',
           },
           [
             t.p(maybeIndexedMessage),
             t.div(
               {
-                className: {
-                  RightPanelContentView_footerLinkList: true,
-                },
+                className: 'RightPanelContentView_footerLinkList',
               },
               [
                 t.a(
