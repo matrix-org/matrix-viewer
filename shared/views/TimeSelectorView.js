@@ -64,10 +64,15 @@ class TimeSelectorView extends TemplateView {
     const localTimeString = getLocaleTimeStringFromDate(todoTestDate);
 
     const hourIncrementStrings = [...Array(24).keys()].map((hourNumber) => {
-      return new Date(Date.UTC(2022, 1, 1, hourNumber)).toLocaleTimeString([], {
-        hour: 'numeric',
-        timeZone: 'UTC',
-      });
+      return {
+        utc: new Date(Date.UTC(2022, 1, 1, hourNumber)).toLocaleTimeString([], {
+          hour: 'numeric',
+          timeZone: 'UTC',
+        }),
+        local: new Date(Date.UTC(2022, 1, 1, hourNumber)).toLocaleTimeString([], {
+          hour: 'numeric',
+        }),
+      };
     });
 
     return t.section(
@@ -89,40 +94,49 @@ class TimeSelectorView extends TemplateView {
             id: inputUniqueId,
           }),
         ]),
-        t.main(
-          {
-            className: {
-              TimeSelectorView_scrubber: true,
-              'is-dragging': (vm) => vm.isDragging,
-              'js-scrubber': true,
+        t.main({ className: 'TimeSelectorView_scrubber' }, [
+          t.div(
+            {
+              className: {
+                TimeSelectorView_scrubberScrollWrapper: true,
+                'is-dragging': (vm) => vm.isDragging,
+                'js-scrubber': true,
+              },
+              onMousedown: (event) => {
+                this.onMousedown(event);
+              },
+              onMouseup: (event) => {
+                this.onMouseup(event);
+              },
+              onMousemove: (event) => {
+                this.onMousemove(event);
+              },
+              onMouseleave: (event) => {
+                this.onMouseleave(event);
+              },
+              onWheel: (event) => {
+                this.onWheel(event);
+              },
             },
-            onMousedown: (event) => {
-              this.onMousedown(event);
-            },
-            onMouseup: (event) => {
-              this.onMouseup(event);
-            },
-            onMousemove: (event) => {
-              this.onMousemove(event);
-            },
-            onMouseleave: (event) => {
-              this.onMouseleave(event);
-            },
-            onWheel: (event) => {
-              this.onWheel(event);
-            },
-          },
-          [
-            t.ul(
-              { className: 'TimeSelectorView_dial' },
-              hourIncrementStrings.map((hourIncrementString) => {
-                return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
-                  t.div({ className: 'TimeSelectorView_incrementLabelText' }, hourIncrementString),
-                ]);
-              })
-            ),
-          ]
-        ),
+            [
+              t.ul(
+                { className: 'TimeSelectorView_dial' },
+                hourIncrementStrings.map((hourIncrementStringData) => {
+                  return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
+                    t.div(
+                      { className: 'TimeSelectorView_incrementLabelText' },
+                      hourIncrementStringData.utc
+                    ),
+                    t.div(
+                      { className: 'TimeSelectorView_incrementLabelText' },
+                      hourIncrementStringData.local
+                    ),
+                  ]);
+                })
+              ),
+            ]
+          ),
+        ]),
         t.footer({ className: 'TimeSelectorView_footer' }, [
           t.label({ for: inputUniqueId }, [
             t.time(
