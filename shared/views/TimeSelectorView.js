@@ -58,6 +58,13 @@ class TimeSelectorView extends TemplateView {
 
     const localTimeString = getLocaleTimeStringFromDate(todoTestDate);
 
+    const hourIncrementStrings = [...Array(24).keys()].map((hourNumber) => {
+      return new Date(Date.UTC(2022, 1, 1, hourNumber)).toLocaleTimeString([], {
+        hour: 'numeric',
+        timeZone: 'UTC',
+      });
+    });
+
     return t.section(
       {
         className: {
@@ -77,7 +84,16 @@ class TimeSelectorView extends TemplateView {
             id: inputUniqueId,
           }),
         ]),
-        t.main({}, ['TODO: slider']),
+        t.main({ className: 'TimeSelectorView_scrubber' }, [
+          t.ul(
+            { className: 'TimeSelectorView_dial' },
+            hourIncrementStrings.map((hourIncrementString) => {
+              return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
+                t.div({ className: 'TimeSelectorView_incrementLabelText' }, hourIncrementString),
+              ]);
+            })
+          ),
+        ]),
         t.footer({ className: 'TimeSelectorView_footer' }, [
           t.label({ for: inputUniqueId }, [
             t.time(

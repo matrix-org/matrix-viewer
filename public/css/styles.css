@@ -357,6 +357,55 @@ summary {
   margin-top: 6px;
 }
 
+.TimeSelectorView_scrubber {
+  --tick-width: 1px;
+  --tick-major-height: 12px;
+  --tick-minor-height: 6px;
+
+  overflow-x: scroll;
+  overflow-y: hidden;
+  display: flex;
+  width: 100%;
+}
+
+.TimeSelectorView_dial {
+  display: flex;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  /* Allow the dial to scroll to the ends with the start/end tick being in the middle */
+  margin: 0 50%;
+
+  list-style: none;
+
+  background-image: linear-gradient(90deg, currentcolor var(--tick-width), transparent 0);
+  background-repeat: repeat-x;
+  background-size: 12px var(--tick-minor-height);
+  background-position: bottom left;
+}
+
+.TimeSelectorView_incrementLabel {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 60px;
+  margin: 0;
+  white-space: nowrap;
+
+  background-image: linear-gradient(90deg, currentcolor var(--tick-width), transparent 0);
+  background-repeat: no-repeat;
+  background-size: var(--tick-width) var(--tick-major-height);
+  background-position: bottom left;
+
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.TimeSelectorView_incrementLabelText {
+  transform: translateX(-50%);
+}
+
 /* Some custom timeline, tiles stuff */
 
 .JumpToPreviousActivitySummaryTileView,
