@@ -217,9 +217,14 @@ class TimeSelectorView extends TemplateView {
 
                           console.log('msInRange', msInRange, '/', ONE_DAY_IN_MS);
 
-                          // If the timeline has messages from more than one day, then just just hide it and log a warning.
-                          // There is no point in highlighting the whole range of time.
-                          if (msInRange > ONE_DAY_IN_MS) {
+                          // No messages in the timeline, means nothing to highlight
+                          if (!msInRange) {
+                            return 'display: none;';
+                          }
+                          // If the timeline has messages from more than one day, then
+                          // just just hide it and log a warning. There is no point in
+                          // highlighting the whole range of time.
+                          else if (msInRange > ONE_DAY_IN_MS) {
                             console.warn(
                               'Timeline has messages from more than one day but TimeSelectorView is being used. We only expect to show the TimeSelectorView when there is less than a day of messages.'
                             );

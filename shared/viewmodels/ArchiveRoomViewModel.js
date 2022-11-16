@@ -140,7 +140,7 @@ class ArchiveRoomViewModel extends ViewModel {
       // This should be the first event in the timeline (different from
       // `dayTimestampFrom`/`dayTimestampTo` which represents only one day from the
       // URL).
-      timelineRangeStartTimestamp: events[0].origin_server_ts,
+      timelineRangeStartTimestamp: events[0]?.origin_server_ts,
       // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
       // `_dayTimestampTo` is actually the newest timestamp to paginate from
       timelineRangeEndTimestamp: events[events.length - 1]?.origin_server_ts,
