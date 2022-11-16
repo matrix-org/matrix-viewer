@@ -1,10 +1,14 @@
 'use strict';
 
 const { TemplateView } = require('hydrogen-view-sdk');
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 
 const TOTAL_MS_IN_ONE_DAY = 24 * 60 * 60 * 1000;
 
-function getTwentyFourHourDateStringFromDate(inputDate, preferredPrecision = 'minutes') {
+function getTwentyFourHourDateStringFromDate(
+  inputDate,
+  preferredPrecision = TIME_PRECISION_VALUES.minutes
+) {
   const date = new Date(inputDate);
 
   const formatValue = (input) => {
@@ -24,14 +28,17 @@ function getTwentyFourHourDateStringFromDate(inputDate, preferredPrecision = 'mi
 
   // Prevent extra precision if it's not needed.
   // This way there won't be an extra time control to worry about for users in most cases.
-  if (preferredPrecision === 'seconds') {
+  if (preferredPrecision === TIME_PRECISION_VALUES.seconds) {
     twentyFourHourDateString += `:${formatValue(second)}`;
   }
 
   return twentyFourHourDateString;
 }
 
-function getLocaleTimeStringFromDate(inputDate, preferredPrecision = 'minutes') {
+function getLocaleTimeStringFromDate(
+  inputDate,
+  preferredPrecision = TIME_PRECISION_VALUES.minutes
+) {
   const date = new Date(inputDate);
 
   const dateTimeFormatOptions = {
@@ -41,7 +48,7 @@ function getLocaleTimeStringFromDate(inputDate, preferredPrecision = 'minutes') 
 
   // Prevent extra precision if it's not needed.
   // This way it will match the `<input type="time">` text/controls
-  if (preferredPrecision === 'seconds') {
+  if (preferredPrecision === TIME_PRECISION_VALUES.seconds) {
     dateTimeFormatOptions.second = '2-digit';
   }
 

@@ -1,22 +1,22 @@
 'use strict';
 
 const { ViewModel } = require('hydrogen-view-sdk');
-const assert = require('../lib/assert');
+const assert = require('matrix-public-archive-shared/lib/assert');
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 
 class TimeSelectorViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const {
       activeDate,
-      preferredPrecision = 'minutes',
+      preferredPrecision = TIME_PRECISION_VALUES.minutes,
       currentTimelineRangeStartTimestamp,
       currentTimelineRangeEndTimestamp,
     } = options;
-    const validTimePrecisionValues = ['minutes', 'seconds'];
     assert(
-      validTimePrecisionValues.includes(preferredPrecision),
+      Object.values(TIME_PRECISION_VALUES).includes(preferredPrecision),
       `TimeSelectorViewModel: options.preferredPrecision must be one of ${JSON.stringify(
-        validTimePrecisionValues
+        Object.values(TIME_PRECISION_VALUES)
       )}`
     );
 

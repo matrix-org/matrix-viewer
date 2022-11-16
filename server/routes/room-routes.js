@@ -18,6 +18,7 @@ const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -60,35 +61,54 @@ function getRoomIdOrAliasFromReq(req) {
   return `${sigil}${roomIdOrAliasWithoutSigil}`;
 }
 
+// eslint-disable-next-line complexity
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
   // Month is the only zero-based index in this group
   const mm = parseInt(req.params.mm, 10) - 1;
   const dd = parseInt(req.params.dd, 10);
 
-  const hourRange = req.params.hourRange;
+  const timeString = req.params.time;
+  let timeInMs = 0;
+  let hour = 0;
+  let minute = 0;
+  let second = 0;
+  if (timeString) {
+    const timeMatches = timeString.match(/^T(\d\d?):(\d\d?)(?::(\d\d?))?$/);
 
-  let fromHour = 0;
-  let toHour = 0;
-  if (hourRange) {
-    const hourMatches = hourRange.match(/^(\d\d?)-(\d\d?)$/);
-
-    if (!hourMatches) {
-      throw new StatusError(404, 'Hour was unable to be parsed');
+    if (!timeMatches) {
+      throw new StatusError(
+        404,
+        'Time was unable to be parsed from URL. It should be in 24-hour format 23:59:59'
+      );
     }
 
-    fromHour = parseInt(hourMatches[1], 10);
-    toHour = parseInt(hourMatches[2], 10);
+    hour = timeMatches[1] && parseInt(timeMatches[1], 10);
+    minute = timeMatches[2] && parseInt(timeMatches[2], 10);
+    second = timeMatches[3] ? parseInt(timeMatches[3], 10) : 0;
 
-    if (Number.isNaN(fromHour) || fromHour < 0 || fromHour > 23) {
-      throw new StatusError(404, 'From hour can only be in range 0-23');
+    if (Number.isNaN(hour) || hour < 0 || hour > 23) {
+      throw new StatusError(404, `Hour can only be in range 0-23 -> ${hour}`);
     }
+    if (Number.isNaN(minute) || minute < 0 || minute > 59) {
+      throw new StatusError(404, `Minute can only be in range 0-59 -> ${minute}`);
+    }
+    if (Number.isNaN(second) || second < 0 || second > 59) {
+      throw new StatusError(404, `Second can only be in range 0-59 -> ${second}`);
+    }
+
+    const hourInMs = hour * 60 * 60 * 1000;
+    const minuteInMs = minute * 60 * 1000;
+    const secondInMs = second * 1000;
+
+    timeInMs = hourInMs + minuteInMs + secondInMs;
   }
 
-  const fromTimestamp = Date.UTC(yyyy, mm, dd, fromHour);
-  let toTimestamp = Date.UTC(yyyy, mm, dd + 1, fromHour);
-  if (hourRange) {
-    toTimestamp = Date.UTC(yyyy, mm, dd, toHour);
+  const fromTimestamp = Date.UTC(yyyy, mm, dd);
+  // We `- 1` to get the timestamp that is a millisecond before the next day
+  let toTimestamp = Date.UTC(yyyy, mm, dd + 1) - 1;
+  if (timeInMs) {
+    toTimestamp = fromTimestamp + timeInMs;
   }
 
   return {
@@ -97,9 +117,10 @@ function parseArchiveRangeFromReq(req) {
     yyyy,
     mm,
     dd,
-    hourRange,
-    fromHour,
-    toHour,
+    hour,
+    minute,
+    second,
+    timeInMs,
   };
 }
 
@@ -269,9 +290,12 @@ router.get(
 // Based off of the Gitter archive routes,
 // https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
 router.get(
-  '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
+  // The extra set of parenthesis around `((:\\d\\d?)?)` is to work around a
+  // `path-to-regex` bug where the `?` wasn't attaching to the capture group, see
+  // https://github.com/pillarjs/path-to-regexp/issues/287
+  '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2}):time(T\\d\\d?:\\d\\d?((:\\d\\d?)?))?',
   timeoutMiddleware,
-  // eslint-disable-next-line max-statements
+  // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
@@ -283,8 +307,7 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
-      parseArchiveRangeFromReq(req);
+    const { fromTimestamp, toTimestamp, timeInMs } = parseArchiveRangeFromReq(req);
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
@@ -296,33 +319,6 @@ router.get(
         ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
       );
     }
-
-    // If the hourRange is defined, we force the range to always be 1 hour. If
-    // the format isn't correct, redirect to the correct hour range
-    if (hourRange && toHour !== fromHour + 1) {
-      // Pass through the query parameters
-      let queryParamterUrlPiece = '';
-      if (req.query) {
-        queryParamterUrlPiece = `?${new URLSearchParams(req.query).toString()}`;
-      }
-
-      res.redirect(
-        // FIXME: Can we use the matrixPublicArchiveURLCreator here?
-        `${urlJoin(
-          basePath,
-          roomIdOrAlias,
-          'date',
-          req.params.yyyy,
-          req.params.mm,
-          req.params.dd,
-          `${fromHour}-${fromHour + 1}`
-        )}${queryParamterUrlPiece}`
-      );
-      return;
-    }
-
-    // TODO: Highlight tile that matches ?at=$xxx
-    //const aroundId = req.query.at;
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
@@ -375,19 +371,59 @@ router.get(
     // days. But if all 500 messages (for example) are from the same day, let's
     // redirect to a smaller hour range to display.
     if (
-      // If there are too many messages, check that the event is from a previous
-      // day in the surroundings.
-      events.length >= archiveMessageLimit &&
-      // Since we're only fetching previous days for the surroundings, we only
-      // need to look at the oldest event in the chronological list.
+      // If there are too many messages, check ...
+      events.length >= archiveMessageLimit
+    ) {
+      let preferredPrecision = null;
+
+      // Check if first event is from the surroundings or not. Since we're only fetching
+      // previous days for the surroundings, we only need to look at the oldest event in
+      // the chronological list.
       //
       // XXX: In the future when we also fetch events from days after, we will
-      // need to change this next day check.
-      events[0].origin_server_ts >= fromTimestamp
-    ) {
-      res.send('TODO: Redirect user to smaller hour range');
-      res.status(204);
-      return;
+      // probably need to change this next day check.
+      const isEventFromSurroundingDay = events[0].origin_server_ts < fromTimestamp;
+
+      // If not specifying a time, then let's specify a time
+      if (!timeInMs && !isEventFromSurroundingDay) {
+        preferredPrecision = TIME_PRECISION_VALUES.minutes;
+      }
+
+      // If we're already specifying minutes in the time but there are too many messages
+      // within the minute, let's go to seconds as well
+      const ONE_MINUTE_IN_MS = 60 * 1000;
+      const isEventFromSurroundingMinute =
+        toTimestamp - events[0].origin_server_ts > ONE_MINUTE_IN_MS;
+      if (!isEventFromSurroundingMinute) {
+        preferredPrecision = TIME_PRECISION_VALUES.seconds;
+      }
+
+      // If we're already specifying seconds in the time but there are too many messages within the
+      // second, let's give up for now ⏩
+      const ONE_SECOND_IN_MS = 1000;
+      const isEventFromSurroundingSecond =
+        toTimestamp - events[0].origin_server_ts > ONE_SECOND_IN_MS;
+      if (!isEventFromSurroundingSecond) {
+        res.send(
+          `Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
+        );
+        // 204 No Content
+        res.status(204);
+      }
+
+      if (preferredPrecision) {
+        console.log('redirecting preferredPrecision', preferredPrecision, new Date(toTimestamp));
+        res.redirect(
+          matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(toTimestamp), {
+            preferredPrecision,
+            // We can avoid passing along the `via` query parameter because we already
+            // joined the room above (see `ensureRoomJoined`).
+            //
+            //viaServers: req.query.via,
+          })
+        );
+        return;
+      }
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');

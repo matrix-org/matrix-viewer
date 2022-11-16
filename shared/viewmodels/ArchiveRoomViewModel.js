@@ -24,6 +24,7 @@ const {
   customTileClassForEntry,
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 
 let txnCount = 0;
 function getFakeEventId() {
@@ -131,9 +132,9 @@ class ArchiveRoomViewModel extends ViewModel {
         //
         // We only need to show seconds if the current archive page is worried about seconds.
         if (initialDate.getUTCSeconds() !== 0) {
-          return 'seconds';
+          return TIME_PRECISION_VALUES.seconds;
         }
-        return 'minutes';
+        return TIME_PRECISION_VALUES.minutes;
       })(),
       // The start of the range to use as a jumping off point to the previous activity
       // This should be the first event in the timeline (different from
