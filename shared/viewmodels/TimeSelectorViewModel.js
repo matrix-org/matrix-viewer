@@ -6,7 +6,12 @@ const assert = require('../lib/assert');
 class TimeSelectorViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { activeDate, preferredPrecision = 'minutes' } = options;
+    const {
+      activeDate,
+      preferredPrecision = 'minutes',
+      currentTimelineRangeStartTimestamp,
+      currentTimelineRangeEndTimestamp,
+    } = options;
     const validTimePrecisionValues = ['minutes', 'seconds'];
     assert(
       validTimePrecisionValues.includes(preferredPrecision),
@@ -19,6 +24,9 @@ class TimeSelectorViewModel extends ViewModel {
     // And we will choose a time within this day.
     this._activeDate = activeDate;
     this._preferredPrecision = preferredPrecision;
+
+    this._currentTimelineRangeStartTimestamp = currentTimelineRangeStartTimestamp;
+    this._currentTimelineRangeEndTimestamp = currentTimelineRangeEndTimestamp;
 
     this._isDragging = false;
   }
@@ -40,6 +48,14 @@ class TimeSelectorViewModel extends ViewModel {
   setPreferredPrecision(preferredPrecision) {
     this._preferredPrecision = preferredPrecision;
     this.emitChange('preferredPrecision');
+  }
+
+  get currentTimelineRangeStartTimestamp() {
+    return this._currentTimelineRangeStartTimestamp;
+  }
+
+  get currentTimelineRangeEndTimestamp() {
+    return this._currentTimelineRangeEndTimestamp;
   }
 
   get isDragging() {

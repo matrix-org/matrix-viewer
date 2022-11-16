@@ -135,6 +135,14 @@ class ArchiveRoomViewModel extends ViewModel {
         }
         return 'minutes';
       })(),
+      // The start of the range to use as a jumping off point to the previous activity
+      // This should be the first event in the timeline (different from
+      // `dayTimestampFrom`/`dayTimestampTo` which represents only one day from the
+      // URL).
+      currentTimelineRangeStartTimestamp: events[0].origin_server_ts,
+      // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
+      // `_dayTimestampTo` is actually the newest timestamp to paginate from
+      currentTimelineRangeEndTimestamp: this._dayTimestampTo,
     });
 
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
@@ -345,6 +353,7 @@ class ArchiveRoomViewModel extends ViewModel {
         content: {
           canonicalAlias: this._room.canonicalAlias,
           // The start of the range to use as a jumping off point to the previous activity
+          // This should be the first event in the timeline (different from `this._dayTimestampFrom`).
           rangeStartTimestamp: events[0].origin_server_ts - 1,
           // This is a bit cheating but I don't know how else to pass this kind of
           // info to the Tile viewmodel
@@ -369,7 +378,10 @@ class ArchiveRoomViewModel extends ViewModel {
         daySummaryKind,
         // The timestamp from the URL that was originally visited
         dayTimestamp: this._dayTimestampFrom,
-        // The end of the range to use as a jumping off point to the next activity
+        // The end of the range to use as a jumping off point to the next activity.
+        //
+        // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
+        // `_dayTimestampTo` is actually the newest timestamp to paginate from
         rangeEndTimestamp: this._dayTimestampTo,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel

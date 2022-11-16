@@ -84,11 +84,6 @@ class TimeSelectorView extends TemplateView {
       };
     });
 
-    // TODO: Add magnifier bubble shadow around the range of messages in the timeline on
-    // this page
-    // const visibleRangeStartDate = todoTestDateStart;
-    // const visibleRangeEndDate = todoTestDateEnd;
-
     // Set the scroll position
     t.mapSideEffect(
       (vm) => vm.activeDate,
@@ -146,6 +141,7 @@ class TimeSelectorView extends TemplateView {
             type: 'time',
             value: (vm) =>
               getTwentyFourHourDateStringFromDate(vm.activeDate, vm.preferredPrecision),
+            onChange: (e) => vm.onTimeInputChange(e),
             className: 'TimeSelectorView_timeInput',
             id: inputUniqueId,
           }),
@@ -202,6 +198,44 @@ class TimeSelectorView extends TemplateView {
                 ),
               ]
             ),
+            t.map(
+              // This is just a trick to get this element to update whenever either of these values change (not fool-proof)
+              (vm) => vm.currentTimelineRangeStartTimestamp + vm.currentTimelineRangeEndTimestamp,
+              (_value, t, vm) => {
+                return t.div({
+                  className: 'TimeSelectorView_magnifierBubble',
+                  style: (vm) => {
+                    const msInRange =
+                      vm.currentTimelineRangeEndTimestamp - vm.currentTimelineRangeStartTimestamp;
+
+                    console.log('msInRange', msInRange);
+
+                    // If the timeline has messages from more than one day, then just just hide it and log a warning.
+                    // There is no point in highlighting the whole range of time.
+                    if (msInRange > TOTAL_MS_IN_ONE_DAY) {
+                      console.warn(
+                        'Timeline has messages from more than one day but TimeSelectorView is being used. We only expect to show the TimeSelectorView when there is less than a day of messages.'
+                      );
+                      return 'display: none;';
+                    }
+
+                    // Get the timestamp from the beginning of whatever day the active day is set to
+                    const startOfDayTimestamp = Date.UTC(
+                      this._vm.activeDate.getUTCFullYear(),
+                      this._vm.activeDate.getUTCMonth(),
+                      this._vm.activeDate.getUTCDate()
+                    );
+
+                    const widthRatio = msInRange / TOTAL_MS_IN_ONE_DAY;
+                    const msFromStartOfDay =
+                      vm.currentTimelineRangeStartTimestamp - startOfDayTimestamp;
+                    const leftPositionRatio = msFromStartOfDay / TOTAL_MS_IN_ONE_DAY;
+
+                    return `width: ${100 * widthRatio}%; left: ${100 * leftPositionRatio}%;`;
+                  },
+                });
+              }
+            ),
           ]
         ),
         t.footer({ className: 'TimeSelectorView_footer' }, [
@@ -237,8 +271,8 @@ class TimeSelectorView extends TemplateView {
 
   onScroll(/*event*/) {
     const currentScrollLeft = this.scrubberScrollNode.scrollLeft;
-    // Ignore scroll events caused by programmatic scroll changes by the side-effect
-    // `activeDate` change.
+    // Ignore scroll events caused by programmatic scroll position changes by the
+    // side-effect `activeDate` change handler.
     //
     // We don't need to recalculate the `activeDate` in the scroll handler here if we
     // programmatically changed the scroll based on the updated `activeDate` we already
@@ -267,14 +301,7 @@ class TimeSelectorView extends TemplateView {
 
     // And craft a new date based on the scroll position
     const newActiveDate = new Date(startOfDayTimestamp + msSoFarInDay);
-
-    console.log(
-      'TODO: scroll ratio',
-      (scrollRatio * 24).toFixed(2),
-      scrollRatio,
-      'newActiveDate',
-      newActiveDate
-    );
+    this._vm.setActiveDate(newActiveDate);
   }
 
   onMousedown(event) {

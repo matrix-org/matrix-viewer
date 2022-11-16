@@ -374,7 +374,7 @@ summary {
   max-width: 600px;
 }
 
-/* The magnifier */
+/* Current position triangle indicator */
 .TimeSelectorView_scrubber::after {
   content: '';
   position: absolute;
@@ -402,6 +402,21 @@ summary {
     left top, right top,
     /* Arrow pointing up at the bottom */
     left bottom, right bottom;
+
+  /* This is just a visual thing, so don't mess with clicks or selection here */
+  pointer-events: none;
+}
+
+/* The magnifier highlights the time range of messages in the timeline on this page */
+.TimeSelectorView_magnifierBubble {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 28px;
+
+  transform: translateX(-50%) translateY(-50%);
+
+  box-shadow: 0 3px 8px rgba(var(--text-color-rgb), 0.5);
 
   /* The magnifier is just a visual thing, so don't mess with clicks or selection here */
   pointer-events: none;
