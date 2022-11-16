@@ -13,6 +13,8 @@ const { readFile } = require('fs').promises;
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');
+const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS } = MS_LOOKUP;
 
 const {
   getTestClientForHs,
@@ -630,11 +632,11 @@ describe('matrix-public-archive', () => {
         const roomId = await createTestRoom(client);
 
         try {
-          const TWO_DAY_MS = 2 * 24 * 60 * 60 * 1000;
+          const TWO_DAYS_IN_MS = 2 * ONE_DAY_IN_MS;
           await fetchEndpointAsText(
             matrixPublicArchiveURLCreator.archiveUrlForDate(
               roomId,
-              new Date(Date.now() + TWO_DAY_MS)
+              new Date(Date.now() + TWO_DAYS_IN_MS)
             )
           );
           assert.fail(
@@ -756,7 +758,6 @@ describe('matrix-public-archive', () => {
             '[data-testid="jump-to-next-activity-link"]'
           );
           const nextActivityLink = nextActivityLinkEl.getAttribute('href');
-          console.log('nextActivityLink', nextActivityLink);
           // Set this for debugging if the test fails here
           archiveUrl = nextActivityLink;
           const { data: nextActivityArchivePageHtml, res: nextActivityRes } =
@@ -861,6 +862,7 @@ describe('matrix-public-archive', () => {
             '[data-testid="jump-to-next-activity-link"]'
           );
           const nextActivityLink = nextActivityLinkEl.getAttribute('href');
+          console.log('nextActivityLink', nextActivityLink);
           // Set this for debugging if the test fails here
           archiveUrl = nextActivityLink;
           const { data: nextActivityArchivePageHtml, res: nextActivityRes } =

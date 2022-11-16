@@ -1,9 +1,11 @@
 'use strict';
 
 const { TemplateView } = require('hydrogen-view-sdk');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
-
-const TOTAL_MS_IN_ONE_DAY = 24 * 60 * 60 * 1000;
+const {
+  MS_LOOKUP,
+  TIME_PRECISION_VALUES,
+} = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS } = MS_LOOKUP;
 
 function getTwentyFourHourDateStringFromDate(
   inputDate,
@@ -104,7 +106,7 @@ class TimeSelectorView extends TemplateView {
 
         // Next, we'll find how many ms have elapsed so far in the day since the start of the day
         const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
-        const timeInDayRatio = msSoFarInDay / TOTAL_MS_IN_ONE_DAY;
+        const timeInDayRatio = msSoFarInDay / ONE_DAY_IN_MS;
 
         // Ignore scroll changes before the node is rendered to the page
         if (this.scrubberScrollNode) {
@@ -213,11 +215,11 @@ class TimeSelectorView extends TemplateView {
                           const msInRange =
                             vm.timelineRangeEndTimestamp - vm.timelineRangeStartTimestamp;
 
-                          console.log('msInRange', msInRange, '/', TOTAL_MS_IN_ONE_DAY);
+                          console.log('msInRange', msInRange, '/', ONE_DAY_IN_MS);
 
                           // If the timeline has messages from more than one day, then just just hide it and log a warning.
                           // There is no point in highlighting the whole range of time.
-                          if (msInRange > TOTAL_MS_IN_ONE_DAY) {
+                          if (msInRange > ONE_DAY_IN_MS) {
                             console.warn(
                               'Timeline has messages from more than one day but TimeSelectorView is being used. We only expect to show the TimeSelectorView when there is less than a day of messages.'
                             );
@@ -231,10 +233,10 @@ class TimeSelectorView extends TemplateView {
                             this._vm.activeDate.getUTCDate()
                           );
 
-                          const widthRatio = msInRange / TOTAL_MS_IN_ONE_DAY;
+                          const widthRatio = msInRange / ONE_DAY_IN_MS;
                           const msFromStartOfDay =
                             vm.timelineRangeStartTimestamp - startOfDayTimestamp;
-                          const leftPositionRatio = msFromStartOfDay / TOTAL_MS_IN_ONE_DAY;
+                          const leftPositionRatio = msFromStartOfDay / ONE_DAY_IN_MS;
 
                           return `width: ${100 * widthRatio}%; left: ${100 * leftPositionRatio}%;`;
                         },
@@ -305,7 +307,7 @@ class TimeSelectorView extends TemplateView {
       this._vm.activeDate.getUTCDate()
     );
     // Next, we'll derive how many ms in day are represented by that scroll position
-    const msSoFarInDay = scrollRatio * TOTAL_MS_IN_ONE_DAY;
+    const msSoFarInDay = scrollRatio * ONE_DAY_IN_MS;
 
     // And craft a new date based on the scroll position
     const newActiveDate = new Date(startOfDayTimestamp + msSoFarInDay);

@@ -18,7 +18,11 @@ const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+const {
+  MS_LOOKUP,
+  TIME_PRECISION_VALUES,
+} = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -174,7 +178,7 @@ router.get(
 
 router.get(
   '/jump',
-  // eslint-disable-next-line max-statements
+  // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
@@ -197,7 +201,7 @@ router.get(
         ts: ts,
         direction: dir,
       }));
-      console.log('timestamp to even found', eventIdForTimestamp, originServerTs);
+      console.log('timestamp_to_event found', eventIdForTimestamp, originServerTs);
 
       // The goal is to go forward 100 messages, so that when we view the room at that
       // point going backwards 100 messages, we end up at the perfect continuation
@@ -220,16 +224,6 @@ router.get(
           dir: 'f',
           limit: archiveMessageLimit,
         });
-        console.log(
-          'messageResData',
-          messageResData.chunk.map((event) => {
-            return {
-              event_id: event.event_id,
-              content: event.content?.body,
-              origin_server_ts: event.origin_server_ts,
-            };
-          })
-        );
 
         if (!messageResData.chunk?.length) {
           throw new StatusError(
@@ -244,28 +238,75 @@ router.get(
 
         console.log('dateOfLastMessage', dateOfLastMessage);
 
-        // Back track from the last message timestamp to the nearest date boundary. This
-        // will gurantee some overlap with the previous page we jumped from so we don't
-        // lose any messages in the gap.
-        //
-        // XXX: This date boundary logic may need to change once we introduce hour
-        // chunks or time slices
-        // (https://github.com/matrix-org/matrix-public-archive/issues/7). For example
-        // if we reached into the next day but it has too many messages to show for a
-        // given page, we would want to back track until a suitable time slice boundary.
-        // Maybe we need to add a new URL parameter here `?time-slice=true` to indicate
-        // that it's okay to break it up by time slice based on previously having to
-        // view by time slice. We wouldn't want to give
-        const utcMidnightOfDayBefore = Date.UTC(
-          dateOfLastMessage.getUTCFullYear(),
-          dateOfLastMessage.getUTCMonth(),
-          dateOfLastMessage.getUTCDate()
-        );
-        console.log('utcMidnightOfDayBefore', new Date(utcMidnightOfDayBefore));
-        // We minus 1 from UTC midnight to get to the day before
-        const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
+        // Back-track from the last message timestamp to the nearest date boundary.
+        // Because we're back-tracking a couple events here, when paginate back out by
+        // the `archiveMessageLimit` later in the room route, it will gurantee some
+        // overlap with the previous page we jumped from so we don't lose any messages
+        // in the gap.
+        const msGapFromJumpPointToLastMessage = timestampOfLastMessage - ts;
+        const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
+        const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
+        const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
+        const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
 
-        originServerTs = endOfDayBeforeTs;
+        console.log('moreThanDayGap', moreThanDayGap);
+        console.log('moreThanHourGap', moreThanHourGap);
+        console.log('moreThanMinuteGap', moreThanMinuteGap);
+        console.log('moreThanSecondGap', moreThanSecondGap);
+
+        // More than a day gap here, so we can just back-track to the nearest day
+        if (moreThanDayGap) {
+          const utcMidnightOfDayBefore = Date.UTC(
+            dateOfLastMessage.getUTCFullYear(),
+            dateOfLastMessage.getUTCMonth(),
+            dateOfLastMessage.getUTCDate()
+          );
+          // We minus 1 from UTC midnight to get to the day before
+          const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
+          originServerTs = endOfDayBeforeTs;
+        }
+        // More than a hour gap here, we will need to back-track to the nearest hour
+        else if (moreThanHourGap) {
+          const utcTopOfHourBefore = Date.UTC(
+            dateOfLastMessage.getUTCFullYear(),
+            dateOfLastMessage.getUTCMonth(),
+            dateOfLastMessage.getUTCDate(),
+            dateOfLastMessage.getUTCHours()
+          );
+          originServerTs = utcTopOfHourBefore;
+        }
+        // More than a minute gap here, we will need to back-track to the nearest minute
+        else if (moreThanMinuteGap) {
+          const utcTopOfMinuteBefore = Date.UTC(
+            dateOfLastMessage.getUTCFullYear(),
+            dateOfLastMessage.getUTCMonth(),
+            dateOfLastMessage.getUTCDate(),
+            dateOfLastMessage.getUTCHours(),
+            dateOfLastMessage.getUTCMinutes()
+          );
+          originServerTs = utcTopOfMinuteBefore;
+        }
+        // More than a second gap here, we will need to back-track to the nearest second
+        else if (moreThanSecondGap) {
+          const utcTopOfSecondBefore = Date.UTC(
+            dateOfLastMessage.getUTCFullYear(),
+            dateOfLastMessage.getUTCMonth(),
+            dateOfLastMessage.getUTCDate(),
+            dateOfLastMessage.getUTCHours(),
+            dateOfLastMessage.getUTCMinutes(),
+            dateOfLastMessage.getUTCSeconds()
+          );
+          originServerTs = utcTopOfSecondBefore;
+        }
+        // Less than a second gap here, we will give up
+        else {
+          res.send(
+            `Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
+          );
+          // 204 No Content
+          res.status(204);
+          return;
+        }
       }
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
@@ -412,7 +453,6 @@ router.get(
 
       // If we're already specifying minutes in the time but there are too many messages
       // within the minute, let's go to seconds as well
-      const ONE_MINUTE_IN_MS = 60 * 1000;
       const isEventFromSurroundingMinute =
         toTimestamp - events[0].origin_server_ts > ONE_MINUTE_IN_MS;
       if (!isEventFromSurroundingMinute) {
@@ -421,7 +461,6 @@ router.get(
 
       // If we're already specifying seconds in the time but there are too many messages within the
       // second, let's give up for now ⏩
-      const ONE_SECOND_IN_MS = 1000;
       const isEventFromSurroundingSecond =
         toTimestamp - events[0].origin_server_ts > ONE_SECOND_IN_MS;
       if (!isEventFromSurroundingSecond) {
