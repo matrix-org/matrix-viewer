@@ -411,11 +411,11 @@ summary {
 .TimeSelectorView_magnifierBubble {
   position: absolute;
   top: 50%;
-  left: 50%;
   height: 28px;
 
-  transform: translateX(-50%) translateY(-50%);
+  transform: translateY(-50%);
 
+  border-radius: 8px;
   box-shadow: 0 3px 8px rgba(var(--text-color-rgb), 0.5);
 
   /* The magnifier is just a visual thing, so don't mess with clicks or selection here */
@@ -450,6 +450,7 @@ summary {
   --tick-minor-height: 10px;
   --tick-detail-height: 3px;
 
+  position: relative;
   display: flex;
   height: 68px;
   margin: 0;

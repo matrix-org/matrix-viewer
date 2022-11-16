@@ -10,8 +10,8 @@ class TimeSelectorViewModel extends ViewModel {
     const {
       activeDate,
       preferredPrecision = TIME_PRECISION_VALUES.minutes,
-      currentTimelineRangeStartTimestamp,
-      currentTimelineRangeEndTimestamp,
+      timelineRangeStartTimestamp,
+      timelineRangeEndTimestamp,
     } = options;
     assert(
       Object.values(TIME_PRECISION_VALUES).includes(preferredPrecision),
@@ -25,8 +25,8 @@ class TimeSelectorViewModel extends ViewModel {
     this._activeDate = activeDate;
     this._preferredPrecision = preferredPrecision;
 
-    this._currentTimelineRangeStartTimestamp = currentTimelineRangeStartTimestamp;
-    this._currentTimelineRangeEndTimestamp = currentTimelineRangeEndTimestamp;
+    this._timelineRangeStartTimestamp = timelineRangeStartTimestamp;
+    this._timelineRangeEndTimestamp = timelineRangeEndTimestamp;
 
     this._isDragging = false;
   }
@@ -50,12 +50,12 @@ class TimeSelectorViewModel extends ViewModel {
     this.emitChange('preferredPrecision');
   }
 
-  get currentTimelineRangeStartTimestamp() {
-    return this._currentTimelineRangeStartTimestamp;
+  get timelineRangeStartTimestamp() {
+    return this._timelineRangeStartTimestamp;
   }
 
-  get currentTimelineRangeEndTimestamp() {
-    return this._currentTimelineRangeEndTimestamp;
+  get timelineRangeEndTimestamp() {
+    return this._timelineRangeEndTimestamp;
   }
 
   get isDragging() {

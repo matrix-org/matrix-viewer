@@ -197,9 +197,10 @@ router.get(
         ts: ts,
         direction: dir,
       }));
+      console.log('timestamp to even found', eventIdForTimestamp, originServerTs);
 
       // The goal is to go forward 100 messages, so that when we view the room at that
-      // point going backwards 100 messages, we end up at the perfect sam continuation
+      // point going backwards 100 messages, we end up at the perfect continuation
       // spot in the room.
       //
       // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
@@ -219,6 +220,16 @@ router.get(
           dir: 'f',
           limit: archiveMessageLimit,
         });
+        console.log(
+          'messageResData',
+          messageResData.chunk.map((event) => {
+            return {
+              event_id: event.event_id,
+              content: event.content?.body,
+              origin_server_ts: event.origin_server_ts,
+            };
+          })
+        );
 
         if (!messageResData.chunk?.length) {
           throw new StatusError(
@@ -231,9 +242,11 @@ router.get(
           messageResData.chunk[messageResData.chunk.length - 1].origin_server_ts;
         const dateOfLastMessage = new Date(timestampOfLastMessage);
 
-        // Back track from the last message timestamp to the date boundary. This will
-        // gurantee some overlap with the previous page we jumped from so we don't lose
-        // any messages in the gap.
+        console.log('dateOfLastMessage', dateOfLastMessage);
+
+        // Back track from the last message timestamp to the nearest date boundary. This
+        // will gurantee some overlap with the previous page we jumped from so we don't
+        // lose any messages in the gap.
         //
         // XXX: This date boundary logic may need to change once we introduce hour
         // chunks or time slices
@@ -248,10 +261,11 @@ router.get(
           dateOfLastMessage.getUTCMonth(),
           dateOfLastMessage.getUTCDate()
         );
+        console.log('utcMidnightOfDayBefore', new Date(utcMidnightOfDayBefore));
         // We minus 1 from UTC midnight to get to the day before
-        const endOfDayBeforeDate = new Date(utcMidnightOfDayBefore - 1);
+        const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
 
-        originServerTs = endOfDayBeforeDate;
+        originServerTs = endOfDayBeforeTs;
       }
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
@@ -274,6 +288,13 @@ router.get(
       const newDayDelta = dir === 'f' ? 1 : -1;
       originServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
     }
+
+    console.log(
+      'redirecting to ',
+      originServerTs,
+      new Date(originServerTs).toISOString(),
+      eventIdForTimestamp
+    );
 
     // Redirect to a day with messages
     res.redirect(

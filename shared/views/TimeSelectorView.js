@@ -188,9 +188,8 @@ class TimeSelectorView extends TemplateView {
                 },
               },
               [
-                t.ul(
-                  { className: 'TimeSelectorView_dial' },
-                  hourIncrementStrings.map((hourIncrementStringData) => {
+                t.ul({ className: 'TimeSelectorView_dial' }, [
+                  ...hourIncrementStrings.map((hourIncrementStringData) => {
                     return t.li({ className: 'TimeSelectorView_incrementLabel' }, [
                       t.div(
                         { className: 'TimeSelectorView_incrementLabelText' },
@@ -201,47 +200,49 @@ class TimeSelectorView extends TemplateView {
                         hourIncrementStringData.local
                       ),
                     ]);
-                  })
-                ),
-              ]
-            ),
-            t.map(
-              // This is just a trick to get this element to update whenever either of these values change (not fool-proof)
-              (vm) => vm.currentTimelineRangeStartTimestamp + vm.currentTimelineRangeEndTimestamp,
-              (_value, t, vm) => {
-                return t.div({
-                  className: 'TimeSelectorView_magnifierBubble',
-                  style: (vm) => {
-                    const msInRange =
-                      vm.currentTimelineRangeEndTimestamp - vm.currentTimelineRangeStartTimestamp;
+                  }),
 
-                    console.log('msInRange', msInRange);
+                  // The magnifier highlights the time range of messages in the timeline on this page
+                  t.map(
+                    // This is just a trick to get this element to update whenever either of these values change (not fool-proof)
+                    (vm) => vm.timelineRangeStartTimestamp + vm.timelineRangeEndTimestamp,
+                    (_value, t, vm) => {
+                      return t.div({
+                        className: 'TimeSelectorView_magnifierBubble',
+                        style: (vm) => {
+                          const msInRange =
+                            vm.timelineRangeEndTimestamp - vm.timelineRangeStartTimestamp;
 
-                    // If the timeline has messages from more than one day, then just just hide it and log a warning.
-                    // There is no point in highlighting the whole range of time.
-                    if (msInRange > TOTAL_MS_IN_ONE_DAY) {
-                      console.warn(
-                        'Timeline has messages from more than one day but TimeSelectorView is being used. We only expect to show the TimeSelectorView when there is less than a day of messages.'
-                      );
-                      return 'display: none;';
+                          console.log('msInRange', msInRange, '/', TOTAL_MS_IN_ONE_DAY);
+
+                          // If the timeline has messages from more than one day, then just just hide it and log a warning.
+                          // There is no point in highlighting the whole range of time.
+                          if (msInRange > TOTAL_MS_IN_ONE_DAY) {
+                            console.warn(
+                              'Timeline has messages from more than one day but TimeSelectorView is being used. We only expect to show the TimeSelectorView when there is less than a day of messages.'
+                            );
+                            return 'display: none;';
+                          }
+
+                          // Get the timestamp from the beginning of whatever day the active day is set to
+                          const startOfDayTimestamp = Date.UTC(
+                            this._vm.activeDate.getUTCFullYear(),
+                            this._vm.activeDate.getUTCMonth(),
+                            this._vm.activeDate.getUTCDate()
+                          );
+
+                          const widthRatio = msInRange / TOTAL_MS_IN_ONE_DAY;
+                          const msFromStartOfDay =
+                            vm.timelineRangeStartTimestamp - startOfDayTimestamp;
+                          const leftPositionRatio = msFromStartOfDay / TOTAL_MS_IN_ONE_DAY;
+
+                          return `width: ${100 * widthRatio}%; left: ${100 * leftPositionRatio}%;`;
+                        },
+                      });
                     }
-
-                    // Get the timestamp from the beginning of whatever day the active day is set to
-                    const startOfDayTimestamp = Date.UTC(
-                      this._vm.activeDate.getUTCFullYear(),
-                      this._vm.activeDate.getUTCMonth(),
-                      this._vm.activeDate.getUTCDate()
-                    );
-
-                    const widthRatio = msInRange / TOTAL_MS_IN_ONE_DAY;
-                    const msFromStartOfDay =
-                      vm.currentTimelineRangeStartTimestamp - startOfDayTimestamp;
-                    const leftPositionRatio = msFromStartOfDay / TOTAL_MS_IN_ONE_DAY;
-
-                    return `width: ${100 * widthRatio}%; left: ${100 * leftPositionRatio}%;`;
-                  },
-                });
-              }
+                  ),
+                ]),
+              ]
             ),
           ]
         ),

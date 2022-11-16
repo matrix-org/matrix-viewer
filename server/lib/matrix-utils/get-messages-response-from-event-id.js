@@ -32,6 +32,17 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
     accessToken,
   });
 
+  // We want to re-paginte over the same event so it's included in the response.
+  //
+  // When going backwards, that means starting using the paginatin token after the event
+  // so we can see it looking backwards again.
+  let paginationToken = contextResData.end;
+  // When going forwards, that means starting using the paginatin token before the event
+  // so we can see it looking forwards again.
+  if (dir === 'f') {
+    paginationToken = contextResData.start;
+  }
+
   // Add `filter={"lazy_load_members":true}` to only get member state events for
   // the messages included in the response
   const messagesEndpoint = urlJoin(
@@ -39,7 +50,7 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
     `_matrix/client/r0/rooms/${encodeURIComponent(
       roomId
     )}/messages?dir=${dir}&from=${encodeURIComponent(
-      contextResData.end
+      paginationToken
     )}&limit=${limit}&filter={"lazy_load_members":true}`
   );
   const { data: messageResData } = await fetchEndpointAsJson(messagesEndpoint, {

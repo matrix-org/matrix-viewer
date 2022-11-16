@@ -140,10 +140,10 @@ class ArchiveRoomViewModel extends ViewModel {
       // This should be the first event in the timeline (different from
       // `dayTimestampFrom`/`dayTimestampTo` which represents only one day from the
       // URL).
-      currentTimelineRangeStartTimestamp: events[0].origin_server_ts,
+      timelineRangeStartTimestamp: events[0].origin_server_ts,
       // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
       // `_dayTimestampTo` is actually the newest timestamp to paginate from
-      currentTimelineRangeEndTimestamp: this._dayTimestampTo,
+      timelineRangeEndTimestamp: events[events.length - 1]?.origin_server_ts,
     });
 
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
@@ -349,11 +349,12 @@ class ArchiveRoomViewModel extends ViewModel {
         type: 'org.matrix.archive.jump_to_previous_activity_summary',
         room_id: this._room.id,
         // Even though this isn't used for sort, just using the time where the event
-        // would logically be (at the start of the day)
+        // would logically be (before any of the other events in the timeline)
         origin_server_ts: events[0].origin_server_ts - 1,
         content: {
           canonicalAlias: this._room.canonicalAlias,
-          // The start of the range to use as a jumping off point to the previous activity
+          // The start of the range to use as a jumping off point to the previous activity.
+          //
           // This should be the first event in the timeline (different from `this._dayTimestampFrom`).
           rangeStartTimestamp: events[0].origin_server_ts - 1,
           // This is a bit cheating but I don't know how else to pass this kind of
@@ -370,10 +371,8 @@ class ArchiveRoomViewModel extends ViewModel {
       type: 'org.matrix.archive.jump_to_next_activity_summary',
       room_id: this._room.id,
       // Even though this isn't used for sort, just using the time where the event
-      // would logically be.
-      //
-      // -1 so we're not at 00:00:00 of the next day
-      origin_server_ts: this._dayTimestampTo - 1,
+      // would logically be (at the end of the day)
+      origin_server_ts: this._dayTimestampTo,
       content: {
         canonicalAlias: this._room.canonicalAlias,
         daySummaryKind,
@@ -381,9 +380,12 @@ class ArchiveRoomViewModel extends ViewModel {
         dayTimestamp: this._dayTimestampFrom,
         // The end of the range to use as a jumping off point to the next activity.
         //
-        // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
-        // `_dayTimestampTo` is actually the newest timestamp to paginate from
-        rangeEndTimestamp: this._dayTimestampTo,
+        // This should be the last event in the timeline but since we paginate from
+        // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest
+        // timestamp to paginate from
+        //
+        // +1 so we're at the next day
+        rangeEndTimestamp: this._dayTimestampTo + 1,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel
         basePath: this._basePath,
