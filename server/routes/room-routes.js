@@ -65,7 +65,7 @@ function getRoomIdOrAliasFromReq(req) {
   return `${sigil}${roomIdOrAliasWithoutSigil}`;
 }
 
-// eslint-disable-next-line complexity
+// eslint-disable-next-line max-statements, complexity
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
   // Month is the only zero-based index in this group
@@ -74,9 +74,8 @@ function parseArchiveRangeFromReq(req) {
 
   const timeString = req.params.time;
   let timeInMs = 0;
-  let hour = 0;
-  let minute = 0;
-  let second = 0;
+  let timeDefined = false;
+  let secondsDefined = false;
   if (timeString) {
     const timeMatches = timeString.match(/^T(\d\d?):(\d\d?)(?::(\d\d?))?$/);
 
@@ -87,9 +86,13 @@ function parseArchiveRangeFromReq(req) {
       );
     }
 
-    hour = timeMatches[1] && parseInt(timeMatches[1], 10);
-    minute = timeMatches[2] && parseInt(timeMatches[2], 10);
-    second = timeMatches[3] ? parseInt(timeMatches[3], 10) : 0;
+    const hour = timeMatches[1] && parseInt(timeMatches[1], 10);
+    const minute = timeMatches[2] && parseInt(timeMatches[2], 10);
+    const second = timeMatches[3] ? parseInt(timeMatches[3], 10) : 0;
+
+    timeDefined = !!timeMatches;
+    // Whether the timestamp included seconds
+    secondsDefined = !!timeMatches[3];
 
     if (Number.isNaN(hour) || hour < 0 || hour > 23) {
       throw new StatusError(404, `Hour can only be in range 0-23 -> ${hour}`);
@@ -101,9 +104,9 @@ function parseArchiveRangeFromReq(req) {
       throw new StatusError(404, `Second can only be in range 0-59 -> ${second}`);
     }
 
-    const hourInMs = hour * 60 * 60 * 1000;
-    const minuteInMs = minute * 60 * 1000;
-    const secondInMs = second * 1000;
+    const hourInMs = hour * ONE_HOUR_IN_MS;
+    const minuteInMs = minute * ONE_MINUTE_IN_MS;
+    const secondInMs = second * ONE_SECOND_IN_MS;
 
     timeInMs = hourInMs + minuteInMs + secondInMs;
   }
@@ -121,10 +124,10 @@ function parseArchiveRangeFromReq(req) {
     yyyy,
     mm,
     dd,
-    hour,
-    minute,
-    second,
-    timeInMs,
+    // Whether the req included time `T23:59`
+    timeDefined,
+    // Whether the req included seconds in the time `T23:59:59`
+    secondsDefined,
   };
 }
 
@@ -249,11 +252,6 @@ router.get(
         const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
         const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
 
-        console.log('moreThanDayGap', moreThanDayGap);
-        console.log('moreThanHourGap', moreThanHourGap);
-        console.log('moreThanMinuteGap', moreThanMinuteGap);
-        console.log('moreThanSecondGap', moreThanSecondGap);
-
         // More than a day gap here, so we can just back-track to the nearest day
         if (moreThanDayGap) {
           const utcMidnightOfDayBefore = Date.UTC(
@@ -369,7 +367,8 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { fromTimestamp, toTimestamp, timeInMs } = parseArchiveRangeFromReq(req);
+    const { fromTimestamp, toTimestamp, timeDefined, secondsDefined } =
+      parseArchiveRangeFromReq(req);
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
@@ -438,16 +437,16 @@ router.get(
     ) {
       let preferredPrecision = null;
 
-      // Check if first event is from the surroundings or not. Since we're only fetching
-      // previous days for the surroundings, we only need to look at the oldest event in
-      // the chronological list.
+      // Check if the first event is from the surroundings or not. Since we're only
+      // fetching previous days for the surroundings, we only need to look at the oldest
+      // event in the chronological list.
       //
       // XXX: In the future when we also fetch events from days after, we will
       // probably need to change this next day check.
       const isEventFromSurroundingDay = events[0].origin_server_ts < fromTimestamp;
 
-      // If not specifying a time, then let's specify a time
-      if (!timeInMs && !isEventFromSurroundingDay) {
+      // If not specifying a time, then let's specify a time. By default the time includes hours and minutes `T23:59`
+      if (!timeDefined && !isEventFromSurroundingDay) {
         preferredPrecision = TIME_PRECISION_VALUES.minutes;
       }
 
@@ -455,12 +454,12 @@ router.get(
       // within the minute, let's go to seconds as well
       const isEventFromSurroundingMinute =
         toTimestamp - events[0].origin_server_ts > ONE_MINUTE_IN_MS;
-      if (!isEventFromSurroundingMinute) {
+      if (!secondsDefined && !isEventFromSurroundingMinute) {
         preferredPrecision = TIME_PRECISION_VALUES.seconds;
       }
 
-      // If we're already specifying seconds in the time but there are too many messages within the
-      // second, let's give up for now ⏩
+      // If we're already specifying seconds in the time but there are too many messages
+      // within the second, let's give up for now ⏩
       const isEventFromSurroundingSecond =
         toTimestamp - events[0].origin_server_ts > ONE_SECOND_IN_MS;
       if (!isEventFromSurroundingSecond) {
@@ -469,6 +468,7 @@ router.get(
         );
         // 204 No Content
         res.status(204);
+        return;
       }
 
       if (preferredPrecision) {

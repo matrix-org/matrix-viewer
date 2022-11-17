@@ -13,8 +13,11 @@ const { readFile } = require('fs').promises;
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');
-const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
-const { ONE_DAY_IN_MS } = MS_LOOKUP;
+const {
+  MS_LOOKUP,
+  TIME_PRECISION_VALUES,
+} = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 const {
   getTestClientForHs,
@@ -559,72 +562,146 @@ describe('matrix-public-archive', () => {
         );
       });
 
-      it(`will redirect to hour pagination when there are too many messages on the same day`, async () => {
-        const client = await getTestClientForHs(testMatrixServerUrl1);
-        const roomId = await createTestRoom(client);
-        // Set this low so we can easily create more than the limit
-        config.set('archiveMessageLimit', 3);
+      describe('too many messages (archiveMessageLimit)', () => {
+        const tooManyMessagesTestCases = [
+          {
+            durationLabel: 'day',
+            durationMs: ONE_DAY_IN_MS,
+            timeSliceLabel: 'hours',
+            timeSliceMS: ONE_HOUR_IN_MS,
+            // We would expect `TIME_PRECISION_VALUES.minutes` here but of the nature of
+            // the end of the day and `toTimestamp`, it ends up being `T23:59:59` to not
+            // lose any messages.
+            expectedPrecision: TIME_PRECISION_VALUES.seconds,
+          },
+          {
+            durationLabel: 'hour',
+            durationMs: ONE_HOUR_IN_MS,
+            timeSliceLabel: 'minutes',
+            timeSliceMS: ONE_MINUTE_IN_MS,
+            // We would expect `TIME_PRECISION_VALUES.minutes` here but of the nature of
+            // the end of the day and `toTimestamp`, it ends up being `T23:59:59` to not
+            // lose any messages.
+            expectedPrecision: TIME_PRECISION_VALUES.seconds,
+          },
+          {
+            durationLabel: 'minute',
+            durationMs: ONE_MINUTE_IN_MS,
+            timeSliceLabel: 'seconds',
+            timeSliceMS: ONE_SECOND_IN_MS,
+            expectedPrecision: TIME_PRECISION_VALUES.seconds,
+          },
+          {
+            // We currently do not support when there are too many messages within a second.
+            durationLabel: 'second',
+            durationMs: ONE_SECOND_IN_MS,
+            timeSliceLabel: '<no-small-enough-time-slice-available-for-one-ms>',
+            timeSliceMS: 1,
+            failTooManyMessages: true,
+          },
+        ];
 
-        // Create more messages than the limit
-        await createMessagesInRoom({
-          client,
-          roomId: roomId,
-          // This is larger than the `archiveMessageLimit` we set
-          numMessages: 5,
-          prefix: 'events in room',
-          timestamp: archiveDate.getTime(),
+        tooManyMessagesTestCases.forEach((testCase) => {
+          it(`will redirect to time slice of ${testCase.timeSliceLabel} when there are too many messages on the same ${testCase.durationLabel}`, async () => {
+            const client = await getTestClientForHs(testMatrixServerUrl1);
+            const roomId = await createTestRoom(client);
+            // Set this low so we can easily create more than the limit
+            config.set('archiveMessageLimit', 3);
+
+            const utcMidnightOfArchiveDayTs = Date.UTC(
+              archiveDate.getUTCFullYear(),
+              archiveDate.getUTCMonth(),
+              archiveDate.getUTCDate() + 1
+            );
+            // We minus 1 from UTC midnight to get be within the archive day
+            const endofArchiveDayTs = utcMidnightOfArchiveDayTs - 1;
+
+            // This is larger than the `archiveMessageLimit` we set
+            const numTestMessages = 5;
+            assert(
+              numTestMessages > config.get('archiveMessageLimit'),
+              'Expected number of messages we create to be larger than the `archiveMessageLimit`'
+            );
+            // Create more messages than the limit
+            await createMessagesInRoom({
+              client,
+              roomId: roomId,
+              numMessages: numTestMessages,
+              prefix: 'events in room',
+              timestamp: endofArchiveDayTs - numTestMessages * testCase.timeSliceMS,
+              // If we create each message every timeSlice then we can gurantee that we
+              // will create less than the duration but not all within the slice to
+              // trigger too many in the slice. i.e. sending a message every hour for 5
+              // hours, is less than the 24 hour day but doesn't overflow the
+              // `archiveMessageLimit` for the hour slice.
+              increment: testCase.timeSliceMS,
+            });
+
+            archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+            const { res, data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+
+            if (testCase.failTooManyMessages) {
+              assert.match(archivePageHtml, /Too many messages were sent all within a second/);
+            } else {
+              // First check the URL has the appropriate time precision
+              if (testCase.expectedPrecision === TIME_PRECISION_VALUES.minutes) {
+                assert.match(res.url, /23:59$/);
+              } else if (testCase.expectedPrecision === TIME_PRECISION_VALUES.seconds) {
+                assert.match(res.url, /23:59:59$/);
+              } else {
+                throw new Error(
+                  `\`testCase.expectedPrecision\` had an unexpected value ${testCase.expectedPrecision} which we don't know how to assert here`
+                );
+              }
+            }
+          });
         });
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        it(`will not redirect to time slice when there are too many messages from surrounding days`, async () => {
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+          // Set this low so we can easily create more than the limit
+          config.set('archiveMessageLimit', 3);
 
-        assert.match(archivePageHtml, /Too many messages were sent all within a second/);
-      });
+          // Create more messages than the limit on a previous day
+          const previousArchiveDate = new Date(Date.UTC(2022, 0, 2));
+          assert(
+            previousArchiveDate < archiveDate,
+            `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
+          );
+          const surroundEventIds = await createMessagesInRoom({
+            client,
+            roomId: roomId,
+            numMessages: 2,
+            prefix: 'events in room',
+            timestamp: previousArchiveDate.getTime(),
+          });
 
-      it(`will not redirect to hour pagination when there are too many messages from surrounding days`, async () => {
-        const client = await getTestClientForHs(testMatrixServerUrl1);
-        const roomId = await createTestRoom(client);
-        // Set this low so we can easily create more than the limit
-        config.set('archiveMessageLimit', 3);
+          // Create more messages than the limit
+          const eventIdsOnDay = await createMessagesInRoom({
+            client,
+            roomId: roomId,
+            numMessages: 2,
+            prefix: 'events in room',
+            timestamp: archiveDate.getTime(),
+          });
 
-        // Create more messages than the limit on a previous day
-        const previousArchiveDate = new Date(Date.UTC(2022, 0, 2));
-        assert(
-          previousArchiveDate < archiveDate,
-          `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
-        );
-        const surroundEventIds = await createMessagesInRoom({
-          client,
-          roomId: roomId,
-          numMessages: 2,
-          prefix: 'events in room',
-          timestamp: previousArchiveDate.getTime(),
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+
+          const dom = parseHTML(archivePageHtml);
+
+          // Make sure the messages are displayed
+          const expectedEventIdsToBeDisplayed = [].concat(surroundEventIds).concat(eventIdsOnDay);
+          assert.deepStrictEqual(
+            expectedEventIdsToBeDisplayed.map((eventId) => {
+              return dom.document
+                .querySelector(`[data-event-id="${eventId}"]`)
+                ?.getAttribute('data-event-id');
+            }),
+            expectedEventIdsToBeDisplayed
+          );
         });
-
-        // Create more messages than the limit
-        const eventIdsOnDay = await createMessagesInRoom({
-          client,
-          roomId: roomId,
-          numMessages: 2,
-          prefix: 'events in room',
-          timestamp: archiveDate.getTime(),
-        });
-
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-
-        const dom = parseHTML(archivePageHtml);
-
-        // Make sure the messages are displayed
-        const expectedEventIdsToBeDisplayed = [].concat(surroundEventIds).concat(eventIdsOnDay);
-        assert.deepStrictEqual(
-          expectedEventIdsToBeDisplayed.map((eventId) => {
-            return dom.document
-              .querySelector(`[data-event-id="${eventId}"]`)
-              ?.getAttribute('data-event-id');
-          }),
-          expectedEventIdsToBeDisplayed
-        );
       });
 
       it('404 when trying to view a future day', async () => {

@@ -220,7 +220,15 @@ async function sendMessage({ client, roomId, content, timestamp }) {
 }
 
 // Create a number of messages in the given room
-async function createMessagesInRoom({ client, roomId, numMessages, prefix, timestamp }) {
+async function createMessagesInRoom({
+  client,
+  roomId,
+  numMessages,
+  prefix,
+  timestamp,
+  // The amount of time between each message
+  increment = 1,
+}) {
   let eventIds = [];
   for (let i = 0; i < numMessages; i++) {
     const eventId = await sendMessage({
@@ -233,7 +241,7 @@ async function createMessagesInRoom({ client, roomId, numMessages, prefix, times
       // The timestamp doesn't matter if it's the same anymore (since
       // https://github.com/matrix-org/synapse/pull/13658) but it still seems
       // like a good idea to make the tests more clear.
-      timestamp: timestamp + i,
+      timestamp: timestamp + i * increment,
     });
     eventIds.push(eventId);
   }
