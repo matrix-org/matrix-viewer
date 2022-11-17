@@ -562,7 +562,7 @@ describe('matrix-public-archive', () => {
         );
       });
 
-      describe('too many messages (archiveMessageLimit)', () => {
+      describe('Too many messages (over `archiveMessageLimit`)', () => {
         const tooManyMessagesTestCases = [
           {
             durationLabel: 'day',
@@ -623,7 +623,7 @@ describe('matrix-public-archive', () => {
               'Expected number of messages we create to be larger than the `archiveMessageLimit`'
             );
             // Create more messages than the limit
-            await createMessagesInRoom({
+            const eventIdsOnDay = await createMessagesInRoom({
               client,
               roomId: roomId,
               numMessages: numTestMessages,
@@ -653,10 +653,30 @@ describe('matrix-public-archive', () => {
                   `\`testCase.expectedPrecision\` had an unexpected value ${testCase.expectedPrecision} which we don't know how to assert here`
                 );
               }
+
+              const dom = parseHTML(archivePageHtml);
+
+              // Make sure the messages are displayed. 4 messages shown since the
+              // `archiveMessageLimit` is 3 and we display 1 more than that to check
+              // overflow
+              const expectedEventIdsToBeDisplayed = eventIdsOnDay.slice(-4);
+              assert.deepStrictEqual(
+                // eslint-disable-next-line max-nested-callbacks
+                expectedEventIdsToBeDisplayed.map((eventId) => {
+                  return dom.document
+                    .querySelector(`[data-event-id="${eventId}"]`)
+                    ?.getAttribute('data-event-id');
+                }),
+                expectedEventIdsToBeDisplayed
+              );
             }
           });
         });
 
+        // It's acceptable to have messages be from surrounding days over the limit. But
+        // if all 500 messages (for example) are from the same day, we should be
+        // redirected to a smaller time slice range to display (see
+        // `tooManyMessagesTestCases` above).
         it(`will not redirect to time slice when there are too many messages from surrounding days`, async () => {
           const client = await getTestClientForHs(testMatrixServerUrl1);
           const roomId = await createTestRoom(client);
