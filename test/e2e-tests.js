@@ -903,7 +903,7 @@ describe('matrix-public-archive', () => {
             // [day1       ]     [day2       ]     [day3                            ]     [day4          ]
             //       [1st page               ]
             //                               |--jump-fwd-4-messages-->|
-            //                               [2nd page                ]
+            //                         [2nd page               ]
             testName: 'can jump forward to the next activity and land in too many messages',
             // Create enough surround messages on previous days that overflow the page limit
             // but don't overflow the limit on a single day basis.
@@ -933,12 +933,12 @@ describe('matrix-public-archive', () => {
             // Assert that the 2nd page contains 5 events (day 3 and day 2)
             expectedEventsOnPage2: [
               // Some of day 2
+              'day2.event1',
               'day2.event2',
               // All of day 3
               'day3.event0',
               'day3.event1',
               'day3.event2',
-              'day3.event3',
             ],
           },
         ];
@@ -1062,7 +1062,8 @@ describe('matrix-public-archive', () => {
             // Assert that the first page contains all expected events
             assert.deepEqual(
               convertEventIdsToDebugEventIds(eventIdsOnFirstPage),
-              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage1)
+              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage1),
+              'Events on page1 should be as expected'
             );
 
             // Follow the next activity link. Aka, fetch messages for the 2nd page
@@ -1118,7 +1119,8 @@ describe('matrix-public-archive', () => {
             // Assert that the 2nd page contains all expected events
             assert.deepEqual(
               convertEventIdsToDebugEventIds(eventIdsOnSecondDay),
-              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage2)
+              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage2),
+              'Events on page2 should be as expected'
             );
           });
         });

@@ -8,7 +8,9 @@ const MS_LOOKUP = {
 };
 
 const TIME_PRECISION_VALUES = {
+  // 23:59
   minutes: 'minutes',
+  // 23:59:59
   seconds: 'seconds',
 };
 

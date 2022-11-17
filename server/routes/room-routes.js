@@ -196,6 +196,7 @@ router.get(
 
     let eventIdForTimestamp;
     let originServerTs;
+    let preferredPrecision = null;
     try {
       // Find the closest day to today with messages
       ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
@@ -252,6 +253,11 @@ router.get(
         const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
         const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
 
+        console.log('moreThanDayGap', moreThanDayGap);
+        console.log('moreThanHourGap', moreThanHourGap);
+        console.log('moreThanMinuteGap', moreThanMinuteGap);
+        console.log('moreThanSecondGap', moreThanSecondGap);
+
         // More than a day gap here, so we can just back-track to the nearest day
         if (moreThanDayGap) {
           const utcMidnightOfDayBefore = Date.UTC(
@@ -262,6 +268,7 @@ router.get(
           // We minus 1 from UTC midnight to get to the day before
           const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
           originServerTs = endOfDayBeforeTs;
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a hour gap here, we will need to back-track to the nearest hour
         else if (moreThanHourGap) {
@@ -272,6 +279,7 @@ router.get(
             dateOfLastMessage.getUTCHours()
           );
           originServerTs = utcTopOfHourBefore;
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a minute gap here, we will need to back-track to the nearest minute
         else if (moreThanMinuteGap) {
@@ -283,6 +291,7 @@ router.get(
             dateOfLastMessage.getUTCMinutes()
           );
           originServerTs = utcTopOfMinuteBefore;
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a second gap here, we will need to back-track to the nearest second
         else if (moreThanSecondGap) {
@@ -295,6 +304,7 @@ router.get(
             dateOfLastMessage.getUTCSeconds()
           );
           originServerTs = utcTopOfSecondBefore;
+          preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // Less than a second gap here, we will give up
         else {
@@ -328,22 +338,24 @@ router.get(
       originServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
     }
 
+    // Redirect to a day with messages
+    const archiveUrlToRedirecTo = matrixPublicArchiveURLCreator.archiveUrlForDate(
+      roomIdOrAlias,
+      new Date(originServerTs),
+      {
+        // Start the scroll at the next event from where they jumped from (seamless navigation)
+        scrollStartEventId: eventIdForTimestamp,
+        preferredPrecision,
+      }
+    );
     console.log(
-      'redirecting to ',
+      '/jump redirecting you to',
+      archiveUrlToRedirecTo,
       originServerTs,
       new Date(originServerTs).toISOString(),
       eventIdForTimestamp
     );
-
-    // Redirect to a day with messages
-    res.redirect(
-      // TODO: Add query parameter that causes the client to start the scroll at the top
-      // when jumping forwards so they can continue reading where they left off.
-      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
-        // Start the scroll at the next event from where they jumped from (seamless navigation)
-        scrollStartEventId: eventIdForTimestamp,
-      })
-    );
+    res.redirect(archiveUrlToRedirecTo);
   })
 );
 
@@ -358,6 +370,7 @@ router.get(
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
+    const highlightEventId = req.query.at;
 
     const archiveMessageLimit = config.get('archiveMessageLimit');
     assert(archiveMessageLimit);
@@ -476,6 +489,8 @@ router.get(
         res.redirect(
           matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(toTimestamp), {
             preferredPrecision,
+            // Pass along the `?at` query parameter
+            scrollStartEventId: highlightEventId,
             // We can avoid passing along the `via` query parameter because we already
             // joined the room above (see `ensureRoomJoined`).
             //
