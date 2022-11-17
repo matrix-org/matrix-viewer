@@ -602,6 +602,9 @@ describe('matrix-public-archive', () => {
         ];
 
         tooManyMessagesTestCases.forEach((testCase) => {
+          // It's acceptable to have messages be from surrounding days over the limit. But
+          // if all 500 messages (for example) are from the same day, we should be
+          // redirected to a smaller time slice range to display.
           it(`will redirect to time slice of ${testCase.timeSliceLabel} when there are too many messages on the same ${testCase.durationLabel}`, async () => {
             const client = await getTestClientForHs(testMatrixServerUrl1);
             const roomId = await createTestRoom(client);
@@ -673,10 +676,6 @@ describe('matrix-public-archive', () => {
           });
         });
 
-        // It's acceptable to have messages be from surrounding days over the limit. But
-        // if all 500 messages (for example) are from the same day, we should be
-        // redirected to a smaller time slice range to display (see
-        // `tooManyMessagesTestCases` above).
         it(`will not redirect to time slice when there are too many messages from surrounding days`, async () => {
           const client = await getTestClientForHs(testMatrixServerUrl1);
           const roomId = await createTestRoom(client);
@@ -757,9 +756,52 @@ describe('matrix-public-archive', () => {
       describe('Jump forwards and backwards', () => {
         let client;
         let roomId;
-        let previousDayToEventMap;
+        let fancyIdentifierToEventMap = {};
+        let previousArchiveDates = [...Array(4).keys()].map((i) => {
+          // The date should be just past midnight so we don't run into inclusive
+          // bounds showing messages from more days than we expect in the tests.
+          return new Date(Date.UTC(2022, 0, i + 1, 1, 0, 0, 1));
+        });
+
+        function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
+          return fancyEventIdentifiers.map((fancyId) => {
+            const eventId = fancyIdentifierToEventMap[fancyId];
+            if (!eventId) {
+              throw new Error(
+                `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
+                  fancyIdentifierToEventMap,
+                  null,
+                  2
+                )}`
+              );
+            }
+            return `${eventId} (${fancyId})`;
+          });
+        }
+
+        function convertEventIdsToDebugEventIds(eventIds) {
+          return eventIds.map((eventId) => {
+            const [fancyId] = Object.entries(fancyIdentifierToEventMap).find(
+              // eslint-disable-next-line no-unused-vars -- It's more clear to leave `fancyId` so we can see what we're destructuring from
+              ([fancyId, eventIdFromFancyMap]) => {
+                return eventIdFromFancyMap === eventId;
+              }
+            );
+            if (!fancyId) {
+              throw new Error(
+                `Unable to find ${eventId} in the fancyIdentifierToEventMap=${JSON.stringify(
+                  fancyIdentifierToEventMap,
+                  null,
+                  2
+                )}`
+              );
+            }
+            return `${eventId} (${fancyId})`;
+          });
+        }
+
         beforeEach(async () => {
-          // Set this low so we can easily create more than the limit
+          // TODO: Remove this since it's put in the generic test case `it`
           config.set('archiveMessageLimit', 4);
 
           client = await getTestClientForHs(testMatrixServerUrl1);
@@ -775,11 +817,15 @@ describe('matrix-public-archive', () => {
           // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
           // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
           //
-          previousDayToEventMap = new Map();
-          for (let i = 1; i < 5; i++) {
-            // The date should be just past midnight so we don't run into inclusive
-            // bounds showing messages from more days than we expect in the tests.
-            const previousArchiveDate = new Date(Date.UTC(2022, 0, i, 1, 0, 0, 1));
+
+          assert.strictEqual(
+            previousArchiveDates.length,
+            4,
+            `These test expects to work with 4 days of history, each with 3 messages, but found previousArchiveDates=${previousArchiveDates}`
+          );
+
+          let dayNumber = 1;
+          for (let previousArchiveDate of previousArchiveDates) {
             assert(
               previousArchiveDate < archiveDate,
               `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
@@ -788,307 +834,165 @@ describe('matrix-public-archive', () => {
               client,
               roomId,
               numMessages: 3,
-              prefix: `day ${i} - events in room`,
+              prefix: `day ${dayNumber} - events in room`,
               timestamp: previousArchiveDate.getTime(),
             });
-            previousDayToEventMap.set(previousArchiveDate, eventIds);
+            eventIds.forEach((eventId, i) => {
+              fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
+            });
+
+            dayNumber++;
           }
         });
 
-        it('can jump forward to the next activity', async () => {
-          // Test to make sure we can jump from the 1st page to the 2nd page forwards.
-          //
-          // `previousDayToEventMap` maps each day to the events in that day (3 events
-          // per day). The page limit is 4 but each page will show 5 messages because we
-          // fetch one extra to determine overflow.
-          //
-          // In order to jump from the 1st page to the 2nd, we first jump forward 4
-          // messages, then back-track to the first date boundary which is day 3. We do
-          // this so that we don't start from day 4 backwards which would miss messages
-          // because there are more than 5 messages in between day 4 and day 2.
-          //
-          // Even though there is overlap between the pages, our scroll continues from
-          // the event where the 1st page starts.
-          //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
-          //       [1st page               ]
-          //                               |--jump-fwd-4-messages-->|
-          //                         [2nd page               ]
-          const previousArchiveDates = Array.from(previousDayToEventMap.keys());
-          assert.strictEqual(
-            previousArchiveDates.length,
-            4,
-            `This test expects to work with 4 days of history, each with 3 messages and a page limit of 4 messages previousArchiveDates=${previousArchiveDates}`
-          );
+        const jumpTestCases = [
+          {
+            // Test to make sure we can jump from the 1st page to the 2nd page forwards.
+            //
+            // `previousDayToEventMap` maps each day to the events in that day (3 events
+            // per day). The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            //
+            // In order to jump from the 1st page to the 2nd, we first jump forward 4
+            // messages, then back-track to the first date boundary which is day 3. We do
+            // this so that we don't start from day 4 backwards which would miss messages
+            // because there are more than 5 messages in between day 4 and day 2.
+            //
+            // Even though there is overlap between the pages, our scroll continues from
+            // the event where the 1st page starts.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+            //       [1st page               ]
+            //                               |--jump-fwd-4-messages-->|
+            //                         [2nd page               ]
+            testName: 'can jump forward to the next activity',
+            archiveMessageLimit: 4,
+            // Fetch messages for the 1st page (day 2 backwards)
+            page1Date: previousArchiveDates[1],
+            // Assert that the first page contains 5 events (day 2 and day 1)
+            expectedEventsOnPage1: [
+              // Some of day 1
+              'day1.event1',
+              'day1.event2',
+              // All of day 2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
 
-          // Fetch messages for the 1st page (day 2 backwards)
-          const day2Date = previousArchiveDates[1];
-          const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
-            roomId,
-            day2Date
-          );
-          // Set this for debugging if the test fails here
-          archiveUrl = firstPageArchiveUrl;
-          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
-          const firstPageDom = parseHTML(firstPageArchivePageHtml);
-
-          const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
-            .map((eventEl) => {
-              return eventEl.getAttribute('data-event-id');
-            })
-            .filter((eventId) => {
-              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-              return eventId.startsWith('$');
-            });
-
-          // Assert that the first page contains 5 events (day 2 and day 1)
-          assert.deepEqual(eventIdsOnFirstPage, [
-            // Some of day 1
-            ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-2),
-            // All of day 2
-            ...previousDayToEventMap.get(previousArchiveDates[1]),
-          ]);
-
-          // Follow the next activity link. Aka, fetch messages for the 2nd page
-          const nextActivityLinkEl = firstPageDom.document.querySelector(
-            '[data-testid="jump-to-next-activity-link"]'
-          );
-          const nextActivityLink = nextActivityLinkEl.getAttribute('href');
-          // Set this for debugging if the test fails here
-          archiveUrl = nextActivityLink;
-          const { data: nextActivityArchivePageHtml, res: nextActivityRes } =
-            await fetchEndpointAsText(nextActivityLink);
-          const nextActivityDom = parseHTML(nextActivityArchivePageHtml);
-
-          // Assert that it's a smooth continuation to more messages
-          //
-          // First by checking where the scroll is going to start from
-          const urlObj = new URL(nextActivityRes.url, basePath);
-          const qs = new URLSearchParams(urlObj.search);
-          assert.strictEqual(
-            qs.get('at'),
+              // // Some of day 1
+              // ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-2),
+              // // All of day 2
+              // ...previousDayToEventMap.get(previousArchiveDates[1]),
+            ],
+            // Go to the next page
+            action: 'next',
             // Continuing from the first event of day 3
-            previousDayToEventMap.get(previousArchiveDates[2])[0]
-          );
+            expectedPage2ContinuationEvent: 'day3.event0',
+            // Assert that the 2nd page contains 5 events (day 3 and day 2)
+            expectedEventsOnPage2: [
+              // Some of day 2
+              'day2.event1',
+              'day2.event2',
+              // All of day 3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
 
-          // Then check the events are on the page correctly
-          const eventIdsOnNextDay = [
-            ...nextActivityDom.document.querySelectorAll(`[data-event-id]`),
-          ]
-            .map((eventEl) => {
-              return eventEl.getAttribute('data-event-id');
-            })
-            .filter((eventId) => {
-              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-              return eventId.startsWith('$');
-            });
+              // // Some of day 2
+              // ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-2),
+              // // All of day 3
+              // ...previousDayToEventMap.get(previousArchiveDates[2]),
+            ],
+          },
+        ];
 
-          // Assert that the 2nd page contains 5 events (day 3 and day 2)
-          assert.deepEqual(eventIdsOnNextDay, [
-            // Some of day 2
-            ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-2),
-            // All of day 3
-            ...previousDayToEventMap.get(previousArchiveDates[2]),
-          ]);
-        });
+        jumpTestCases.forEach((testCase) => {
+          it(testCase.testName, async () => {
+            // Set this low so we can easily create more than the limit
+            config.set('archiveMessageLimit', testCase.archiveMessageLimit);
 
-        it('can jump forward to the next activity even when it only goes to the next day', async () => {
-          // Set this low so we can easily create more than the limit.
-          //
-          // This is specifically 3 so we only jump to the next day (day2 -> day3)
-          // instead of reaching into day4 as well.
-          config.set('archiveMessageLimit', 3);
+            // Fetch the first page
+            const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
+              roomId,
+              testCase.page1Date
+            );
+            // Set this for debugging if the test fails here
+            archiveUrl = firstPageArchiveUrl;
+            const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(
+              firstPageArchiveUrl
+            );
+            const firstPageDom = parseHTML(firstPageArchivePageHtml);
 
-          // Test to make sure we can jump from the 1st page to the 2nd page forwards.
-          //
-          // `previousDayToEventMap` maps each day to the events in that day (3 events
-          // per day). The page limit is 3 but each page will show 4 messages because we
-          // fetch one extra to determine overflow.
-          //
-          // In order to jump from the 1st page to the 2nd, we first jump forward 4
-          // messages, then back-track to the first date boundary which is day 3. We do
-          // this so that we don't start from day 4 backwards which would miss messages
-          // because there are more than 5 messages in between day 4 and day 2.
-          //
-          // Even though there is overlap between the pages, our scroll continues from
-          // the event where the 1st page starts.
-          //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
-          //             [1st page         ]
-          //                               |-jump-fwd-3-msg->|
-          //                               [2nd page         ]
-          const previousArchiveDates = Array.from(previousDayToEventMap.keys());
-          assert.strictEqual(
-            previousArchiveDates.length,
-            4,
-            `This test expects to work with 4 days of history, each with 3 messages and a page limit of 3 messages previousArchiveDates=${previousArchiveDates}`
-          );
+            const eventIdsOnFirstPage = [
+              ...firstPageDom.document.querySelectorAll(`[data-event-id]`),
+            ]
+              // eslint-disable-next-line max-nested-callbacks
+              .map((eventEl) => {
+                return eventEl.getAttribute('data-event-id');
+              })
+              // eslint-disable-next-line max-nested-callbacks
+              .filter((eventId) => {
+                // Only return valid events. Filter out our `fake-event-id-xxx--x` events
+                return eventId.startsWith('$');
+              });
 
-          // Fetch messages for the 1st page (day 2 backwards)
-          const day2Date = previousArchiveDates[1];
-          const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
-            roomId,
-            day2Date
-          );
-          // Set this for debugging if the test fails here
-          archiveUrl = firstPageArchiveUrl;
-          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
-          const firstPageDom = parseHTML(firstPageArchivePageHtml);
+            // Assert that the first page contains all expected events
+            assert.deepEqual(
+              convertEventIdsToDebugEventIds(eventIdsOnFirstPage),
+              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage1)
+            );
 
-          const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
-            .map((eventEl) => {
-              return eventEl.getAttribute('data-event-id');
-            })
-            .filter((eventId) => {
-              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-              return eventId.startsWith('$');
-            });
+            // Follow the next activity link. Aka, fetch messages for the 2nd page
+            let actionLinkSelector;
+            if (testCase.action === 'next') {
+              actionLinkSelector = '[data-testid="jump-to-next-activity-link"]';
+            } else if (testCase.action === 'previous') {
+              actionLinkSelector = '[data-testid="jump-to-previous-activity-link"]';
+            } else {
+              throw new Error(
+                `Unexpected value for testCase.action=${testCase.action} that we don't know what to do with`
+              );
+            }
+            const jumpToActivityLinkEl = firstPageDom.document.querySelector(actionLinkSelector);
+            const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
+            // Set this for debugging if the test fails here
+            archiveUrl = jumpToActivityLinkHref;
+            const { data: secondPageArchivePageHtml, res: jumpToActivityRes } =
+              await fetchEndpointAsText(jumpToActivityLinkHref);
+            const secondPageDom = parseHTML(secondPageArchivePageHtml);
 
-          // Assert that the first page contains 4 events (day 2 and day 1)
-          assert.deepEqual(eventIdsOnFirstPage, [
-            // Some of day 1
-            ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-1),
-            // All of day 2
-            ...previousDayToEventMap.get(previousArchiveDates[1]),
-          ]);
+            // Assert that it's a smooth continuation to more messages
+            //
+            // First by checking where the scroll is going to start from
+            const urlObj = new URL(jumpToActivityRes.url, basePath);
+            const qs = new URLSearchParams(urlObj.search);
+            const [continationDebugEventId] = convertEventIdsToDebugEventIds([qs.get('at')]);
+            const [expectedContinuationDebugEventId] = convertFancyIdentifierListToDebugEventIds([
+              testCase.expectedPage2ContinuationEvent,
+            ]);
+            assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
 
-          // Follow the next activity link. Aka, fetch messages for the 2nd page
-          const nextActivityLinkEl = firstPageDom.document.querySelector(
-            '[data-testid="jump-to-next-activity-link"]'
-          );
-          const nextActivityLink = nextActivityLinkEl.getAttribute('href');
-          console.log('nextActivityLink', nextActivityLink);
-          // Set this for debugging if the test fails here
-          archiveUrl = nextActivityLink;
-          const { data: nextActivityArchivePageHtml, res: nextActivityRes } =
-            await fetchEndpointAsText(nextActivityLink);
-          const nextActivityDom = parseHTML(nextActivityArchivePageHtml);
+            // Then check the events are on the page correctly
+            const eventIdsOnSecondDay = [
+              ...secondPageDom.document.querySelectorAll(`[data-event-id]`),
+            ]
+              // eslint-disable-next-line max-nested-callbacks
+              .map((eventEl) => {
+                return eventEl.getAttribute('data-event-id');
+              })
+              // eslint-disable-next-line max-nested-callbacks
+              .filter((eventId) => {
+                // Only return valid events. Filter out our `fake-event-id-xxx--x` events
+                return eventId.startsWith('$');
+              });
 
-          // Assert that it's a smooth continuation to more messages
-          //
-          // First by checking where the scroll is going to start from
-          const urlObj = new URL(nextActivityRes.url, basePath);
-          const qs = new URLSearchParams(urlObj.search);
-          assert.strictEqual(
-            qs.get('at'),
-            // Continuing from the first event of day 3
-            previousDayToEventMap.get(previousArchiveDates[2])[0]
-          );
-
-          // Then check the events are on the page correctly
-          const eventIdsOnNextDay = [
-            ...nextActivityDom.document.querySelectorAll(`[data-event-id]`),
-          ]
-            .map((eventEl) => {
-              return eventEl.getAttribute('data-event-id');
-            })
-            .filter((eventId) => {
-              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-              return eventId.startsWith('$');
-            });
-
-          // Assert that the 2nd page contains 4 events (day 3 and day 2)
-          assert.deepEqual(eventIdsOnNextDay, [
-            // Some of day 2
-            ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-1),
-            // All of day 3
-            ...previousDayToEventMap.get(previousArchiveDates[2]),
-          ]);
-        });
-
-        it('can jump backward to the previous activity', async () => {
-          // Test to make sure we can jump from the 1st page to the 2nd page backwards
-          //
-          // `previousDayToEventMap` maps each day to the events in that day (3 events
-          // per day). The page limit is 4 but each page will show 5 messages because we
-          // fetch one extra to determine overflow.
-          //
-          // The 2nd page continues from the *day* where the 1st page starts. Even
-          // though there is overlap between the pages, our scroll continues from the
-          // event where the 1st page starts.
-          //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
-          //                         [1st page               ]
-          //       [2nd page               ]
-          const previousArchiveDates = Array.from(previousDayToEventMap.keys());
-          assert.strictEqual(
-            previousArchiveDates.length,
-            4,
-            `This test expects to work with 4 days of history, each with 3 messages and a page limit of 4 messages previousArchiveDates=${previousArchiveDates}`
-          );
-
-          // Fetch messages for the 1st page (day 3 backwards)
-          const day3Date = previousArchiveDates[2];
-          const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
-            roomId,
-            day3Date
-          );
-          // Set this for debugging if the test fails here
-          archiveUrl = firstPageArchiveUrl;
-          const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(firstPageArchiveUrl);
-          const firstPageDom = parseHTML(firstPageArchivePageHtml);
-
-          const eventIdsOnFirstPage = [...firstPageDom.document.querySelectorAll(`[data-event-id]`)]
-            .map((eventEl) => {
-              return eventEl.getAttribute('data-event-id');
-            })
-            .filter((eventId) => {
-              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-              return eventId.startsWith('$');
-            });
-
-          // Assert that the first page contains 4 events (day 3 and day 2)
-          assert.deepEqual(eventIdsOnFirstPage, [
-            // Some of day 2
-            ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-2),
-            // All of day 3
-            ...previousDayToEventMap.get(previousArchiveDates[2]),
-          ]);
-
-          // Follow the previous activity link
-          const previousActivityLinkEl = firstPageDom.document.querySelector(
-            '[data-testid="jump-to-previous-activity-link"]'
-          );
-          const previousActivityLink = previousActivityLinkEl.getAttribute('href');
-          // Set this for debugging if the test fails here
-          archiveUrl = previousActivityLink;
-          const { data: previousActivityArchivePageHtml, res: previousActivityRes } =
-            await fetchEndpointAsText(previousActivityLink);
-          const previousActivityDom = parseHTML(previousActivityArchivePageHtml);
-
-          // Assert that it's a smooth continuation to more messages
-          //
-          // First by checking where the scroll is going to start from
-          const urlObj = new URL(previousActivityRes.url, basePath);
-          const qs = new URLSearchParams(urlObj.search);
-          assert.strictEqual(
-            qs.get('at'),
-            // Continuing from the first event of day 2
-            previousDayToEventMap.get(previousArchiveDates[1])[0]
-          );
-
-          // Then check the events are on the page correctly
-          const eventIdsOnPreviousDay = [
-            ...previousActivityDom.document.querySelectorAll(`[data-event-id]`),
-          ]
-            .map((eventEl) => {
-              return eventEl.getAttribute('data-event-id');
-            })
-            .filter((eventId) => {
-              // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-              return eventId.startsWith('$');
-            });
-
-          // Assert that the 2nd page contains 4 events (day 2 and day 1)
-          assert.deepEqual(eventIdsOnPreviousDay, [
-            // All of day 1
-            ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-2),
-            // All of day 2
-            ...previousDayToEventMap.get(previousArchiveDates[1]),
-          ]);
+            // Assert that the 2nd page contains all expected events
+            assert.deepEqual(
+              convertEventIdsToDebugEventIds(eventIdsOnSecondDay),
+              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage2)
+            );
+          });
         });
       });
     });
