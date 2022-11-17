@@ -879,11 +879,6 @@ describe('matrix-public-archive', () => {
               'day2.event0',
               'day2.event1',
               'day2.event2',
-
-              // // Some of day 1
-              // ...previousDayToEventMap.get(previousArchiveDates[0]).slice(-2),
-              // // All of day 2
-              // ...previousDayToEventMap.get(previousArchiveDates[1]),
             ],
             // Go to the next page
             action: 'next',
@@ -898,11 +893,98 @@ describe('matrix-public-archive', () => {
               'day3.event0',
               'day3.event1',
               'day3.event2',
-
-              // // Some of day 2
-              // ...previousDayToEventMap.get(previousArchiveDates[1]).slice(-2),
-              // // All of day 3
-              // ...previousDayToEventMap.get(previousArchiveDates[2]),
+            ],
+          },
+          {
+            // Test to make sure we can jump from the 1st page to the 2nd page backwards
+            //
+            // `previousDayToEventMap` maps each day to the events in that day (3 events
+            // per day). The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            //
+            // The 2nd page continues from the *day* where the 1st page starts. Even
+            // though there is overlap between the pages, our scroll continues from the
+            // event where the 1st page starts.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+            //                         [1st page               ]
+            //       [2nd page               ]
+            testName: 'can jump backward to the previous activity',
+            archiveMessageLimit: 4,
+            // Fetch messages for the 1st page (day 3 backwards)
+            page1Date: previousArchiveDates[2],
+            // Assert that the first page contains 4 events (day 3 and day 2)
+            expectedEventsOnPage1: [
+              // Some of day 2
+              'day2.event1',
+              'day2.event2',
+              // All of day 3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
+            ],
+            // Go to the previous page
+            action: 'previous',
+            // Continuing from the first event of day 2
+            expectedPage2ContinuationEvent: 'day2.event0',
+            // Assert that the 2nd page contains 4 events (day 2 and day 1)
+            expectedEventsOnPage2: [
+              // Some of day 1
+              'day1.event1',
+              'day1.event2',
+              // All of day 2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
+            ],
+          },
+          {
+            // Test to make sure we can jump from the 1st page to the 2nd page forwards.
+            //
+            // `previousDayToEventMap` maps each day to the events in that day (3 events
+            // per day). The page limit is 3 but each page will show 4 messages because we
+            // fetch one extra to determine overflow.
+            //
+            // In order to jump from the 1st page to the 2nd, we first jump forward 4
+            // messages, then back-track to the first date boundary which is day 3. We do
+            // this so that we don't start from day 4 backwards which would miss messages
+            // because there are more than 5 messages in between day 4 and day 2.
+            //
+            // Even though there is overlap between the pages, our scroll continues from
+            // the event where the 1st page starts.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+            //             [1st page         ]
+            //                               |-jump-fwd-3-msg->|
+            //                               [2nd page         ]
+            testName:
+              'can jump forward to the next activity even when it only goes to the next day',
+            archiveMessageLimit: 3,
+            // Fetch messages for the 1st page (day 2 backwards)
+            page1Date: previousArchiveDates[1],
+            // Assert that the first page contains 4 events (day 2 and day 1)
+            expectedEventsOnPage1: [
+              // Some of day 1
+              'day1.event2',
+              // All of day 2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
+            ],
+            // Go to the next page
+            action: 'next',
+            // Continuing from the first event of day 3
+            expectedPage2ContinuationEvent: 'day3.event0',
+            // Assert that the 2nd page contains 4 events (day 3 and day 2)
+            expectedEventsOnPage2: [
+              // Some of day 2
+              'day2.event2',
+              // All of day 3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
             ],
           },
         ];
