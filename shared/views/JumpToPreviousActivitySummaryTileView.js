@@ -7,7 +7,6 @@ class JumpToPreviousActivitySummaryTileView extends TemplateView {
     return t.div(
       {
         className: 'JumpToPreviousActivitySummaryTileView',
-        'data-event-id': vm.eventId,
       },
       [
         t.a(

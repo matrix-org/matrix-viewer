@@ -754,122 +754,168 @@ describe('matrix-public-archive', () => {
       });
 
       describe('Jump forwards and backwards', () => {
-        let client;
-        let roomId;
-        let fancyIdentifierToEventMap = {};
-        let previousArchiveDates = [...Array(4).keys()].map((i) => {
-          // The date should be just past midnight so we don't run into inclusive
-          // bounds showing messages from more days than we expect in the tests.
-          return new Date(Date.UTC(2022, 0, i + 1, 1, 0, 0, 1));
-        });
-
-        function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
-          return fancyEventIdentifiers.map((fancyId) => {
-            const eventId = fancyIdentifierToEventMap[fancyId];
-            if (!eventId) {
-              throw new Error(
-                `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
-                  fancyIdentifierToEventMap,
-                  null,
-                  2
-                )}`
-              );
-            }
-            return `${eventId} (${fancyId})`;
-          });
-        }
-
-        function convertEventIdsToDebugEventIds(eventIds) {
-          return eventIds.map((eventId) => {
-            const [fancyId] = Object.entries(fancyIdentifierToEventMap).find(
-              // eslint-disable-next-line no-unused-vars -- It's more clear to leave `fancyId` so we can see what we're destructuring from
-              ([fancyId, eventIdFromFancyMap]) => {
-                return eventIdFromFancyMap === eventId;
-              }
-            );
-            if (!fancyId) {
-              throw new Error(
-                `Unable to find ${eventId} in the fancyIdentifierToEventMap=${JSON.stringify(
-                  fancyIdentifierToEventMap,
-                  null,
-                  2
-                )}`
-              );
-            }
-            return `${eventId} (${fancyId})`;
-          });
-        }
-
-        beforeEach(async () => {
-          // TODO: Remove this since it's put in the generic test case `it`
-          config.set('archiveMessageLimit', 4);
-
-          client = await getTestClientForHs(testMatrixServerUrl1);
-          roomId = await createTestRoom(client);
-
-          // Create enough surround messages on previous days that overflow the page limit
-          // but don't overflow the limit on a single day basis.
-          //
-          // We create 4 days of messages so we can see a seamless continuation from
-          // page1 to page2. The page limit is 4 but each page will show up-to 5
-          // messages because we fetch one extra to determine overflow.
-          //
-          // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-          // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
-          //
-
-          assert.strictEqual(
-            previousArchiveDates.length,
-            4,
-            `These test expects to work with 4 days of history, each with 3 messages, but found previousArchiveDates=${previousArchiveDates}`
-          );
-
-          let dayNumber = 1;
-          for (let previousArchiveDate of previousArchiveDates) {
-            assert(
-              previousArchiveDate < archiveDate,
-              `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
-            );
-            const eventIds = await createMessagesInRoom({
-              client,
-              roomId,
-              numMessages: 3,
-              prefix: `day ${dayNumber} - events in room`,
-              timestamp: previousArchiveDate.getTime(),
-            });
-            eventIds.forEach((eventId, i) => {
-              fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
-            });
-
-            dayNumber++;
-          }
-        });
-
         const jumpTestCases = [
           {
             // Test to make sure we can jump from the 1st page to the 2nd page forwards.
             //
-            // `previousDayToEventMap` maps each day to the events in that day (3 events
-            // per day). The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            //
             // In order to jump from the 1st page to the 2nd, we first jump forward 4
-            // messages, then back-track to the first date boundary which is day 3. We do
-            // this so that we don't start from day 4 backwards which would miss messages
-            // because there are more than 5 messages in between day 4 and day 2.
+            // messages, then back-track to the first date boundary which is day3. We do
+            // this so that we don't start from day4 backwards which would miss messages
+            // because there are more than 5 messages in between day4 and day2.
             //
             // Even though there is overlap between the pages, our scroll continues from
             // the event where the 1st page starts.
             //
             // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
+            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
             //       [1st page               ]
             //                               |--jump-fwd-4-messages-->|
             //                         [2nd page               ]
             testName: 'can jump forward to the next activity',
+            // Create enough surround messages on previous days that overflow the page limit
+            // but don't overflow the limit on a single day basis.
+            //
+            // We create 4 days of messages so we can see a seamless continuation from
+            // page1 to page2.
+            dayAndMessageStructure: [3, 3, 3, 3],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            // Fetch messages for the 1st page (day2 backwards)
+            page1Date: 'day2',
+            // Assert that the first page contains 5 events (day2 and day1)
+            expectedEventsOnPage1: [
+              // Some of day1
+              'day1.event1',
+              'day1.event2',
+              // All of day2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
+            ],
+            // Go to the next page
+            action: 'next',
+            // Continuing from the first event of day 3
+            expectedPage2ContinuationEvent: 'day3.event0',
+            // Assert that the 2nd page contains 5 events (day3 and day2)
+            expectedEventsOnPage2: [
+              // Some of day2
+              'day2.event1',
+              'day2.event2',
+              // All of day3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
+            ],
+          },
+          {
+            // Test to make sure we can jump from the 1st page to the 2nd page backwards
+            //
+            // The 2nd page continues from the *day* where the 1st page starts. Even
+            // though there is overlap between the pages, our scroll continues from the
+            // event where the 1st page starts.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
+            //                         [1st page               ]
+            //       [2nd page               ]
+            testName: 'can jump backward to the previous activity',
+            dayAndMessageStructure: [3, 3, 3, 3],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            // Fetch messages for the 1st page (day 3 backwards)
+            page1Date: 'day3',
+            // Assert that the first page contains 4 events (day3 and day2)
+            expectedEventsOnPage1: [
+              // Some of day2
+              'day2.event1',
+              'day2.event2',
+              // All of day3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
+            ],
+            // Go to the previous page
+            action: 'previous',
+            // Continuing from the first event of day2
+            expectedPage2ContinuationEvent: 'day2.event0',
+            // Assert that the 2nd page contains 4 events (day2 and day1)
+            expectedEventsOnPage2: [
+              // Some of day1
+              'day1.event1',
+              'day1.event2',
+              // All of day2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
+            ],
+          },
+          {
+            // Test to make sure we can jump from the 1st page to the 2nd page forwards.
+            //
+            // In order to jump from the 1st page to the 2nd, we first jump forward 3
+            // messages, then back-track to the first date boundary which is still day3
+            // We do this to ensure that you actually jump to the next day (previous
+            // failed with naive flawed code).
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
+            //             [1st page         ]
+            //                               |-jump-fwd-3-msg->|
+            //                               [2nd page         ]
+            testName:
+              'can jump forward to the next activity even when it only goes to the next day',
+            dayAndMessageStructure: [3, 3, 3, 3],
+            // The page limit is 3 but each page will show 4 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 3,
+            // Fetch messages for the 1st page (day2 backwards)
+            page1Date: 'day2',
+            // Assert that the first page contains 4 events (day2 and day1)
+            expectedEventsOnPage1: [
+              // Some of day1
+              'day1.event2',
+              // All of day2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
+            ],
+            // Go to the next page
+            action: 'next',
+            // Continuing from the first event of day3
+            expectedPage2ContinuationEvent: 'day3.event0',
+            // Assert that the 2nd page contains 4 events (day3 and day2)
+            expectedEventsOnPage2: [
+              // Some of day2
+              'day2.event2',
+              // All of day3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
+            ],
+          },
+          {
+            // Test to make sure we can jump forwards from the 1st page to the 2nd page
+            // with too many messages to display on a single day.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15
+            // [day1       ]     [day2       ]     [day3                            ]     [day4          ]
+            //       [1st page               ]
+            //                               |--jump-fwd-4-messages-->|
+            //                               [2nd page                ]
+            testName: 'can jump forward to the next activity and land in too many messages',
+            // Create enough surround messages on previous days that overflow the page limit
+            // but don't overflow the limit on a single day basis.
+            //
+            // We create 4 days of messages so we can see a seamless continuation from
+            // page1 to page2.
+            dayAndMessageStructure: [3, 3, 6, 3],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             // Fetch messages for the 1st page (day 2 backwards)
-            page1Date: previousArchiveDates[1],
+            page1Date: 'day2',
             // Assert that the first page contains 5 events (day 2 and day 1)
             expectedEventsOnPage1: [
               // Some of day 1
@@ -887,117 +933,111 @@ describe('matrix-public-archive', () => {
             // Assert that the 2nd page contains 5 events (day 3 and day 2)
             expectedEventsOnPage2: [
               // Some of day 2
-              'day2.event1',
               'day2.event2',
               // All of day 3
               'day3.event0',
               'day3.event1',
               'day3.event2',
-            ],
-          },
-          {
-            // Test to make sure we can jump from the 1st page to the 2nd page backwards
-            //
-            // `previousDayToEventMap` maps each day to the events in that day (3 events
-            // per day). The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            //
-            // The 2nd page continues from the *day* where the 1st page starts. Even
-            // though there is overlap between the pages, our scroll continues from the
-            // event where the 1st page starts.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
-            //                         [1st page               ]
-            //       [2nd page               ]
-            testName: 'can jump backward to the previous activity',
-            archiveMessageLimit: 4,
-            // Fetch messages for the 1st page (day 3 backwards)
-            page1Date: previousArchiveDates[2],
-            // Assert that the first page contains 4 events (day 3 and day 2)
-            expectedEventsOnPage1: [
-              // Some of day 2
-              'day2.event1',
-              'day2.event2',
-              // All of day 3
-              'day3.event0',
-              'day3.event1',
-              'day3.event2',
-            ],
-            // Go to the previous page
-            action: 'previous',
-            // Continuing from the first event of day 2
-            expectedPage2ContinuationEvent: 'day2.event0',
-            // Assert that the 2nd page contains 4 events (day 2 and day 1)
-            expectedEventsOnPage2: [
-              // Some of day 1
-              'day1.event1',
-              'day1.event2',
-              // All of day 2
-              'day2.event0',
-              'day2.event1',
-              'day2.event2',
-            ],
-          },
-          {
-            // Test to make sure we can jump from the 1st page to the 2nd page forwards.
-            //
-            // `previousDayToEventMap` maps each day to the events in that day (3 events
-            // per day). The page limit is 3 but each page will show 4 messages because we
-            // fetch one extra to determine overflow.
-            //
-            // In order to jump from the 1st page to the 2nd, we first jump forward 4
-            // messages, then back-track to the first date boundary which is day 3. We do
-            // this so that we don't start from day 4 backwards which would miss messages
-            // because there are more than 5 messages in between day 4 and day 2.
-            //
-            // Even though there is overlap between the pages, our scroll continues from
-            // the event where the 1st page starts.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day 1      ]     [day 2      ]     [day 3      ]     [day 4         ]
-            //             [1st page         ]
-            //                               |-jump-fwd-3-msg->|
-            //                               [2nd page         ]
-            testName:
-              'can jump forward to the next activity even when it only goes to the next day',
-            archiveMessageLimit: 3,
-            // Fetch messages for the 1st page (day 2 backwards)
-            page1Date: previousArchiveDates[1],
-            // Assert that the first page contains 4 events (day 2 and day 1)
-            expectedEventsOnPage1: [
-              // Some of day 1
-              'day1.event2',
-              // All of day 2
-              'day2.event0',
-              'day2.event1',
-              'day2.event2',
-            ],
-            // Go to the next page
-            action: 'next',
-            // Continuing from the first event of day 3
-            expectedPage2ContinuationEvent: 'day3.event0',
-            // Assert that the 2nd page contains 4 events (day 3 and day 2)
-            expectedEventsOnPage2: [
-              // Some of day 2
-              'day2.event2',
-              // All of day 3
-              'day3.event0',
-              'day3.event1',
-              'day3.event2',
+              'day3.event3',
             ],
           },
         ];
 
         jumpTestCases.forEach((testCase) => {
+          // eslint-disable-next-line max-statements
           it(testCase.testName, async () => {
+            // Setup
+            // --------------------------------------
+            // --------------------------------------
+            const fancyIdentifierToEventMap = {};
+
+            function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
+              // eslint-disable-next-line max-nested-callbacks
+              return fancyEventIdentifiers.map((fancyId) => {
+                const eventId = fancyIdentifierToEventMap[fancyId];
+                if (!eventId) {
+                  throw new Error(
+                    `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
+                      fancyIdentifierToEventMap,
+                      null,
+                      2
+                    )}`
+                  );
+                }
+                return `${eventId} (${fancyId})`;
+              });
+            }
+
+            function convertEventIdsToDebugEventIds(eventIds) {
+              // eslint-disable-next-line max-nested-callbacks
+              return eventIds.map((eventId) => {
+                const [fancyId] =
+                  Object.entries(fancyIdentifierToEventMap).find(
+                    // eslint-disable-next-line max-nested-callbacks, no-unused-vars -- It's more clear to leave `fancyId` so we can see what we're destructuring from
+                    ([fancyId, eventIdFromFancyMap]) => {
+                      return eventIdFromFancyMap === eventId;
+                    }
+                  ) ?? [];
+                if (!fancyId) {
+                  throw new Error(
+                    `Unable to find ${eventId} in the fancyIdentifierToEventMap=${JSON.stringify(
+                      fancyIdentifierToEventMap,
+                      null,
+                      2
+                    )}`
+                  );
+                }
+                return `${eventId} (${fancyId})`;
+              });
+            }
+
+            const client = await getTestClientForHs(testMatrixServerUrl1);
+            const roomId = await createTestRoom(client);
+
+            const dayIdentifierToDateMap = {};
+            const numberOfDaysToConstruct = testCase.dayAndMessageStructure.length;
+            for (let i = 0; i < numberOfDaysToConstruct; i++) {
+              const dayNumber = i + 1;
+              const numMessagesOnDay = testCase.dayAndMessageStructure[i];
+
+              // The date should be just past midnight so we don't run into inclusive
+              // bounds showing messages from more days than we expect in the tests.
+              const previousArchiveDate = new Date(Date.UTC(2022, 0, dayNumber, 1, 0, 0, 1));
+
+              dayIdentifierToDateMap[`day${dayNumber}`] = previousArchiveDate;
+
+              assert(
+                previousArchiveDate < archiveDate,
+                `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
+              );
+
+              const eventIds = await createMessagesInRoom({
+                client,
+                roomId,
+                numMessages: numMessagesOnDay,
+                prefix: `day ${dayNumber} - events in room`,
+                timestamp: previousArchiveDate.getTime(),
+                // Just spread things out a bit so we don't run into time slice redirecting
+                increment: ONE_HOUR_IN_MS,
+              });
+              // eslint-disable-next-line max-nested-callbacks
+              eventIds.forEach((eventId, i) => {
+                fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
+              });
+            }
+
+            // Now Test
+            // --------------------------------------
+            // --------------------------------------
+
             // Set this low so we can easily create more than the limit
             config.set('archiveMessageLimit', testCase.archiveMessageLimit);
 
             // Fetch the first page
+            const dateToFetchPage1From = dayIdentifierToDateMap[testCase.page1Date];
             const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
               roomId,
-              testCase.page1Date
+              dateToFetchPage1From
             );
             // Set this for debugging if the test fails here
             archiveUrl = firstPageArchiveUrl;
@@ -1047,12 +1087,18 @@ describe('matrix-public-archive', () => {
             // Assert that it's a smooth continuation to more messages
             //
             // First by checking where the scroll is going to start from
-            const urlObj = new URL(jumpToActivityRes.url, basePath);
-            const qs = new URLSearchParams(urlObj.search);
-            const [continationDebugEventId] = convertEventIdsToDebugEventIds([qs.get('at')]);
             const [expectedContinuationDebugEventId] = convertFancyIdentifierListToDebugEventIds([
               testCase.expectedPage2ContinuationEvent,
             ]);
+            const urlObj = new URL(jumpToActivityRes.url, basePath);
+            const qs = new URLSearchParams(urlObj.search);
+            const continuationEventId = qs.get('at');
+            if (!continuationEventId) {
+              throw new Error(
+                `Expected ?at=$xxx query parameter to be defined in the URL=${jumpToActivityRes.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
+              );
+            }
+            const [continationDebugEventId] = convertEventIdsToDebugEventIds([continuationEventId]);
             assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
 
             // Then check the events are on the page correctly

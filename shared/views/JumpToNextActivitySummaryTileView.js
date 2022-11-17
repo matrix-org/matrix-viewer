@@ -29,7 +29,6 @@ class JumpToNextActivitySummaryTileView extends TemplateView {
           // while we wait for the rest of the JavaScript to load.
           'js-bottom-scroll-anchor': true,
         },
-        'data-event-id': vm.eventId,
       },
       [
         t.if(
