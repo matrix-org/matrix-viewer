@@ -208,7 +208,7 @@ class TimeSelectorView extends TemplateView {
                   t.map(
                     // This is just a trick to get this element to update whenever either of these values change (not fool-proof)
                     (vm) => vm.timelineRangeStartTimestamp + vm.timelineRangeEndTimestamp,
-                    (_value, t, vm) => {
+                    (_value, t /*, vm*/) => {
                       return t.div({
                         className: 'TimeSelectorView_magnifierBubble',
                         style: (vm) => {
