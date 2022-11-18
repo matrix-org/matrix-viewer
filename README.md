@@ -33,25 +33,58 @@ the maintenance burden of supporting more event types in Hydrogen.
 ### Prerequisites
 
 - Node.js v16
-  - We only need v16 because it includes [`require('crypto').webcrypto.subtle`](https://nodejs.org/docs/latest-v16.x/api/webcrypto.html#cryptosubtle) for [Matrix encryption (olm) which can't be disabled in Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
+  - We only need v16 because it includes
+    [`require('crypto').webcrypto.subtle`](https://nodejs.org/docs/latest-v16.x/api/webcrypto.html#cryptosubtle)
+    for [Matrix encryption (olm) which can't be disabled in
+    Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
+- A Matrix homeserver that supports [MSC3030's](https://github.com/matrix-org/matrix-spec-proposals/pull/3030) `/timestamp_to_event` endpoint
+  - Currently, the only implementation is in Synapse under an experimental feature flag.
+    Adjust your homeserver config to enable it:
+    `homeserver.yaml`
+    ```yaml
+    experimental_features:
+      msc3030_enabled: true
+    ```
+  - The `/timestamp_to_event` endpoint will soon be stabilized in Synapse which means
+    it will be available without the feature flag. You can track progress at
+    https://github.com/matrix-org/synapse/issues/14390
 
 ### Get the app running
 
 ```sh
 $ npm install
 
-# Edit config/config.user-overrides.json so that `matrixServerUrl` points to your homeserver
-# and has `matrixAccessToken` defined
+# Edit `config/config.user-overrides.json` so that `matrixServerUrl` points to
+# your homeserver and has `matrixAccessToken` defined
 $ cp config/config.default.json config/config.user-overrides.json
 
-$ npm run start-dev
+$ npm run start
 # To enable tracing, add the `--tracing` flag
-$ npm run start-dev -- --tracing
+$ npm run start -- --tracing
 ```
 
 ## Development
 
 ```sh
+# Clone and install the `matrix-public-archive` project
+$ git clone git@github.com:matrix-org/matrix-public-archive.git
+$ cd matrix-public-archive
+$ npm install
+
+# Edit `config/config.user-overrides.json` so that `matrixServerUrl` points to
+# your homeserver and has `matrixAccessToken` defined
+$ cp config/config.default.json config/config.user-overrides.json
+
+# This will watch for changes, rebuild bundles and restart the server
+$ npm run start-dev
+# To enable tracing, add the `--tracing` flag
+$ npm run start-dev -- --tracing
+```
+
+If you want to make changes to the underlying Hydrogen SDK as well, you can locally link
+it into this project with the following instructions:
+
+```
 # We need to use a draft branch of Hydrogen to get the custom changes needed for
 # `matrix-public-archive` to run. Hopefully soon, we can get all of the custom
 # changes mainlined so this isn't necessary.
@@ -63,19 +96,8 @@ $ yarn build:sdk
 $ cd target/ && npm link && cd ..
 $ cd ..
 
-# Now clone and install the `matrix-public-archive` project
-$ git clone git@github.com:matrix-org/matrix-public-archive.git
 $ cd matrix-public-archive
-$ npm install
 $ npm link hydrogen-view-sdk
-# If you just want to run the tests, you can skip to the "Running tests" section at this point
-#
-# Edit config/config.user-overrides.json so that `matrixServerUrl` points to your homeserver
-# and has `matrixAccessToken` defined
-$ cp config/config.default.json config/config.user-overrides.json
-
-# Now we can finally start the app
-$ npm run start-dev
 ```
 
 ### Running tests

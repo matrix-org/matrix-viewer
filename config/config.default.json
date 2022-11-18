@@ -1,6 +1,7 @@
 {
   "basePort": "3050",
   "basePath": "http://localhost:3050",
+  // Requires homeserver with MSC3030 `/timestamp_to_event` endpoint available (see readme for more details)
   "matrixServerUrl": "http://localhost:8008/",
   "matrixServerName": "localhost",
   // Set this to 100 since that is the max that Synapse will backfill even if you do a
