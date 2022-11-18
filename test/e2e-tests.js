@@ -56,7 +56,7 @@ function assertExpectedPrecisionAgainstUrl(expectedPrecision, url) {
     assert.doesNotMatch(
       urlPathname,
       /T[\d:]*?$/,
-      'Expected the URL to *not* have any time precision'
+      `Expected the URL to *not* have any time precision but saw ${urlPathname}`
     );
   } else if (expectedPrecision === TIME_PRECISION_VALUES.minutes) {
     assert.match(urlPathname, /T\d\d:\d\d$/);
@@ -978,6 +978,121 @@ describe('matrix-public-archive', () => {
             expectedPage2Precision: null,
           },
           {
+            // Test to make sure we can jump from the 1st page to the 2nd page forwards
+            // across many quiet days without losing any messages in between.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
+            // [day1       ]     [day2       ]     [day3       ]     [day4          ]     [day5   ]     [day6   ]     [day7    ]    [day8          ]
+            //                   [1st page                                          ]
+            //                                                                      |------------------jump-fwd-8-msg---------------------->|
+            //                                                       [2nd page                                                 ]
+            testName: 'can jump forward over many days without losing any messages in a gap',
+            dayAndMessageStructure: [3, 3, 3, 3, 2, 2, 2, 3],
+            // The page limit is 8 but each page will show 9 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 8,
+            // Fetch messages for the 1st page (day4 backwards)
+            page1Date: 'day4',
+            // Assert that the 1st page contains 9 events
+            expectedEventsOnPage1: [
+              // All of day2
+              'day2.event0',
+              'day2.event1',
+              'day2.event2',
+              // All of day3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
+              // All of day4
+              'day4.event0',
+              'day4.event1',
+              'day4.event2',
+            ],
+            // Go to the next page
+            action: 'next',
+            // Continuing from the first event of day5
+            expectedPage2ContinuationEvent: 'day5.event0',
+            // Assert that the 2nd page contains 9 events
+            expectedEventsOnPage2: [
+              // All of day4
+              'day4.event0',
+              'day4.event1',
+              'day4.event2',
+              // All of day5
+              'day5.event0',
+              'day5.event1',
+              // All of day6
+              'day6.event0',
+              'day6.event1',
+              // All of day7
+              'day7.event0',
+              'day7.event1',
+            ],
+            // We expect the URL to look like `T23:59:59` because TODO
+            //
+            // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
+            // and `2022/11/17T23:59:59` are equivalent?
+            expectedPage2Precision: TIME_PRECISION_VALUES.seconds,
+          },
+          {
+            // Test to make sure we can jump from the 1st page to the 2nd page backwards
+            // and show many days without much activity so they all fit on one page.
+            //
+            // The 2nd page continues from the *day* with the closest event backwards
+            // from the 1st page (event4 on day2). Even though there is overlap between the pages, our
+            // scroll continues from the event where the 1st page starts.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
+            // [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5   ]    [day6   ]     [day7          ]     [day8          ]     [day9          ]
+            //                                                                            [1st page                                                ]
+            //                   [2nd page                                          ]
+            testName: 'can jump backward to the previous activity with many small quiet days',
+            dayAndMessageStructure: [2, 2, 2, 2, 2, 2, 3, 3, 3],
+            // The page limit is 8 but each page will show 9 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 8,
+            // Fetch messages for the 1st page (day9 backwards)
+            page1Date: 'day9',
+            // Assert that the first page contains 9 events
+            expectedEventsOnPage1: [
+              // All of day7
+              'day7.event0',
+              'day7.event1',
+              'day7.event2',
+              // All of day8
+              'day8.event0',
+              'day8.event1',
+              'day8.event2',
+              // All of day9
+              'day9.event0',
+              'day9.event1',
+              'day9.event2',
+            ],
+            // Go to the previous page
+            action: 'previous',
+            // Continuing from the last event of day6
+            expectedPage2ContinuationEvent: 'day6.event1',
+            // Assert that the 2nd page contains 9 events
+            expectedEventsOnPage2: [
+              // Some of day2
+              'day2.event1',
+              // All of day3
+              'day3.event0',
+              'day3.event1',
+              // All of day4
+              'day4.event0',
+              'day4.event1',
+              // All of day5
+              'day5.event0',
+              'day5.event1',
+              // All of day6
+              'day6.event0',
+              'day6.event1',
+            ],
+            // We expect the URL to have no time slice
+            expectedPage2Precision: null,
+          },
+          {
             // Test to make sure we can jump forwards from the 1st page to the 2nd page
             // with too many messages to display on a single day.
             //
@@ -1173,7 +1288,7 @@ describe('matrix-public-archive', () => {
             );
             // Set this for debugging if the test fails here
             archiveUrl = firstPageArchiveUrl;
-            const { data: firstPageArchivePageHtml } = await fetchEndpointAsText(
+            const { data: firstPageArchivePageHtml, res: firstPageRes } = await fetchEndpointAsText(
               firstPageArchiveUrl
             );
             const firstPageDom = parseHTML(firstPageArchivePageHtml);
@@ -1184,11 +1299,6 @@ describe('matrix-public-archive', () => {
               // eslint-disable-next-line max-nested-callbacks
               .map((eventEl) => {
                 return eventEl.getAttribute('data-event-id');
-              })
-              // eslint-disable-next-line max-nested-callbacks
-              .filter((eventId) => {
-                // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-                return eventId.startsWith('$');
               });
 
             // Assert that the first page contains all expected events
@@ -1213,9 +1323,8 @@ describe('matrix-public-archive', () => {
             const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
             // Set this for debugging if the test fails here
             archiveUrl = jumpToActivityLinkHref;
-            const { data: secondPageArchivePageHtml, res: page2Res } = await fetchEndpointAsText(
-              jumpToActivityLinkHref
-            );
+            const { data: secondPageArchivePageHtml, res: secondPageRes } =
+              await fetchEndpointAsText(jumpToActivityLinkHref);
             const secondPageDom = parseHTML(secondPageArchivePageHtml);
 
             // Assert that it's a smooth continuation to more messages
@@ -1224,19 +1333,19 @@ describe('matrix-public-archive', () => {
             const [expectedContinuationDebugEventId] = convertFancyIdentifierListToDebugEventIds([
               testCase.expectedPage2ContinuationEvent,
             ]);
-            const urlObj = new URL(page2Res.url, basePath);
+            const urlObj = new URL(secondPageRes.url, basePath);
             const qs = new URLSearchParams(urlObj.search);
             const continuationEventId = qs.get('at');
             if (!continuationEventId) {
               throw new Error(
-                `Expected ?at=$xxx query parameter to be defined in the URL=${page2Res.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
+                `Expected ?at=$xxx query parameter to be defined in the URL=${secondPageRes.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
               );
             }
             const [continationDebugEventId] = convertEventIdsToDebugEventIds([continuationEventId]);
             assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
 
             // Assert the correct time precision in the URL
-            assertExpectedPrecisionAgainstUrl(testCase.expectedPage2Precision, page2Res.url);
+            assertExpectedPrecisionAgainstUrl(testCase.expectedPage2Precision, secondPageRes.url);
 
             // Then check the events are on the page correctly
             const eventIdsOnSecondDay = [
@@ -1245,11 +1354,6 @@ describe('matrix-public-archive', () => {
               // eslint-disable-next-line max-nested-callbacks
               .map((eventEl) => {
                 return eventEl.getAttribute('data-event-id');
-              })
-              // eslint-disable-next-line max-nested-callbacks
-              .filter((eventId) => {
-                // Only return valid events. Filter out our `fake-event-id-xxx--x` events
-                return eventId.startsWith('$');
               });
 
             // Assert that the 2nd page contains all expected events

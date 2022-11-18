@@ -311,7 +311,7 @@ router.get(
           // 501 Not Implemented: the server does not support the functionality required to fulfill the request
           res.status(501);
           res.send(
-            `Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
+            `/jump ran into a problem: Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
           );
           return;
         }
@@ -443,7 +443,7 @@ router.get(
     // If we have over the `archiveMessageLimit` number of messages fetching
     // from the given day, it's acceptable to have them be from surrounding
     // days. But if all 500 messages (for example) are from the same day, let's
-    // redirect to a smaller hour range to display.
+    // redirect to a smaller time range to display.
     if (
       // If there are too many messages, check ...
       events.length >= archiveMessageLimit
@@ -479,7 +479,7 @@ router.get(
         // 501 Not Implemented: the server does not support the functionality required to fulfill the request
         res.status(501);
         res.send(
-          `Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
+          `/date ran into a problem: Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
         );
         return;
       }
