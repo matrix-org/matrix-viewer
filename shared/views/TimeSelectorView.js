@@ -170,6 +170,9 @@ class TimeSelectorView extends TemplateView {
                   'is-dragging': (vm) => vm.isDragging,
                   'js-scrubber': true,
                 },
+                // Emulate momentum scrolling for mouse click and dragging. Still allows
+                // for native momentum scrolling on touch devices because those don't
+                // trigger mouse events.
                 onMousedown: (event) => {
                   this.onMousedown(event);
                 },
@@ -349,6 +352,8 @@ class TimeSelectorView extends TemplateView {
 
   onWheel(/*event*/) {
     this._velocityX = 0;
+    // If someone is using the horizontal mouse wheel, they already know what they're
+    // doing. Don't mess with it.
     this.cancelMomentumTracking();
   }
 

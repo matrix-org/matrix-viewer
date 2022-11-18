@@ -425,6 +425,11 @@ summary {
 }
 
 .TimeSelectorView_scrubberScrollWrapper {
+  /**
+   * By having plain normal scrolling for this control, we get all the nice momentum
+   * scrolling that is native to peoples touch devices (Android, iOS, etc). We also
+   * emulate momentum scrolling for mouse click and dragging.
+   */
   overflow-x: auto;
   /* Hide scrollbar in Firefox. We want scroll but no scrollbar so mobile and touchpad
   people can still scroll */
