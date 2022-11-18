@@ -38,7 +38,7 @@ the maintenance burden of supporting more event types in Hydrogen.
     for [Matrix encryption (olm) which can't be disabled in
     Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
 - A Matrix homeserver that supports [MSC3030's](https://github.com/matrix-org/matrix-spec-proposals/pull/3030) `/timestamp_to_event` endpoint
-  - Currently, the only implementation is in Synapse under a experimental feature flag.
+  - Currently, the only implementation is in Synapse under an experimental feature flag.
     Adjust your homeserver config to enable it:
     `homeserver.yaml`
     ```yaml
