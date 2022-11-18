@@ -308,11 +308,11 @@ router.get(
         }
         // Less than a second gap here, we will give up
         else {
+          // 501 Not Implemented: the server does not support the functionality required to fulfill the request
+          res.status(501);
           res.send(
             `Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
           );
-          // 204 No Content
-          res.status(204);
           return;
         }
       }
@@ -476,11 +476,11 @@ router.get(
       const isEventFromSurroundingSecond =
         toTimestamp - events[0].origin_server_ts > ONE_SECOND_IN_MS;
       if (!isEventFromSurroundingSecond) {
+        // 501 Not Implemented: the server does not support the functionality required to fulfill the request
+        res.status(501);
         res.send(
           `Too many messages were sent all within a second for us to display (more than ${archiveMessageLimit} in one second). We're unable to redirect you to a smaller time range to view them without losing a few between each page. Since this is probably pretty rare, we've decided not to support it for now.`
         );
-        // 204 No Content
-        res.status(204);
         return;
       }
 
