@@ -47,7 +47,11 @@ function createDomAndSetupVmContext() {
   vmContext.global.DOMParser = dom.DOMParser;
   // Make sure `webcrypto` exists since it was only introduced in Node.js v17
   assert(crypto.webcrypto);
-  vmContext.global.crypto = crypto.webcrypto;
+  // Only assign vmContext.global.crypto if it’s undefined
+  // (Node.js v19 has crypto set on the global already)
+  if (!vmContext.global.crypto) {
+    vmContext.global.crypto = crypto.webcrypto;
+  }
 
   // So require(...) works in the vm
   vmContext.global.require = require;

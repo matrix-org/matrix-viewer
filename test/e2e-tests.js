@@ -889,6 +889,12 @@ describe('matrix-public-archive', () => {
       });
     });
 
+    describe('Room directory renders as expected', () => {
+      it('renders the room directory', async () => {
+        await getTestClientForHs(testMatrixServerUrl1);
+      });
+    });
+
     describe('Room directory', () => {
       it('room search narrows down results', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
