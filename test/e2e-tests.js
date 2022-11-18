@@ -888,16 +888,20 @@ describe('matrix-public-archive', () => {
             // Assert that the 2nd page contains 4 events (day3 and day2)
             expectedEventsOnPage2: [
               // Some of day2
+              'day2.event1',
               'day2.event2',
               // All of day3
               'day3.event0',
               'day3.event1',
-              'day3.event2',
             ],
           },
           {
             // Test to make sure we can jump forwards from the 1st page to the 2nd page
             // with too many messages to display on a single day.
+            //
+            // We jump forward 4 messages (`archiveMessageLimit`), then back-track one
+            // hour which starst off at event9 and render the page with 5 messages because we
+            // fetch one more than `archiveMessageLimit` to determine overflow.
             //
             // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15
             // [day1       ]     [day2       ]     [day3                            ]     [day4          ]
