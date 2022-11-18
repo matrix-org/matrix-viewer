@@ -102,6 +102,9 @@ class URLCreator {
     // Get the `23:20:04` part of it
     let urlTime = timePiece.split('.')[0];
     if (preferredPrecision === TIME_PRECISION_VALUES.minutes) {
+      // We only want to replace the seconds part of the URL if its superfluous. `23:59:00`
+      // does not convey more information than `23:59` so we can safely remove it if the
+      // desired precision is in minutes.
       urlTime = urlTime.replace(/:00$/, '');
     }
     const shouldIncludeTimeInUrl = !!preferredPrecision;
