@@ -1,5 +1,7 @@
 # Matrix Public Archive
 
+<a href="https://matrix.to/#/#matrix-public-archive:matrix.org"><img src="https://img.shields.io/matrix/matrix-public-archive:matrix.org.svg?label=%23matrix-public-archive%3Amatrix.org&logo=matrix&server_fqdn=matrix.org" alt="Join the community and get support at #matrix-public-archive:matrix.org" /></a>
+
 **NB: This project is very much a work-in-progress (WIP)!** Undocumented
 config/secrets, using a draft branch of Hydrogen, etc.
 
@@ -103,13 +105,3 @@ $ npm link hydrogen-view-sdk
 ### Running tests
 
 See the [testing readme](./test/README.md).
-
-## Community
-
-Got any questions? Join our community chat :
-
-  <a href="https://matrix.to/#/#matrix-public-archive:matrix.org"><img src="https://img.shields.io/badge/chat-%23matrix--public--archive-success" alt="chat" /></a>
-
-You can also view a log of the recent conversation in our community chat
-
-  <a href=" https://view.matrix.org/alias/%23matrix-public-archive:matrix.org"><img src="https://img.shields.io/badge/preview-%23matrix--public--archive-success" alt="preview" /></a>
