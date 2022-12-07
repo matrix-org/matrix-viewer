@@ -28,6 +28,11 @@ the messages from a Matrix homeserver.
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
 
+## Demo videos
+
+- [Aug 2022](https://www.youtube.com/watch?v=6KHQSeJTXm0&t=583s) ([blog post](https://matrix.org/blog/2022/08/05/this-week-in-matrix-2022-08-05#matrix-public-archive-website))
+- [Oct 2022](https://www.youtube.com/watch?v=UT6KSEqDUf8&t=548s)
+
 ## Setup
 
 ### Prerequisites
