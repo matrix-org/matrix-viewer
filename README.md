@@ -14,6 +14,11 @@ something with more Element-feeling polish and loading faster (avoid the slow
 
 ![](https://user-images.githubusercontent.com/558581/179578263-e224ed59-dbba-464e-8b34-89a72ee0ae71.png)
 
+## Demo videos
+
+- [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) Aug 2022](https://www.youtube.com/watch?v=6KHQSeJTXm0&t=583s) ([blog post](https://matrix.org/blog/2022/08/05/this-week-in-matrix-2022-08-05#matrix-public-archive-website)): A quick intro of what the project looks like, the goals, what it accomplishes, and how it's a new portal into the Matrix ecosystem.
+- [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) Oct 2022](https://www.youtube.com/watch?v=UT6KSEqDUf8&t=548s): Showing off the room directory landing page used to browse everything available in the archive.
+
 ## Plan summary
 
 The plan is to server-side render (SSR) the
@@ -27,11 +32,6 @@ the messages from a Matrix homeserver.
 
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
-
-## Demo videos
-
-- [Aug 2022](https://www.youtube.com/watch?v=6KHQSeJTXm0&t=583s) ([blog post](https://matrix.org/blog/2022/08/05/this-week-in-matrix-2022-08-05#matrix-public-archive-website))
-- [Oct 2022](https://www.youtube.com/watch?v=UT6KSEqDUf8&t=548s)
 
 ## Setup
 
