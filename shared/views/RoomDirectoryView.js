@@ -6,6 +6,9 @@ const ModalView = require('matrix-public-archive-shared/views/ModalView');
 const HomeserverSelectionModalContentView = require('./HomeserverSelectionModalContentView');
 const MatrixLogoView = require('./MatrixLogoView');
 const RoomCardView = require('./RoomCardView');
+const FilterCardView = require('./FilterCardView');
+
+const NSFW_KEYWORDS = ['NSFW', 'porn', 'nude', 'sex'];
 
 class RoomDirectoryView extends TemplateView {
   render(t, vm) {
@@ -17,6 +20,15 @@ class RoomDirectoryView extends TemplateView {
       vm.setSearchTerm(searchInputValueBeforeRendering);
     }
 
+    function toggleSafeSearchLabel() {
+      var text = document.getElementById('checkBox_label');
+      if (text.innerHTML === 'Safe Search is on') {
+        text.innerHTML = 'Safe Search is off';
+      } else {
+        text.innerHTML = 'Safe Search is on';
+      }
+    }
+
     const roomList = new ListView(
       {
         className: 'RoomDirectoryView_roomList',
@@ -24,6 +36,23 @@ class RoomDirectoryView extends TemplateView {
         parentProvidesUpdates: false,
       },
       (room) => {
+        let name = room.name;
+        let topic = room.topic;
+        const contains = NSFW_KEYWORDS.some((element) => {
+          if (
+            name
+              .toLowerCase()
+              .includes(
+                element.toLowerCase() || topic.toLowerCase().includes(element.toLowerCase())
+              )
+          ) {
+            return true;
+          }
+          return false;
+        });
+        if (contains === true) {
+          return new FilterCardView(room);
+        }
         return new RoomCardView(room);
       }
     );
@@ -279,6 +308,18 @@ class RoomDirectoryView extends TemplateView {
             }
           ),
           // Otherwise, display the rooms that we fetched
+          t.div({ className: 'RoomDirectoryView_safeSearchSection' }, [
+            // Safe search icon
+            t.input({
+              type: 'checkbox',
+              className: 'RoomDirectoryView_safeSearchInput',
+              name: 'safeSearch',
+              id: 'safeSearch',
+              checked: true,
+              onClick: toggleSafeSearchLabel,
+            }),
+            t.label({ for: 'safeSearch', id: 'checkBox_label' }, 'Safe Search is on'),
+          ]),
           t.view(roomList),
           t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
             t.a(

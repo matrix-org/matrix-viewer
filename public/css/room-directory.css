@@ -122,7 +122,7 @@
   color: #eeeeee;
 }
 
-.RoomDirectoryView_homeserverSelectSection {
+.RoomDirectoryView_safeSearchSection, .RoomDirectoryView_homeserverSelectSection {
   display: flex;
   align-items: center;
   margin-top: 16px;
@@ -262,7 +262,6 @@
 .RoomDirectoryView_codeBlock {
   overflow: auto;
   padding: 0.5em 0.8em;
-
   background-color: #f6f6f6;
   border: 1px solid rgb(233, 233, 233);
   border-radius: 4px;
@@ -289,7 +288,7 @@
   }
 }
 
-.RoomCardView {
+.FilterCardView, .RoomCardView {
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -299,6 +298,10 @@
   list-style: none;
   border: 1px solid rgba(54, 139, 214, 30%);
   border-radius: 8px;
+}
+
+.FilterCardView {
+  background-color: #abb5be;
 }
 
 .RoomCardView_header {
@@ -350,6 +353,16 @@
   text-overflow: ellipsis;
 }
 
+.FilterCardView_topic {
+  display: -webkit-box;
+  height: 2.4em;
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  line-height: 1.2em;
+  -webkit-box-orient: vertical;
+}
+
 .RoomCardView_footer {
   display: flex;
   /**
@@ -365,6 +378,13 @@
 .RoomCardView_footerInner {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.FilterCardView_footerInner {
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
 }
@@ -408,4 +428,25 @@
 .RoomCardView_viewButtonWrapperLink:focus > .RoomCardView_viewButton {
   background-color: #2774c2;
   color: #ffffff;
+}
+
+.RoomDirectoryView_safeSearchInput {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  -o-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: #ffffff;
+  border: 1px solid rgba(200, 200, 200, 1);
+  box-shadow: inset -20px 0px 0px 0px rgba(200, 200, 200, 1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  right: 0;
+}
+
+.RoomDirectoryView_safeSearchInput:checked {
+  order: 1px solid rgba(80, 134, 240, 1);
+  box-shadow: inset 20px 0px 0px 0px rgba(80, 134, 240, 1);
 }
