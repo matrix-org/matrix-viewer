@@ -2,8 +2,8 @@
   "basePort": "3050",
   "basePath": "http://localhost:3050",
   // Requires homeserver with MSC3030 `/timestamp_to_event` endpoint available (see readme for more details)
-  "matrixServerUrl": "https://jem-matrix.me",
-  "matrixServerName": "jem-matrix.me",
+  "matrixServerUrl": "http://localhost:8008/",
+  "matrixServerName": "localhost",
   // Set this to 100 since that is the max that Synapse will backfill even if you do a
   // `/messges?limit=1000` and we don't want to miss messages in between.
   "archiveMessageLimit": 100,
@@ -15,8 +15,8 @@
 
   // Testing
   "testMatrixServerUrl1": "http://localhost:11008/",
-  "testMatrixServerUrl2": "http://localhost:12008/",
+  "testMatrixServerUrl2": "http://localhost:12008/"
 
   // Secrets
-  "matrixAccessToken": "syt_bGluZGE_jQKXtszoRuWoKLjGfUuP_49c1iD"
+  //"matrixAccessToken": "xxx"
 }
