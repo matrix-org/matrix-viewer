@@ -122,7 +122,8 @@
   color: #eeeeee;
 }
 
-.RoomDirectoryView_safeSearchSection, .RoomDirectoryView_homeserverSelectSection {
+.RoomDirectoryView_safeSearchSection,
+.RoomDirectoryView_homeserverSelectSection {
   display: flex;
   align-items: center;
   margin-top: 16px;
@@ -288,7 +289,8 @@
   }
 }
 
-.FilterCardView, .RoomCardView {
+.FilterCardView,
+.RoomCardView {
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -435,7 +437,7 @@
   right: 0;
   width: 40px;
   height: 20px;
-  
+
   appearance: none;
   background-color: #ffffff;
   border: 1px solid rgba(200, 200, 200, 1);

@@ -2,12 +2,12 @@ version: 1
 
 formatters:
   precise:
-   format: '%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(request)s - %(message)s'
+    format: '%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(request)s - %(message)s'
 
 filters:
   context:
     (): synapse.logging.context.LoggingContextFilter
-    request: ""
+    request: ''
 
 handlers:
   console:
@@ -17,13 +17,12 @@ handlers:
     # log to stdout, for easier use with 'docker logs'
     stream: 'ext://sys.stdout'
 
-
 # loggers:
 #     synapse.rest.media.v1.thumbnail_resource:
 #         level: DEBUG
 
 root:
-    level: INFO
-    handlers: [console]
+  level: INFO
+  handlers: [console]
 
 disable_existing_loggers: false

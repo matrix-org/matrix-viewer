@@ -6,9 +6,6 @@
   },
   "rules": {
     "no-console": "warn",
-    "strict": [
-      "error",
-      "safe"
-    ]
+    "strict": ["error", "safe"]
   }
 }

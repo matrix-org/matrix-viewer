@@ -15,7 +15,7 @@
 
   // Testing
   "testMatrixServerUrl1": "http://localhost:11008/",
-  "testMatrixServerUrl2": "http://localhost:12008/",
+  "testMatrixServerUrl2": "http://localhost:12008/"
 
   // Secrets
   //"matrixAccessToken": "xxx"
