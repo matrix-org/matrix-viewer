@@ -431,19 +431,17 @@
 }
 
 .RoomDirectoryView_safeSearchInput {
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  -o-appearance: none;
-  appearance: none;
   position: relative;
+  right: 0;
   width: 40px;
   height: 20px;
+  
+  appearance: none;
   background-color: #ffffff;
   border: 1px solid rgba(200, 200, 200, 1);
   box-shadow: inset -20px 0px 0px 0px rgba(200, 200, 200, 1);
   border-radius: 10px;
   transition: all 0.2s ease;
-  right: 0;
 }
 
 .RoomDirectoryView_safeSearchInput:checked {
