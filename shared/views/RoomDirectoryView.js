@@ -50,7 +50,7 @@ class RoomDirectoryView extends TemplateView {
           }
           return false;
         });
-        if (contains === true) {
+        if (isRoomNsfw) {
           return new FilterCardView(room);
         }
         return new RoomCardView(room);
