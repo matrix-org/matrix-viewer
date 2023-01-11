@@ -38,17 +38,9 @@ class RoomDirectoryView extends TemplateView {
       (room) => {
         let name = room.name;
         let topic = room.topic;
-        const contains = NSFW_KEYWORDS.some((element) => {
-          if (
-            name
-              .toLowerCase()
-              .includes(
-                element.toLowerCase() || topic.toLowerCase().includes(element.toLowerCase())
-              )
-          ) {
-            return true;
-          }
-          return false;
+        const isRoomNsfw = NSFW_KEYWORDS.some((nsfwKeyword) => {
+          const nsfwRegex = new RegExp(`/\\b${nsfwKeyword}\\b/i`);
+          return room.name?.match(nsfwRegex) || room.topic?.match(nsfwRegex);
         });
         if (isRoomNsfw) {
           return new FilterCardView(room);
