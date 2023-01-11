@@ -3,7 +3,7 @@
 const { TemplateView, AvatarView } = require('hydrogen-view-sdk');
 const AvatarViewModel = require('../viewmodels/AvatarViewModel');
 
-class FilterCardView extends TemplateView {
+class NsfwCardView extends TemplateView {
   render(t, vm) {
     const avatarViewModel = new AvatarViewModel({
       homeserverUrlToPullMediaFrom: vm.homeserverUrlToPullMediaFrom,
