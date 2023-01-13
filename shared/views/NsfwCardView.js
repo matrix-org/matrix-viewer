@@ -55,13 +55,12 @@ class NsfwCardView extends TemplateView {
           t.div({ className: 'FilterCardView_footerInner' }, [
             t.a(
               {
-                className: 'RoomCardView_viewButtonWrapperLink',
-                href: vm.archiveRoomUrl,
+                className: '',
                 title: `View the ${displayName} room`,
               },
               t.span(
                 {
-                  className: 'RoomCardView_viewButton',
+                  className: 'NsfwCardView_viewButton',
                 },
                 ['View']
               )
@@ -73,4 +72,4 @@ class NsfwCardView extends TemplateView {
   }
 }
 
-module.exports = FilterCardView;
+module.exports = NsfwCardView;

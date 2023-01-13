@@ -11,6 +11,8 @@ const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 
 const ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY = 'addedHomservers';
 
+const NSFW_OBSERVER_LOCAL_STORAGE_KEY = 'nsfwObserver';
+
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
     super(options);
@@ -23,11 +25,14 @@ class RoomDirectoryViewModel extends ViewModel {
       pageSearchParameters,
       nextPaginationToken,
       prevPaginationToken,
+      nsfwObserver = true,
     } = options;
     assert(homeserverUrl);
     assert(homeserverName);
     assert(matrixPublicArchiveURLCreator);
     assert(rooms);
+
+    this._nsfwObserver = nsfwObserver;
 
     this._roomFetchError = roomFetchError;
 
@@ -83,6 +88,7 @@ class RoomDirectoryViewModel extends ViewModel {
               viaServers: room.canonical_alias ? undefined : [this.pageSearchParameters.homeserver],
             }
           ),
+          isNsfw: nsfwObserver,
         };
       })
     );
@@ -286,6 +292,25 @@ class RoomDirectoryViewModel extends ViewModel {
 
   get rooms() {
     return this._rooms;
+  }
+
+  loadValuesFromPersistence() {
+    if (window.localStorage) {
+      this._nsfwObserver = JSON.parse(window.localStorage.getItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY));
+      this.emitChange('nsfwObserver');
+    } else {
+      console.warn(`Skipping read from LocalStorage since LocalStorage not available`);
+    }
+  }
+
+  get nsfwObserver() {
+    return this._nsfwObserver;
+  }
+
+  toggleNsfwObserver(checkedValue) {
+    this._nsfwObserver = checkedValue;
+    window.localStorage.setItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY, this._nsfwObserver);
+    this.emitChange('nsfwObserver');
   }
 }
 

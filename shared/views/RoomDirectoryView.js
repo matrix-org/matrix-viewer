@@ -6,7 +6,7 @@ const ModalView = require('matrix-public-archive-shared/views/ModalView');
 const HomeserverSelectionModalContentView = require('./HomeserverSelectionModalContentView');
 const MatrixLogoView = require('./MatrixLogoView');
 const RoomCardView = require('./RoomCardView');
-const FilterCardView = require('./FilterCardView');
+const NsfwCardView = require('./NsfwCardView');
 
 const NSFW_KEYWORDS = ['NSFW', 'porn', 'nude', 'sex'];
 
@@ -20,15 +20,6 @@ class RoomDirectoryView extends TemplateView {
       vm.setSearchTerm(searchInputValueBeforeRendering);
     }
 
-    function toggleSafeSearchLabel() {
-      var text = document.getElementById('checkBox_label');
-      if (text.innerHTML === 'Safe Search is on') {
-        text.innerHTML = 'Safe Search is off';
-      } else {
-        text.innerHTML = 'Safe Search is on';
-      }
-    }
-
     const roomList = new ListView(
       {
         className: 'RoomDirectoryView_roomList',
@@ -36,14 +27,12 @@ class RoomDirectoryView extends TemplateView {
         parentProvidesUpdates: false,
       },
       (room) => {
-        let name = room.name;
-        let topic = room.topic;
         const isRoomNsfw = NSFW_KEYWORDS.some((nsfwKeyword) => {
           const nsfwRegex = new RegExp(`/\\b${nsfwKeyword}\\b/i`);
           return room.name?.match(nsfwRegex) || room.topic?.match(nsfwRegex);
         });
         if (isRoomNsfw) {
-          return new FilterCardView(room);
+          return new NsfwCardView(room);
         }
         return new RoomCardView(room);
       }
@@ -305,12 +294,15 @@ class RoomDirectoryView extends TemplateView {
             t.input({
               type: 'checkbox',
               className: 'RoomDirectoryView_safeSearchInput',
-              name: 'safeSearch',
-              id: 'safeSearch',
-              checked: true,
-              onClick: toggleSafeSearchLabel,
+              name: 'nsfwObserver',
+              id: 'nsfwObserver',
+              checked: (vm) => vm.nsfwObserver,
+              onInput: (event) => vm.toggleNsfwObserver(event.target.checked),
             }),
-            t.label({ for: 'safeSearch', id: 'checkBox_label' }, 'Safe Search is on'),
+            t.label({ for: 'nsfwObserver', id: 'checkBox_label' }, [
+              'Safe Search is ',
+              (vm) => vm.nsfwObserver,
+            ]),
           ]),
           t.view(roomList),
           t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
