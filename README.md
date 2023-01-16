@@ -2,9 +2,6 @@
 
 <a href="https://matrix.to/#/#matrix-public-archive:matrix.org"><img src="https://img.shields.io/matrix/matrix-public-archive:matrix.org.svg?label=%23matrix-public-archive%3Amatrix.org&logo=matrix&server_fqdn=matrix.org" alt="Join the community and get support at #matrix-public-archive:matrix.org" /></a>
 
-**NB: This project is very much a work-in-progress (WIP)!** Undocumented
-config/secrets, using a draft branch of Hydrogen, etc.
-
 In the vein of [feature parity with
 Gitter](https://github.com/vector-im/roadmap/issues/26), the goal is to make a
 public archive site for `world_readable` Matrix rooms like Gitter's archives
@@ -21,16 +18,15 @@ something with more Element-feeling polish and loading faster (avoid the slow
 - [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) Aug 2022](https://www.youtube.com/watch?v=6KHQSeJTXm0&t=583s) ([blog post](https://matrix.org/blog/2022/08/05/this-week-in-matrix-2022-08-05#matrix-public-archive-website)): A quick intro of what the project looks like, the goals, what it accomplishes, and how it's a new portal into the Matrix ecosystem.
 - [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) Oct 2022](https://www.youtube.com/watch?v=UT6KSEqDUf8&t=548s): Showing off the room directory landing page used to browse everything available in the archive.
 
-## Plan summary
+## Technical overview
 
-The plan is to server-side render (SSR) the
-[Hydrogen](https://github.com/vector-im/hydrogen-web) Matrix client on a Node.js
-server (since both use JavaScript) and serve pages on the fly (probably with
-some Cloudflare caching on top) when someone requests
-`/archives/${year}/${month}/${day}`. To fetch the events for a given day/time,
-we will use [MSC3030](https://github.com/matrix-org/matrix-doc/pull/3030)'s
-`/timestamp_to_event` endpoint to jump to a given day in the timeline and fetch
-the messages from a Matrix homeserver.
+We server-side render (SSR) the [Hydrogen](https://github.com/vector-im/hydrogen-web)
+Matrix client on a Node.js server (since both use JavaScript) and serve pages on the fly
+(with some Cloudflare caching on top) when someone requests
+`/archives/r/matrixhq:matrix.org/${year}/${month}/${day}`. To fetch the events for a
+given day/time, we use [MSC3030](https://github.com/matrix-org/matrix-doc/pull/3030)'s
+`/timestamp_to_event` endpoint to jump to a given day in the timeline and fetch the
+messages from a Matrix homeserver.
 
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
