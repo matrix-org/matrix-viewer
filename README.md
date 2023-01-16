@@ -23,10 +23,10 @@ something with more Element-feeling polish and loading faster (avoid the slow
 We server-side render (SSR) the [Hydrogen](https://github.com/vector-im/hydrogen-web)
 Matrix client on a Node.js server (since both use JavaScript) and serve pages on the fly
 (with some Cloudflare caching on top) when someone requests
-`/archives/r/matrixhq:matrix.org/${year}/${month}/${day}`. To fetch the events for a given day/time, we use
-[MSC3030](https://github.com/matrix-org/matrix-doc/pull/3030)'s `/timestamp_to_event`
-endpoint to jump to a given day in the timeline and fetch the messages from a Matrix
-homeserver.
+`/archives/r/matrixhq:matrix.org/${year}/${month}/${day}`. To fetch the events for a
+given day/time, we use [MSC3030](https://github.com/matrix-org/matrix-doc/pull/3030)'s
+`/timestamp_to_event` endpoint to jump to a given day in the timeline and fetch the
+messages from a Matrix homeserver.
 
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
