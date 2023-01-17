@@ -27,10 +27,13 @@ class RoomDirectoryView extends TemplateView {
         parentProvidesUpdates: false,
       },
       (room) => {
-        const isRoomNsfw = NSFW_KEYWORDS.some((nsfwKeyword) => {
-          const nsfwRegex = new RegExp(`/\\b${nsfwKeyword}\\b/i`);
-          return room.name?.match(nsfwRegex) || room.topic?.match(nsfwRegex);
-        });
+        console.log(vm.nsfwObserver);
+        const isRoomNsfw =
+          vm.nsfwObserver &&
+          NSFW_KEYWORDS.some((nsfwKeyword) => {
+            const nsfwRegex = new RegExp(`/\\b${nsfwKeyword}\\b/i`);
+            return room.name?.match(nsfwRegex) || room.topic?.match(nsfwRegex);
+          });
         if (isRoomNsfw) {
           return new NsfwCardView(room);
         }

@@ -1,6 +1,6 @@
 'use strict';
 
-const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
+const { ViewModel, ObservableArray, EventEmitter } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
@@ -12,6 +12,58 @@ const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 const ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY = 'addedHomservers';
 
 const NSFW_OBSERVER_LOCAL_STORAGE_KEY = 'nsfwObserver';
+
+class Room extends EventEmitter {
+  constructor(options) {
+    super(options);
+    const {
+      roomId,
+      canonicalAlias,
+      name,
+      mxcAvatarUrl,
+      homeserverUrlToPullMediaFrom,
+      numJoinedMembers,
+      topic,
+      archiveRoomUrl,
+      isNsfw,
+    } = options;
+
+    this.roomId = roomId;
+    this.canonicalAlias = canonicalAlias;
+    this.name = name;
+    this.mxcAvatarUrl = mxcAvatarUrl;
+    this.homeserverUrlToPullMediaFrom = homeserverUrlToPullMediaFrom;
+    this.numJoinedMembers = numJoinedMembers;
+    this.topic = topic;
+    this.archiveRoomUrl = archiveRoomUrl;
+    this._nsfwObserver = isNsfw;
+  }
+
+  loadValuesFromPersistence() {
+    if (window.localStorage) {
+      this._nsfwObserver = JSON.parse(window.localStorage.getItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY));
+      this.emitChange('nsfwObserver');
+    } else {
+      console.warn(`Skipping read from LocalStorage since LocalStorage not available`);
+    }
+  }
+
+  get nsfwObserver() {
+    return this._nsfwObserver;
+  }
+
+  toggleNsfwObserver(checkedValue) {
+    this._nsfwObserver = checkedValue;
+    window.localStorage.setItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY, this._nsfwObserver);
+    this.emitChange('nsfwObserver');
+    this.emitUpdate();
+  }
+
+  _emitUpdate() {
+    // once for event emitter listeners
+    this.emit('change');
+  }
+}
 
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
@@ -25,14 +77,13 @@ class RoomDirectoryViewModel extends ViewModel {
       pageSearchParameters,
       nextPaginationToken,
       prevPaginationToken,
-      nsfwObserver = true,
     } = options;
     assert(homeserverUrl);
     assert(homeserverName);
     assert(matrixPublicArchiveURLCreator);
     assert(rooms);
 
-    this._nsfwObserver = nsfwObserver;
+    // this._nsfwObserver = false;
 
     this._roomFetchError = roomFetchError;
 
@@ -72,25 +123,28 @@ class RoomDirectoryViewModel extends ViewModel {
     );
 
     this._rooms = new ObservableArray(
-      rooms.map((room) => {
-        return {
-          roomId: room.room_id,
-          canonicalAlias: room.canonical_alias,
-          name: room.name,
-          mxcAvatarUrl: room.avatar_url,
-          homeserverUrlToPullMediaFrom: homeserverUrl,
-          numJoinedMembers: room.num_joined_members,
-          topic: room.topic,
-          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(
-            room.canonical_alias || room.room_id,
-            {
-              // Only include via servers when we have to fallback to the room ID
-              viaServers: room.canonical_alias ? undefined : [this.pageSearchParameters.homeserver],
-            }
-          ),
-          isNsfw: nsfwObserver,
-        };
-      })
+      rooms.map(
+        (room) =>
+          new Room({
+            roomId: room.room_id,
+            canonicalAlias: room.canonical_alias,
+            name: room.name,
+            mxcAvatarUrl: room.avatar_url,
+            homeserverUrlToPullMediaFrom: homeserverUrl,
+            numJoinedMembers: room.num_joined_members,
+            topic: room.topic,
+            archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(
+              room.canonical_alias || room.room_id,
+              {
+                // Only include via servers when we have to fallback to the room ID
+                viaServers: room.canonical_alias
+                  ? undefined
+                  : [this.pageSearchParameters.homeserver],
+              }
+            ),
+            isNsfw: Room.nsfwObserver,
+          })
+      )
     );
 
     this.#setupNavigation();
@@ -294,24 +348,24 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._rooms;
   }
 
-  loadValuesFromPersistence() {
-    if (window.localStorage) {
-      this._nsfwObserver = JSON.parse(window.localStorage.getItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY));
-      this.emitChange('nsfwObserver');
-    } else {
-      console.warn(`Skipping read from LocalStorage since LocalStorage not available`);
-    }
-  }
+  // loadValuesFromPersistence() {
+  //   if (window.localStorage) {
+  //     this._nsfwObserver = JSON.parse(window.localStorage.getItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY));
+  //     this.emitChange('nsfwObserver');
+  //   } else {
+  //     console.warn(`Skipping read from LocalStorage since LocalStorage not available`);
+  //   }
+  // }
 
-  get nsfwObserver() {
-    return this._nsfwObserver;
-  }
+  // get nsfwObserver() {
+  //   return this._nsfwObserver;
+  // }
 
-  toggleNsfwObserver(checkedValue) {
-    this._nsfwObserver = checkedValue;
-    window.localStorage.setItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY, this._nsfwObserver);
-    this.emitChange('nsfwObserver');
-  }
+  // toggleNsfwObserver(checkedValue) {
+  //   this._nsfwObserver = checkedValue;
+  //   window.localStorage.setItem(NSFW_OBSERVER_LOCAL_STORAGE_KEY, this._nsfwObserver);
+  //   this.emitChange('nsfwObserver');
+  // }
 }
 
 module.exports = RoomDirectoryViewModel;
