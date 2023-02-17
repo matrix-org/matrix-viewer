@@ -18,7 +18,7 @@ async function timestampToEvent({ accessToken, roomId, ts, direction }) {
 
   const timestampToEventEndpoint = urlJoin(
     matrixServerUrl,
-    `_matrix/client/unstable/org.matrix.msc3030/rooms/${encodeURIComponent(
+    `_matrix/client/v1/rooms/${encodeURIComponent(
       roomId
     )}/timestamp_to_event?ts=${encodeURIComponent(ts)}&dir=${encodeURIComponent(direction)}`
   );
