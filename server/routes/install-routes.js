@@ -2,6 +2,7 @@
 
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const asyncHandler = require('../lib/express-async-handler');
 
 const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
@@ -15,6 +16,7 @@ function installRoutes(app) {
   app.use(handleTracingMiddleware);
   app.use(preventClickjackingMiddleware);
   app.use(contentSecurityPolicyMiddleware);
+  app.use(cors());
 
   let healthCheckResponse;
   app.get(
