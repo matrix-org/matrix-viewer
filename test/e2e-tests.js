@@ -623,7 +623,7 @@ describe('matrix-public-archive', () => {
             durationMs: ONE_SECOND_IN_MS,
             timeSliceLabel: '<no-small-enough-time-slice-available-for-one-ms>',
             timeSliceMS: 1,
-            failTooManyMessages: true,
+            failBecauseTooManyMessages: true,
           },
         ];
 
@@ -668,7 +668,7 @@ describe('matrix-public-archive', () => {
 
             archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
 
-            if (testCase.failTooManyMessages) {
+            if (testCase.failBecauseTooManyMessages) {
               try {
                 const { res } = await fetchEndpointAsText(archiveUrl);
                 assert.fail(
