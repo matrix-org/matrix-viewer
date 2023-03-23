@@ -11,7 +11,11 @@ const { parseHTML } = require('linkedom');
 const { readFile } = require('fs').promises;
 
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
+const {
+  fetchEndpointAsText,
+  fetchEndpointAsJson,
+  HTTPResponseError,
+} = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');
 const {
   MS_LOOKUP,
@@ -663,11 +667,23 @@ describe('matrix-public-archive', () => {
             });
 
             archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-            const { res, data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
             if (testCase.failTooManyMessages) {
-              assert.match(archivePageHtml, /Too many messages were sent all within a second/);
+              try {
+                const { res } = await fetchEndpointAsText(archiveUrl);
+                assert.fail(
+                  `Expected fetch to throw error because it's a 501 "Not implemented" response but it returned ${res.status}`
+                );
+              } catch (err) {
+                if (err instanceof HTTPResponseError) {
+                  assert.match(err.message, /Too many messages were sent all within a second/);
+                } else {
+                  throw err;
+                }
+              }
             } else {
+              const { res, data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+
               // First check the URL has the appropriate time precision
               assertExpectedPrecisionAgainstUrl(testCase.expectedPrecision, res.url);
 
