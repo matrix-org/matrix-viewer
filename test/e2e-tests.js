@@ -1206,10 +1206,6 @@ describe('matrix-public-archive', () => {
             expectedPage2Precision: TIME_PRECISION_VALUES.seconds,
           },
           {
-            // Test to make sure we can jump forwards from the 1st page with too
-            // many messages to the 2nd page with too many messages to display on a
-            // single day.
-            //
             // We jump forward 4 messages (`archiveMessageLimit`), then back-track one
             // hour which starst off at event11 and render the page with 5 messages
             // because we fetch one more than `archiveMessageLimit` to determine
@@ -1221,7 +1217,7 @@ describe('matrix-public-archive', () => {
             //                                           |---jump-fwd-4-messages--->|
             //                                     [2nd page                 ]
             testName:
-              'can jump forward from too many messages to the next activity and land in too many messages',
+              'can jump forward from one day with too many messages into the next day with too many messages',
             dayAndMessageStructure: [2, 6, 6],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
@@ -1255,6 +1251,53 @@ describe('matrix-public-archive', () => {
             // through day3 and while we could get away with just hour precision, the
             // default precision has hours and minutes.
             expectedPage2Precision: TIME_PRECISION_VALUES.minutes,
+          },
+          {
+            // TODO: This test currently fails but I think it's correct (our implementation is wrong)
+            //
+            // The 2nd page continues from the *day* with the closest event backwards
+            // from the 1st page (event9 on day2).
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                         ]     [day3                              ]
+            //                                                       [1st page                    ]
+            //                         [2nd page               ]
+            testName:
+              'can jump backward from one day with too many messages into the previous day with too many messages',
+            dayAndMessageStructure: [2, 6, 6],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            // Fetch messages for the 1st page (day3 backwards)
+            page1Date: 'day3',
+            // Assert that the first page contains 5 events
+            expectedEventsOnPage1: [
+              // Some of day 3
+              'day3.event1',
+              'day3.event2',
+              'day3.event3',
+              'day3.event4',
+              'day3.event5',
+            ],
+            // Go to the previous page
+            action: 'previous',
+            // Continuing from the second event of day3
+            expectedPage2ContinuationEvent: 'day3.event0',
+            // Assert that the 2nd page contains 5 events
+            expectedEventsOnPage2: [
+              // Some of day 2
+              'day2.event2',
+              'day2.event3',
+              'day2.event4',
+              'day2.event5',
+              // Some of day 3
+              'day3.event0',
+            ],
+            // We expect the URL to look like `T23:59:59` because TODO
+            //
+            // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
+            // and `2022/11/17T23:59:59` are equivalent?
+            expectedPage2Precision: TIME_PRECISION_VALUES.seconds,
           },
         ];
 
