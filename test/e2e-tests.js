@@ -1293,11 +1293,10 @@ describe('matrix-public-archive', () => {
               // Some of day 3
               'day3.event0',
             ],
-            // We expect the URL to look like `T23:59:59` because TODO
-            //
-            // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-            // and `2022/11/17T23:59:59` are equivalent?
-            expectedPage2Precision: TIME_PRECISION_VALUES.seconds,
+            // We expect the URL to look like `T01:01` because we're rendering part way
+            // through day3 and while we could get away with just hour precision, the
+            // default precision has hours and minutes.
+            expectedPage2Precision: TIME_PRECISION_VALUES.minutes,
           },
         ];
 

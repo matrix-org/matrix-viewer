@@ -28,7 +28,8 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
-        ts: this.rangeStartTimestamp,
+        // We `- 1` so we don't jump to the same event because the endpoint is inclusive
+        ts: this.rangeStartTimestamp - 1,
         dir: 'b',
       }
     );

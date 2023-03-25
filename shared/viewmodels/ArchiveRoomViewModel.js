@@ -356,7 +356,7 @@ class ArchiveRoomViewModel extends ViewModel {
           // The start of the range to use as a jumping off point to the previous activity.
           //
           // This should be the first event in the timeline (different from `this._dayTimestampFrom`).
-          rangeStartTimestamp: events[0].origin_server_ts - 1,
+          rangeStartTimestamp: events[0].origin_server_ts,
           // This is a bit cheating but I don't know how else to pass this kind of
           // info to the Tile viewmodel
           basePath: this._basePath,
@@ -383,9 +383,7 @@ class ArchiveRoomViewModel extends ViewModel {
         // This should be the last event in the timeline but since we paginate from
         // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest
         // timestamp to paginate from
-        //
-        // +1 so we're at the next day
-        rangeEndTimestamp: this._dayTimestampTo + 1,
+        rangeEndTimestamp: this._dayTimestampTo,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel
         basePath: this._basePath,
