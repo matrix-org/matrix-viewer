@@ -27,6 +27,11 @@ class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
     return this._entry?.content?.['dayTimestamp'];
   }
 
+  // The start of the range to use as a jumping off point to the previous activity
+  get rangeStartTimestamp() {
+    return this._entry?.content?.['rangeStartTimestamp'];
+  }
+
   // The end of the range to use as a jumping off point to the next activity
   get rangeEndTimestamp() {
     return this._entry?.content?.['rangeEndTimestamp'];
@@ -36,9 +41,9 @@ class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
-        // We `+ 1` so we don't jump to the same event because the endpoint is inclusive
-        ts: this.rangeEndTimestamp + 1,
         dir: 'f',
+        currentRangeStartTs: this.rangeStartTimestamp,
+        currentRangeEndTs: this.rangeEndTimestamp,
       }
     );
   }

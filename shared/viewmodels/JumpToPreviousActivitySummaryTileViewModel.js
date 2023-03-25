@@ -24,13 +24,18 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
     return this._entry?.content?.['rangeStartTimestamp'];
   }
 
+  // The end of the range to use as a jumping off point to the next activity
+  get rangeEndTimestamp() {
+    return this._entry?.content?.['rangeEndTimestamp'];
+  }
+
   get jumpToPreviousActivityUrl() {
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
-        // We `- 1` so we don't jump to the same event because the endpoint is inclusive
-        ts: this.rangeStartTimestamp - 1,
         dir: 'b',
+        currentRangeStartTs: this.rangeStartTimestamp,
+        currentRangeEndTs: this.rangeEndTimestamp,
       }
     );
   }

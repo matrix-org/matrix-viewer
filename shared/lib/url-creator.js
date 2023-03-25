@@ -115,14 +115,16 @@ class URLCreator {
     )}${qsToUrlPiece(qs)}`;
   }
 
-  archiveJumpUrlForRoom(roomIdOrAlias, { ts, dir }) {
+  archiveJumpUrlForRoom(roomIdOrAlias, { dir, currentRangeStartTs, currentRangeEndTs }) {
     assert(roomIdOrAlias);
-    assert(ts);
     assert(dir);
+    assert(currentRangeStartTs);
+    assert(currentRangeEndTs);
 
     let qs = new URLSearchParams();
-    qs.append('ts', ts);
     qs.append('dir', dir);
+    qs.append('currentRangeStartTs', currentRangeStartTs);
+    qs.append('currentRangeEndTs', currentRangeEndTs);
 
     const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
 

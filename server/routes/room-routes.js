@@ -203,10 +203,26 @@ router.get(
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
-    const ts = parseInt(req.query.ts, 10);
-    assert(!Number.isNaN(ts), '?ts query parameter must be a number');
+    const currentRangeStartTs = parseInt(req.query.currentRangeStartTs, 10);
+    assert(
+      !Number.isNaN(currentRangeStartTs),
+      '?currentRangeStartTs query parameter must be a number'
+    );
+    const currentRangeEndTs = parseInt(req.query.currentRangeEndTs, 10);
+    assert(!Number.isNaN(currentRangeEndTs), '?currentRangeEndTs query parameter must be a number');
     const dir = req.query.dir;
     assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
+
+    let ts;
+    if (dir === 'b') {
+      // We `- 1` so we don't jump to the same event because the endpoint is inclusive
+      ts = currentRangeStartTs - 1;
+    } else if (dir === 'f') {
+      // We `+ 1` so we don't jump to the same event because the endpoint is inclusive
+      ts = currentRangeEndTs + 1;
+    } else {
+      throw new Error(`Unable to handle unknown dir=${dir} in /jump`);
+    }
 
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint
@@ -251,14 +267,12 @@ router.get(
       // and we want to redirect them to previous chunk from that same day, like
       // `/2020/01/02T16:00:00`
       if (dir === 'b') {
-        // TODO: This should be using timestamp of the current page URL, not the
-        // timestamp we're trying to jump from
         const dateOfClosestEvent = new Date(tsForClosestEvent);
 
-        const fromSameDay = areTimestampsFromSameDay(ts, tsForClosestEvent);
-        const fromSameHour = areTimestampsFromSameHour(ts, tsForClosestEvent);
-        const fromSameMinute = areTimestampsFromSameMinute(ts, tsForClosestEvent);
-        const fromSameSecond = areTimestampsFromSameSecond(ts, tsForClosestEvent);
+        const fromSameDay = areTimestampsFromSameDay(currentRangeEndTs, tsForClosestEvent);
+        const fromSameHour = areTimestampsFromSameHour(currentRangeEndTs, tsForClosestEvent);
+        const fromSameMinute = areTimestampsFromSameMinute(currentRangeEndTs, tsForClosestEvent);
+        const fromSameSecond = areTimestampsFromSameSecond(currentRangeEndTs, tsForClosestEvent);
 
         console.log('fromSameDay', fromSameDay);
         console.log('fromSameHour', fromSameHour);
