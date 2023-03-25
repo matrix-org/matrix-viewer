@@ -147,7 +147,7 @@ router.get(
     // any of the additional room info or messages.
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
-    // Find the closest day to today with messages
+    // Find the closest day to the current time with messages
     const { originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
       roomId,
@@ -198,7 +198,7 @@ router.get(
     let originServerTs;
     let preferredPrecision = null;
     try {
-      // Find the closest day to today with messages
+      // Find the closest event to the given timestamp
       ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
         accessToken: matrixAccessToken,
         roomId,
@@ -209,7 +209,7 @@ router.get(
 
       // The goal is to go forward 100 messages, so that when we view the room at that
       // point going backwards 100 messages, we end up at the perfect continuation
-      // spot in the room.
+      // spot in the room (seamless).
       //
       // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
       // could backfill messages which will fill up the response before we perfectly

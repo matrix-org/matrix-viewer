@@ -952,8 +952,8 @@ describe('matrix-public-archive', () => {
             // Test to make sure we can jump from the 1st page to the 2nd page backwards
             //
             // The 2nd page continues from the *day* with the closest event backwards
-            // from the 1st page (event4 on day2). Even though there is overlap between the pages, our
-            // scroll continues from the event where the 1st page starts.
+            // from the 1st page (event4 on day2). Even though there is overlap between
+            // the pages, our scroll continues from the event where the 1st page starts.
             //
             // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
             // [day1       ]     [day2       ]     [day3       ]     [day4          ]
@@ -1113,8 +1113,9 @@ describe('matrix-public-archive', () => {
             // with too many messages to display on a single day.
             //
             // We jump forward 4 messages (`archiveMessageLimit`), then back-track one
-            // hour which starst off at event9 and render the page with 5 messages because we
-            // fetch one more than `archiveMessageLimit` to determine overflow.
+            // hour which starts off at event9 and render the page with 5 messages
+            // because we fetch one more than `archiveMessageLimit` to determine
+            // overflow.
             //
             // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15
             // [day1       ]     [day2       ]     [day3                            ]     [day4          ]
@@ -1147,7 +1148,7 @@ describe('matrix-public-archive', () => {
               // Some of day 2
               'day2.event1',
               'day2.event2',
-              // All of day 3
+              // Some of day 3
               'day3.event0',
               'day3.event1',
               'day3.event2',
@@ -1203,6 +1204,57 @@ describe('matrix-public-archive', () => {
             // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
             // and `2022/11/17T23:59:59` are equivalent?
             expectedPage2Precision: TIME_PRECISION_VALUES.seconds,
+          },
+          {
+            // Test to make sure we can jump forwards from the 1st page with too
+            // many messages to the 2nd page with too many messages to display on a
+            // single day.
+            //
+            // We jump forward 4 messages (`archiveMessageLimit`), then back-track one
+            // hour which starst off at event11 and render the page with 5 messages
+            // because we fetch one more than `archiveMessageLimit` to determine
+            // overflow.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                         ]     [day3                              ]
+            //                   [1st page               ]
+            //                                           |---jump-fwd-4-messages--->|
+            //                                     [2nd page                 ]
+            testName:
+              'can jump forward from too many messages to the next activity and land in too many messages',
+            dayAndMessageStructure: [2, 6, 6],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            // Fetch messages for the 1st page (day2 backwards)
+            page1Date: 'day2',
+            // Assert that the first page contains 5 events
+            expectedEventsOnPage1: [
+              // Some of day 2
+              'day2.event1',
+              'day2.event2',
+              'day2.event3',
+              'day2.event4',
+              'day2.event5',
+            ],
+            // Go to the next page
+            action: 'next',
+            // Continuing from the first event of day3
+            expectedPage2ContinuationEvent: 'day3.event0',
+            // Assert that the 2nd page contains 5 events
+            expectedEventsOnPage2: [
+              // Some of day 2
+              'day2.event4',
+              'day2.event5',
+              // Some of day 3
+              'day3.event0',
+              'day3.event1',
+              'day3.event2',
+            ],
+            // We expect the URL to look like `T04:00` because we're rendering part way
+            // through day3 and while we could get away with just hour precision, the
+            // default precision has hours and minutes.
+            expectedPage2Precision: TIME_PRECISION_VALUES.minutes,
           },
         ];
 
