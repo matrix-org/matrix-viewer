@@ -135,7 +135,7 @@ function parseArchiveRangeFromReq(req) {
     toTimestamp = fromTimestamp + timeInMs;
   } else {
     // We `- 1` from UTC midnight to get the timestamp that is a millisecond before the
-    // next day
+    // next day T23:59:59.999
     toTimestamp = Date.UTC(yyyy, mm, dd + 1) - 1;
   }
 
@@ -264,11 +264,12 @@ router.get(
       // we just need to get the user to the previous time-period.
       //
       // We are trying to avoid sending the user to the same time period they were just
-      // viewing. i.e, if they were visiting `/2020/01/02T23:59:59`, which had more
-      // messages than we could display in that day, jumping backwards from the earliest
-      // displayed event from `T16:00:00` would still give us the same day `/2020/01/02`
-      // and we want to redirect them to previous chunk from that same day, like
-      // `/2020/01/02T16:00:00`
+      // viewing. i.e, if they were visiting `/2020/01/02T16:00:00` (displays messages
+      // backwards from that time up to the limit), which had more messages than we
+      // could display in that day, jumping backwards from the earliest displayed event
+      // in the displayed range, say `T12:00:05` would still give us the same day
+      // `/2020/01/02` and we want to redirect them to previous chunk from that same
+      // day, like `/2020/01/02T12:00:00`
       if (dir === 'b') {
         const dateOfClosestEvent = new Date(tsForClosestEvent);
 
@@ -374,7 +375,10 @@ router.get(
         //
         // We could choose to jump to the exact timestamp of the last message instead of
         // back-tracking but then we get ugly URL's every time you jump instead of being
-        // able to back-track and round down to the nearest hour in a lot of cases.
+        // able to back-track and round down to the nearest hour in a lot of cases. The
+        // other reason not to return the exact date is maybe there multiple messages at
+        // the same timestamp and we will lose messages in the gap it displays more than
+        // we thought.
         const msGapFromJumpPointToLastMessage = timestampOfLastMessage - ts;
         const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
         const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
@@ -394,13 +398,13 @@ router.get(
             dateOfLastMessage.getUTCDate()
           );
           // We `- 1` from UTC midnight to get the timestamp that is a millisecond
-          // before the next day
-          //
-          // TODO: This is the cause of the `/date/2022/11/16T23:59:59` in the URL's.
-          // Can we better coalesce back to just the date itself (`/date/2022/11/16`)?
+          // before the next day but we choose a no time precision so we jump to just
+          // the bare date without a time. A bare date in the `/date/2022/12/16`
+          // endpoint represents the end of that day looking backwards so this is
+          // exactly what we want.
           const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
           newOriginServerTs = endOfDayBeforeTs;
-          preferredPrecision = TIME_PRECISION_VALUES.minutes;
+          preferredPrecision = TIME_PRECISION_VALUES.none;
         }
         // More than a hour gap here, we will need to back-track to the nearest hour
         else if (moreThanHourGap) {
@@ -492,8 +496,7 @@ router.get(
   })
 );
 
-// Based off of the Gitter archive routes,
-// https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
+// Shows messages from the given date/time looking backwards up to the limit.
 router.get(
   // The extra set of parenthesis around `((:\\d\\d?)?)` is to work around a
   // `path-to-regex` bug where the `?` wasn't attaching to the capture group, see
@@ -538,6 +541,9 @@ router.get(
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
+      //
+      // When given a bare date like `2022/11/16`, we want to paginate from the end of that
+      // day backwards. This is why we use the `toTimestamp` here and fetch backwards.
       fetchEventsFromTimestampBackwards({
         accessToken: matrixAccessToken,
         roomId,
@@ -591,7 +597,8 @@ router.get(
       // probably need to change this next day check.
       const isEventFromSurroundingDay = events[0].origin_server_ts < fromTimestamp;
 
-      // If not specifying a time, then let's specify a time. By default the time includes hours and minutes `T23:59`
+      // Since we're over the limit, if not specifying a time, then let's specify a
+      // time. By default the time includes hours and minutes `T23:59`
       if (!timeDefined && !isEventFromSurroundingDay) {
         preferredPrecision = TIME_PRECISION_VALUES.minutes;
       }

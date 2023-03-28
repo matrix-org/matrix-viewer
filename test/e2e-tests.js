@@ -825,11 +825,7 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T23:59:59` because TODO
-              //
-              // XXX: Can't we simplify and have the URL without any time since `2022/01/03`
-              // and `2022/01/03T23:59:59` are equivalent?
-              urlDate: '2022/01/03T23:59:59',
+              urlDate: '2022/01/03',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
               // (end of day3 backwards)
@@ -884,11 +880,7 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T23:59:59` because TODO
-              //
-              // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-              // and `2022/11/17T23:59:59` are equivalent?
-              urlDate: '2022/01/03T23:59:59',
+              urlDate: '2022/01/03',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
               // (end of day3 backwards)
@@ -1044,11 +1036,7 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T23:59:59` because TODO
-              //
-              // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-              // and `2022/11/17T23:59:59` are equivalent?
-              urlDate: '2022/01/07T23:59:59',
+              urlDate: '2022/01/07',
               // Continuing from the first event of day5
               continueAtEvent: 'day5.event0',
               events: [
