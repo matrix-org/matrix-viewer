@@ -256,9 +256,9 @@ router.get(
       // the next chunk in the desired direction.
       // ==============================
       //
-      // Since a given room archive URL represents the end of the day/time-period
-      // looking backward (scroll is also anchored to the bottom), we just need to get
-      // the user to the previous time-period.
+      // When jumping backwards, since a given room archive URL represents the end of
+      // the day/time-period looking backward (scroll is also anchored to the bottom),
+      // we just need to get the user to the previous time-period.
       //
       // We are trying to avoid sending the user to the same time period they were just
       // viewing. i.e, if they were visiting `/2020/01/02T23:59:59`, which had more
@@ -323,10 +323,10 @@ router.get(
           newOriginServerTs = tsForClosestEvent;
         }
       }
-      // The goal is to go forward 100 messages, so that when we view the room at that
-      // point going backwards 100 messages (which is how the archive works for any
-      // given date from the archive URL), we end up at the perfect continuation spot in
-      // the room (seamless).
+      // When jumping forwards, the goal is to go forward 100 messages, so that when we
+      // view the room at that point going backwards 100 messages (which is how the
+      // archive works for any given date from the archive URL), we end up at the
+      // perfect continuation spot in the room (seamless).
       //
       // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
       // could backfill messages which will fill up the response before we perfectly
@@ -531,12 +531,12 @@ router.get(
         accessToken: matrixAccessToken,
         roomId,
         ts: toTimestamp,
-        // We fetch one more than the `archiveMessageLimit` so that we can see
-        // there are too many messages from the given day. If we have over the
-        // `archiveMessageLimit` number of messages fetching from the given day,
-        // it's acceptable to have them be from surrounding days. But if all 500
-        // messages (for example) are from the same day, let's redirect to a
-        // smaller hour range to display.
+        // We fetch one more than the `archiveMessageLimit` so that we can see if there
+        // are too many messages from the given day. If we have over the
+        // `archiveMessageLimit` number of messages fetching from the given day, it's
+        // acceptable to have them be from surrounding days. But if all 500 messages
+        // (for example) are from the same day, let's redirect to a smaller hour range
+        // to display.
         limit: archiveMessageLimit + 1,
       }),
     ]);
