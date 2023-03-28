@@ -280,7 +280,7 @@ router.get(
         console.log('fromSameSecond', fromSameSecond);
 
         // The closest event is from the same second we tried to jump from. Since we
-        // can't represent something smaller than a second in the URL (we could do MS
+        // can't represent something smaller than a second in the URL (we could do ms
         // but it's a concious choice to make the URL cleaner), we will need to just
         // return the timestamp with a precision of seconds and hope that there isn't
         // too many messages in this same second. The `/date/...` router will handle if
