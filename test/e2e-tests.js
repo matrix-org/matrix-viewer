@@ -787,8 +787,6 @@ describe('matrix-public-archive', () => {
       describe('Jump forwards and backwards', () => {
         const jumpTestCases = [
           {
-            // Test to make sure we can jump from the 1st page to the 2nd page forwards.
-            //
             // In order to jump from the 1st page to the 2nd, we first jump forward 4
             // messages, then back-track to the first date boundary which is day3. We do
             // this so that we don't start from day4 backwards which would miss messages
@@ -848,9 +846,8 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // Test to make sure we can jump from the 1st page to the 2nd page forwards.
-            // This test is just slightly different and jumps further into day4. Just a
-            // slight variation to make sure it still does the correct thing.
+            // This test is just slightly different and jumps further into day4 (just a
+            // slight variation to make sure it still does the correct thing)
             //
             // In order to jump from the 1st page to the 2nd, we first jump forward 4
             // messages, then back-track to the first date boundary which is day3. There
@@ -962,8 +959,6 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // Test to make sure we can jump from the 1st page to the 2nd page backwards
-            //
             // From the first page with too many messages, starting at event5(page1
             // rangeStart), we look backwards for the closest event. Because we find
             // event4 as the closest, which is from a different day from event9(page1
@@ -1013,9 +1008,6 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // Test to make sure we can jump from the 1st page to the 2nd page forwards
-            // across many quiet days without losing any messages in between.
-            //
             // In order to jump from the 1st page to the 2nd, we first jump forward 8
             // messages, then back-track to the first date boundary which is the nearest
             // day backwards from event20. We use the nearest day because there is more
@@ -1026,7 +1018,8 @@ describe('matrix-public-archive', () => {
             //                   [1st page                                          ]
             //                                                                      |------------------jump-fwd-8-msg---------------------->|
             //                                                       [2nd page                                                 ]
-            testName: 'can jump forward over many days without losing any messages in the gap',
+            testName:
+              'can jump forward over many quiet days without losing any messages in the gap',
             dayAndMessageStructure: [3, 3, 3, 3, 2, 2, 2, 3],
             // The page limit is 8 but each page will show 9 messages because we
             // fetch one extra to determine overflow.
@@ -1077,9 +1070,6 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // Test to make sure we can jump from the 1st page to the 2nd page backwards
-            // and show many days without much activity so they all fit on one page.
-            //
             // From the first page with too many messages, starting at event13 (page1
             // rangeStart), we look backwards for the closest event. Because we find
             // event12 as the closest, which is from the a different day from event21
