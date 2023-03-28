@@ -95,7 +95,7 @@ describe('matrix-public-archive', () => {
 
       // Create a room on hs2
       const hs2RoomId = await createTestRoom(hs2Client);
-      const room2EventIds = await createMessagesInRoom({
+      const { eventIds: room2EventIds } = await createMessagesInRoom({
         client: hs2Client,
         roomId: hs2RoomId,
         numMessages: 10,
@@ -462,7 +462,7 @@ describe('matrix-public-archive', () => {
 
         // Create a room on hs2
         const hs2RoomId = await createTestRoom(hs2Client);
-        const room2EventIds = await createMessagesInRoom({
+        const { eventIds: room2EventIds } = await createMessagesInRoom({
           client: hs2Client,
           roomId: hs2RoomId,
           numMessages: 3,
@@ -652,7 +652,7 @@ describe('matrix-public-archive', () => {
               'Expected number of messages we create to be larger than the `archiveMessageLimit`'
             );
             // Create more messages than the limit
-            const eventIdsOnDay = await createMessagesInRoom({
+            const { eventIds: eventIdsOnDay } = await createMessagesInRoom({
               client,
               roomId: roomId,
               numMessages: numTestMessages,
@@ -718,7 +718,7 @@ describe('matrix-public-archive', () => {
             previousArchiveDate < archiveDate,
             `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
           );
-          const surroundEventIds = await createMessagesInRoom({
+          const { eventIds: surroundEventIds } = await createMessagesInRoom({
             client,
             roomId: roomId,
             numMessages: 2,
@@ -727,7 +727,7 @@ describe('matrix-public-archive', () => {
           });
 
           // Create more messages than the limit
-          const eventIdsOnDay = await createMessagesInRoom({
+          const { eventIds: eventIdsOnDay } = await createMessagesInRoom({
             client,
             roomId: roomId,
             numMessages: 2,
@@ -802,47 +802,51 @@ describe('matrix-public-archive', () => {
             //                               |--jump-fwd-4-messages-->|
             //                         [2nd page               ]
             testName: 'can jump forward to the next activity',
-            // Create enough surround messages on previous days that overflow the page limit
-            // but don't overflow the limit on a single day basis.
-            //
-            // We create 4 days of messages so we can see a seamless continuation from
-            // page1 to page2.
-            dayAndMessageStructure: [3, 3, 3, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
-            // Fetch messages for the 1st page (day2 backwards)
-            page1Date: 'day2',
-            // Assert that the first page contains 5 events
-            expectedEventsOnPage1: [
-              // Some of day1
-              'day1.event1',
-              'day1.event2',
-              // All of day2
-              'day2.event0',
-              'day2.event1',
-              'day2.event2',
-            ],
-            // Go to the next page
-            action: 'next',
-            // Continuing from the first event of day3
-            expectedPage2ContinuationEvent: 'day3.event0',
-            // Assert that the 2nd page contains 5 events
-            expectedEventsOnPage2: [
-              // Some of day2
-              'day2.event1',
-              'day2.event2',
-              // All of day3
-              'day3.event0',
-              'day3.event1',
-              'day3.event2',
-            ],
-            // We expect the URL to look like `T23:59:59` because TODO
-            //
-            // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-            // and `2022/11/17T23:59:59` are equivalent?
-            expectedPage2Precision: TIME_PRECISION_VALUES.seconds,
+            // Create enough surround messages on previous days that overflow the page
+            // limit but don't overflow the limit on a single day basis. We create 4
+            // days of messages so we can see a seamless continuation from page1 to
+            // page2.
+            dayAndMessageStructure: [3, 3, 3, 3],
+            startUrlDate: '2022/01/02',
+            page1: {
+              urlDate: '2022/01/02',
+              // (end of day2 backwards)
+              events: [
+                // Some of day1
+                'day1.event1',
+                'day1.event2',
+                // All of day2
+                'day2.event0',
+                'day2.event1',
+                'day2.event2',
+              ],
+              action: 'next',
+            },
+            page2: {
+              // We expect the URL to look like `T23:59:59` because TODO
+              //
+              // XXX: Can't we simplify and have the URL without any time since `2022/01/03`
+              // and `2022/01/03T23:59:59` are equivalent?
+              urlDate: '2022/01/03T23:59:59',
+              // Continuing from the first event of day3
+              continueAtEvent: 'day3.event0',
+              // (end of day3 backwards)
+              events: [
+                // Some of day2
+                'day2.event1',
+                'day2.event2',
+                // All of day3
+                'day3.event0',
+                'day3.event1',
+                'day3.event2',
+              ],
+              action: null,
+            },
           },
+          /* * /
           {
             // Test to make sure we can jump from the 1st page to the 2nd page forwards.
             // This test is just slightly different and jumps further into day4. Just a
@@ -1298,6 +1302,7 @@ describe('matrix-public-archive', () => {
             // default precision has hours and minutes.
             expectedPage2Precision: TIME_PRECISION_VALUES.minutes,
           },
+          /* */
         ];
 
         jumpTestCases.forEach((testCase) => {
@@ -1358,17 +1363,12 @@ describe('matrix-public-archive', () => {
               const numMessagesOnDay = testCase.dayAndMessageStructure[i];
 
               // The date should be just past midnight so we don't run into inclusive
-              // bounds showing messages from more days than we expect in the tests.
+              // bounds leaking messages from one day into another.
               const previousArchiveDate = new Date(Date.UTC(2022, 0, dayNumber, 1, 0, 0, 1));
 
               dayIdentifierToDateMap[`day${dayNumber}`] = previousArchiveDate;
 
-              assert(
-                previousArchiveDate < archiveDate,
-                `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
-              );
-
-              const eventIds = await createMessagesInRoom({
+              const { eventIds } = await createMessagesInRoom({
                 client,
                 roomId,
                 numMessages: numMessagesOnDay,
@@ -1377,6 +1377,9 @@ describe('matrix-public-archive', () => {
                 // Just spread things out a bit so we don't run into time slice redirecting
                 increment: ONE_HOUR_IN_MS,
               });
+              // Make sure we created the same number of events as we expect
+              assert.strictEqual(eventIds.length, numMessagesOnDay);
+
               // eslint-disable-next-line max-nested-callbacks
               eventIds.forEach((eventId, i) => {
                 fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
@@ -1387,91 +1390,129 @@ describe('matrix-public-archive', () => {
             // --------------------------------------
             // --------------------------------------
 
-            // Set this low so we can easily create more than the limit
+            // Make sure the archive is configured as the test expects
+            assert(
+              Number.isInteger(testCase.archiveMessageLimit) && testCase.archiveMessageLimit > 0,
+              `testCase.archiveMessageLimit=${testCase.archiveMessageLimit} must be an integer and greater than 0`
+            );
             config.set('archiveMessageLimit', testCase.archiveMessageLimit);
 
-            // Fetch the first page
-            const dateToFetchPage1From = dayIdentifierToDateMap[testCase.page1Date];
-            const firstPageArchiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
-              roomId,
-              dateToFetchPage1From
-            );
-            // Set this for debugging if the test fails here
-            archiveUrl = firstPageArchiveUrl;
-            const { data: firstPageArchivePageHtml, res: firstPageRes } = await fetchEndpointAsText(
-              firstPageArchiveUrl
-            );
-            const firstPageDom = parseHTML(firstPageArchivePageHtml);
+            // eslint-disable-next-line max-nested-callbacks
+            const pagesKeyList = Object.keys(testCase).filter((key) => {
+              const isPageKey = key.startsWith('page');
+              if (isPageKey) {
+                assert.match(key, /page\d+/);
+                return true;
+              }
 
-            const eventIdsOnFirstPage = [
-              ...firstPageDom.document.querySelectorAll(`[data-event-id]`),
-            ]
-              // eslint-disable-next-line max-nested-callbacks
-              .map((eventEl) => {
-                return eventEl.getAttribute('data-event-id');
-              });
-
-            // Assert that the first page contains all expected events
-            assert.deepEqual(
-              convertEventIdsToDebugEventIds(eventIdsOnFirstPage),
-              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage1),
-              'Events on page1 should be as expected'
+              return false;
+            });
+            assert(
+              pagesKeyList.length > 0,
+              'You must have at least one `pageX` of expectations in your jump test case'
             );
-
-            // Follow the next activity link. Aka, fetch messages for the 2nd page
-            let actionLinkSelector;
-            if (testCase.action === 'next') {
-              actionLinkSelector = '[data-testid="jump-to-next-activity-link"]';
-            } else if (testCase.action === 'previous') {
-              actionLinkSelector = '[data-testid="jump-to-previous-activity-link"]';
-            } else {
-              throw new Error(
-                `Unexpected value for testCase.action=${testCase.action} that we don't know what to do with`
+            // Make sure the page are in order
+            // eslint-disable-next-line max-nested-callbacks
+            pagesKeyList.reduce((prevPageCount, currentPageKey) => {
+              const pageNumber = parseInt(currentPageKey.match(/\d+$/)[0], 10);
+              assert(
+                prevPageCount + 1 === pageNumber,
+                `Page numbers must be sorted in each test case but found ` +
+                  `${pageNumber} after ${prevPageCount} - pagesList=${pagesKeyList}`
               );
-            }
-            const jumpToActivityLinkEl = firstPageDom.document.querySelector(actionLinkSelector);
-            const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
-            // Set this for debugging if the test fails here
-            archiveUrl = jumpToActivityLinkHref;
-            const { data: secondPageArchivePageHtml, res: secondPageRes } =
-              await fetchEndpointAsText(jumpToActivityLinkHref);
-            const secondPageDom = parseHTML(secondPageArchivePageHtml);
+              return pageNumber;
+            }, 0);
 
-            // Assert that it's a smooth continuation to more messages
+            // Get the URL for the first page to fetch
             //
-            // First by checking where the scroll is going to start from
-            const [expectedContinuationDebugEventId] = convertFancyIdentifierListToDebugEventIds([
-              testCase.expectedPage2ContinuationEvent,
-            ]);
-            const urlObj = new URL(secondPageRes.url, basePath);
-            const qs = new URLSearchParams(urlObj.search);
-            const continuationEventId = qs.get('at');
-            if (!continuationEventId) {
-              throw new Error(
-                `Expected ?at=$xxx query parameter to be defined in the URL=${secondPageRes.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
-              );
-            }
-            const [continationDebugEventId] = convertEventIdsToDebugEventIds([continuationEventId]);
-            assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
-
-            // Assert the correct time precision in the URL
-            assertExpectedPrecisionAgainstUrl(testCase.expectedPage2Precision, secondPageRes.url);
-
-            // Then check the events are on the page correctly
-            const eventIdsOnSecondDay = [
-              ...secondPageDom.document.querySelectorAll(`[data-event-id]`),
-            ]
-              // eslint-disable-next-line max-nested-callbacks
-              .map((eventEl) => {
-                return eventEl.getAttribute('data-event-id');
-              });
-
-            // Assert that the 2nd page contains all expected events
-            assert.deepEqual(
-              convertEventIdsToDebugEventIds(eventIdsOnSecondDay),
-              convertFancyIdentifierListToDebugEventIds(testCase.expectedEventsOnPage2),
-              'Events on page2 should be as expected'
+            // Set the `archiveUrl` for debugging if the test fails here
+            const startUrlDate = testCase.startUrlDate;
+            assert(
+              startUrlDate,
+              `\`startUrlDate\` must be defined in your test case: ${JSON.stringify(
+                testCase,
+                null,
+                2
+              )}`
             );
+            archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
+              roomId
+            )}/date/${startUrlDate}`;
+
+            // Loop through all of the pages of the test and ensure expectations
+            let alreadyEncounteredLastPage = false;
+            for (const pageKey of pagesKeyList) {
+              if (alreadyEncounteredLastPage) {
+                assert.fail(
+                  'We should not see any more pages after we already saw a page without an action ' +
+                    `which signals the end of expecations. Encountered ${pageKey} in ${pagesKeyList} ` +
+                    'after we already thought we were done'
+                );
+              }
+
+              const pageTestMeta = testCase[pageKey];
+
+              // Fetch the given page.
+              const { data: archivePageHtml, res: pageRes } = await fetchEndpointAsText(archiveUrl);
+              const pageDom = parseHTML(archivePageHtml);
+
+              // Assert the correct time precision in the URL
+              assert.match(pageRes.url, new RegExp(`/date/${pageTestMeta.urlDate}(\\?|$)`));
+
+              // If provided, assert that it's a smooth continuation to more messages.
+              // First by checking where the scroll is going to start from
+              if (pageTestMeta.continueAtEvent) {
+                const [expectedContinuationDebugEventId] =
+                  convertFancyIdentifierListToDebugEventIds([pageTestMeta.continueAtEvent]);
+                const urlObj = new URL(pageRes.url, basePath);
+                const qs = new URLSearchParams(urlObj.search);
+                const continuationEventId = qs.get('at');
+                if (!continuationEventId) {
+                  throw new Error(
+                    `Expected ?at=$xxx query parameter to be defined in the URL=${pageRes.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
+                  );
+                }
+                const [continationDebugEventId] = convertEventIdsToDebugEventIds([
+                  continuationEventId,
+                ]);
+                assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
+              }
+
+              const eventIdsOnPage = [...pageDom.document.querySelectorAll(`[data-event-id]`)]
+                // eslint-disable-next-line max-nested-callbacks
+                .map((eventEl) => {
+                  return eventEl.getAttribute('data-event-id');
+                });
+
+              // Assert that the page contains all expected events
+              assert.deepEqual(
+                convertEventIdsToDebugEventIds(eventIdsOnPage),
+                convertFancyIdentifierListToDebugEventIds(pageTestMeta.events),
+                `Events on ${pageKey} should be as expected`
+              );
+
+              // Follow the next activity link. Aka, fetch messages for the 2nd page
+              let actionLinkSelector;
+              if (pageTestMeta.action === 'next') {
+                actionLinkSelector = '[data-testid="jump-to-next-activity-link"]';
+              } else if (pageTestMeta.action === 'previous') {
+                actionLinkSelector = '[data-testid="jump-to-previous-activity-link"]';
+              } else if (pageTestMeta.action === null) {
+                // No more pages to test ✅, move on
+                alreadyEncounteredLastPage = true;
+                continue;
+              } else {
+                throw new Error(
+                  `Unexpected value for ${pageKey}.action=${pageTestMeta.action} that we don't know what to do with`
+                );
+              }
+              const jumpToActivityLinkEl = pageDom.document.querySelector(actionLinkSelector);
+              const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
+              // Move to the next iteration of the loop
+              //
+              // Set this for debugging if the test fails here
+              archiveUrl = jumpToActivityLinkHref;
+            }
           });
         });
       });

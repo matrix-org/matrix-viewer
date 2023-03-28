@@ -230,26 +230,33 @@ async function createMessagesInRoom({
   increment = 1,
 }) {
   let eventIds = [];
+  let events = [];
   for (let i = 0; i < numMessages; i++) {
+    const originServerTs = timestamp + i * increment;
+    const content = {
+      msgtype: 'm.text',
+      body: `${prefix} - message${i}`,
+    };
     const eventId = await sendMessage({
       client,
       roomId,
-      content: {
-        msgtype: 'm.text',
-        body: `${prefix} - message${i}`,
-      },
-      // The timestamp doesn't matter if it's the same anymore (since
-      // https://github.com/matrix-org/synapse/pull/13658) but it still seems
-      // like a good idea to make the tests more clear.
-      timestamp: timestamp + i * increment,
+      content,
+      // Technically, we don't have to set the timestamp to be unique or sequential but
+      // it still seems like a good idea to make the tests more clear.
+      timestamp: originServerTs,
     });
     eventIds.push(eventId);
+    events.push({
+      roomId,
+      originServerTs,
+      content,
+    });
   }
 
   // Sanity check that we actually sent some messages
   assert.strictEqual(eventIds.length, numMessages);
 
-  return eventIds;
+  return { eventIds, events };
 }
 
 async function updateProfile({ client, displayName, avatarUrl }) {

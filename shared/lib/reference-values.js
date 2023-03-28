@@ -8,9 +8,11 @@ const MS_LOOKUP = {
 };
 
 const TIME_PRECISION_VALUES = {
-  // 23:59
+  // no time present - `/date/2022/11/16`
+  none: null,
+  // 23:59 - `/date/2022/11/16T23:59`
   minutes: 'minutes',
-  // 23:59:59
+  // 23:59:59 - `/date/2022/11/16T23:59:59`
   seconds: 'seconds',
 };
 
