@@ -130,10 +130,13 @@ function parseArchiveRangeFromReq(req) {
   }
 
   const fromTimestamp = Date.UTC(yyyy, mm, dd);
-  // We `- 1` to get the timestamp that is a millisecond before the next day
-  let toTimestamp = Date.UTC(yyyy, mm, dd + 1) - 1;
+  let toTimestamp;
   if (timeInMs) {
     toTimestamp = fromTimestamp + timeInMs;
+  } else {
+    // We `- 1` from UTC midnight to get the timestamp that is a millisecond before the
+    // next day
+    toTimestamp = Date.UTC(yyyy, mm, dd + 1) - 1;
   }
 
   return {
@@ -368,6 +371,10 @@ router.get(
         // the `archiveMessageLimit` later in the room route, it will gurantee some
         // overlap with the previous page we jumped from so we don't lose any messages
         // in the gap.
+        //
+        // We could choose to jump to the exact timestamp of the last message instead of
+        // back-tracking but then we get ugly URL's every time you jump instead of being
+        // able to back-track and round down to the nearest hour in a lot of cases.
         const msGapFromJumpPointToLastMessage = timestampOfLastMessage - ts;
         const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
         const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
@@ -386,7 +393,11 @@ router.get(
             dateOfLastMessage.getUTCMonth(),
             dateOfLastMessage.getUTCDate()
           );
-          // We minus 1 from UTC midnight to get to the day before
+          // We `- 1` from UTC midnight to get the timestamp that is a millisecond
+          // before the next day
+          //
+          // TODO: This is the cause of the `/date/2022/11/16T23:59:59` in the URL's.
+          // Can we better coalesce back to just the date itself (`/date/2022/11/16`)?
           const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
           newOriginServerTs = endOfDayBeforeTs;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;

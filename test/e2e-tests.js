@@ -941,10 +941,10 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T03:00` because we're rendering part way
+              // We expect the URL to look like `T02:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
-              urlDate: '2022/01/03T03:00',
+              urlDate: '2022/01/03T02:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
               events: [
@@ -1160,10 +1160,10 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T04:00` because we're rendering part way
+              // We expect the URL to look like `T03:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
-              urlDate: '2022/01/03T04:00',
+              urlDate: '2022/01/03T03:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
               events: [
@@ -1267,7 +1267,7 @@ describe('matrix-public-archive', () => {
               // We expect the URL to look like `T04:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
-              urlDate: '2022/01/03T04:00',
+              urlDate: '2022/01/03T03:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
               events: [
@@ -1320,7 +1320,7 @@ describe('matrix-public-archive', () => {
               // We expect the URL to look like `T02:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
-              urlDate: '2022/01/03T02:00',
+              urlDate: '2022/01/03T01:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
               events: [
@@ -1335,6 +1335,102 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          {
+            // We jump forward 4 messages (`archiveMessageLimit`) to event12, then
+            // back-track to the nearest hour which starts off at event11 and render the
+            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // to determine overflow.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                                                                  ]
+            //                   [1st page               ]
+            //                                           |---jump-fwd-4-messages--->|
+            //                                     [2nd page                 ]
+            testName:
+              'can jump forward from one day with too many messages into the same day with too many messages',
+            dayAndMessageStructure: [2, 12],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/02T6:00',
+            page1: {
+              urlDate: '2022/01/02T6:00',
+              events: [
+                // Some of day 2
+                'day2.event1',
+                'day2.event2',
+                'day2.event3',
+                'day2.event4',
+                'day2.event5',
+              ],
+              action: 'next',
+            },
+            page2: {
+              // We expect the URL to look like `T09:00` because we're rendering part way
+              // through day2 and while we could get away with just hour precision, the
+              // default precision has hours and minutes.
+              urlDate: '2022/01/02T09:00',
+              // Continuing from the first new event on the page
+              continueAtEvent: 'day2.event6',
+              events: [
+                // More of day 2
+                'day2.event4',
+                'day2.event5',
+                'day2.event6',
+                'day2.event7',
+                'day2.event8',
+              ],
+              action: null,
+            },
+          },
+          {
+            // From the first page with too many messages, starting at event10 (page1
+            // rangeStart), we look backwards for the closest event. Because we find
+            // event9 as the closest, which is from the same day as event14 (page1
+            // rangeEnd), we round up to the nearest hour so that the URL encompasses it
+            // when looking backwards.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                                                                  ]
+            //                                                 [1st page                   ]
+            //                   [2nd page               ]
+            testName:
+              'can jump backward from one day with too many messages into the same day with too many messages',
+            dayAndMessageStructure: [2, 12],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/02T11:00',
+            page1: {
+              urlDate: '2022/01/02T11:00',
+              events: [
+                // Some of day 2
+                'day2.event6',
+                'day2.event7',
+                'day2.event8',
+                'day2.event9',
+                'day2.event10',
+              ],
+              action: 'previous',
+            },
+            page2: {
+              // We expect the URL to look like `T06:00` because we're rendering part way
+              // through day2 and while we could get away with just hour precision, the
+              // default precision has hours and minutes.
+              urlDate: '2022/01/02T06:00',
+              // Continuing from the first new event on the page
+              continueAtEvent: 'day2.event5',
+              events: [
+                // More of day 2
+                'day2.event1',
+                'day2.event2',
+                'day2.event3',
+                'day2.event4',
+                'day2.event5',
+              ],
+              action: null,
+            },
+          },
         ];
 
         jumpTestCases.forEach((testCase) => {
@@ -1343,6 +1439,7 @@ describe('matrix-public-archive', () => {
             // Setup
             // --------------------------------------
             // --------------------------------------
+            const eventMap = {};
             const fancyIdentifierToEventMap = {};
 
             function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
@@ -1358,7 +1455,9 @@ describe('matrix-public-archive', () => {
                     )}`
                   );
                 }
-                return `${eventId} (${fancyId})`;
+                const ts = eventMap[eventId]?.originServerTs;
+                const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
+                return `${eventId} (${fancyId}) - ${tsDebugString}`;
               });
             }
 
@@ -1381,7 +1480,9 @@ describe('matrix-public-archive', () => {
                     )}`
                   );
                 }
-                return `${eventId} (${fancyId})`;
+                const ts = eventMap[eventId]?.originServerTs;
+                const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
+                return `${eventId} (${fancyId}) - ${tsDebugString}`;
               });
             }
 
@@ -1402,25 +1503,27 @@ describe('matrix-public-archive', () => {
 
               // The date should be just past midnight so we don't run into inclusive
               // bounds leaking messages from one day into another.
-              const previousArchiveDate = new Date(Date.UTC(2022, 0, dayNumber, 1, 0, 0, 1));
+              const previousArchiveDate = new Date(Date.UTC(2022, 0, dayNumber, 0, 0, 0, 1));
 
               dayIdentifierToDateMap[`day${dayNumber}`] = previousArchiveDate;
 
-              const { eventIds } = await createMessagesInRoom({
-                client,
-                roomId,
-                numMessages: numMessagesOnDay,
-                prefix: `day ${dayNumber} - events in room`,
-                timestamp: previousArchiveDate.getTime(),
-                // Just spread things out a bit so we don't run into time slice redirecting
-                increment: ONE_HOUR_IN_MS,
-              });
+              const { eventIds: createdEventIds, eventMap: createdEventMap } =
+                await createMessagesInRoom({
+                  client,
+                  roomId,
+                  numMessages: numMessagesOnDay,
+                  prefix: `day ${dayNumber} - events in room`,
+                  timestamp: previousArchiveDate.getTime(),
+                  // Just spread things out a bit so we don't run into time slice redirecting
+                  increment: ONE_HOUR_IN_MS,
+                });
               // Make sure we created the same number of events as we expect
-              assert.strictEqual(eventIds.length, numMessagesOnDay);
+              assert.strictEqual(createdEventIds.length, numMessagesOnDay);
 
               // eslint-disable-next-line max-nested-callbacks
-              eventIds.forEach((eventId, i) => {
+              createdEventIds.forEach((eventId, i) => {
                 fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
+                eventMap[eventId] = createdEventMap.get(eventId);
               });
             }
 
@@ -1554,7 +1657,16 @@ describe('matrix-public-archive', () => {
                 // Set this for debugging if the test fails here
                 archiveUrl = jumpToActivityLinkHref;
               } catch (err) {
-                throw new RethrownError(`Encountered error while asserting ${pageKey}:`, err);
+                const errorWithContext = new RethrownError(
+                  `Encountered error while asserting ${pageKey}: ${err.message}`,
+                  err
+                );
+                // Copy these over so mocha generates a nice diff for us
+                if (err instanceof assert.AssertionError) {
+                  errorWithContext.actual = err.actual;
+                  errorWithContext.expected = err.expected;
+                }
+                throw errorWithContext;
               }
             }
           });

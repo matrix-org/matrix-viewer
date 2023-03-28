@@ -230,7 +230,7 @@ async function createMessagesInRoom({
   increment = 1,
 }) {
   let eventIds = [];
-  let events = [];
+  let eventMap = new Map();
   for (let i = 0; i < numMessages; i++) {
     const originServerTs = timestamp + i * increment;
     const content = {
@@ -246,7 +246,7 @@ async function createMessagesInRoom({
       timestamp: originServerTs,
     });
     eventIds.push(eventId);
-    events.push({
+    eventMap.set(eventId, {
       roomId,
       originServerTs,
       content,
@@ -256,7 +256,7 @@ async function createMessagesInRoom({
   // Sanity check that we actually sent some messages
   assert.strictEqual(eventIds.length, numMessages);
 
-  return { eventIds, events };
+  return { eventIds, eventMap };
 }
 
 async function updateProfile({ client, displayName, avatarUrl }) {
