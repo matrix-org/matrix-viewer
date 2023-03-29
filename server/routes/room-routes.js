@@ -484,10 +484,17 @@ router.get(
     // day in whatever direction they wanted to go so we can display the empty view for
     // that day.
     if (!newOriginServerTs) {
-      const tsDate = new Date(ts);
-      const yyyy = tsDate.getUTCFullYear();
-      const mm = tsDate.getUTCMonth();
-      const dd = tsDate.getUTCDate();
+      let tsAtRangeBoundaryInDirection;
+      if (dir === DIRECTION.backward) {
+        tsAtRangeBoundaryInDirection = currentRangeStartTs;
+      } else if (dir === DIRECTION.forward) {
+        tsAtRangeBoundaryInDirection = currentRangeEndTs;
+      }
+
+      const dateAtRangeBoundaryInDirection = new Date(tsAtRangeBoundaryInDirection);
+      const yyyy = dateAtRangeBoundaryInDirection.getUTCFullYear();
+      const mm = dateAtRangeBoundaryInDirection.getUTCMonth();
+      const dd = dateAtRangeBoundaryInDirection.getUTCDate();
 
       const newDayDelta = dir === DIRECTION.forward ? 1 : -1;
       newOriginServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
