@@ -5,7 +5,7 @@ const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
 } = require('matrix-public-archive-shared/lib/reference-values');
-const { ONE_DAY_IN_MS } = MS_LOOKUP;
+const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 function getTwentyFourHourDateStringFromDate(
   inputDate,
@@ -150,7 +150,9 @@ class TimeSelectorView extends TemplateView {
             type: 'time',
             value: (vm) =>
               getTwentyFourHourDateStringFromDate(vm.activeDate, vm.preferredPrecision),
-            onChange: (e) => vm.onTimeInputChange(e),
+            onChange: (e) => {
+              this.onTimeInputChange(e);
+            },
             className: 'TimeSelectorView_timeInput',
             id: inputUniqueId,
           }),
@@ -277,6 +279,28 @@ class TimeSelectorView extends TemplateView {
         ]),
       ]
     );
+  }
+
+  onTimeInputChange(event) {
+    const prevActiveDate = this._vm.activeDate;
+
+    const newTimeString = event.target.value;
+    if (newTimeString) {
+      const [hourString, minuteString, secondString = '0'] = newTimeString.split(':');
+      const hourInMs = parseInt(hourString, 10) * ONE_HOUR_IN_MS;
+      const minuteInMs = parseInt(minuteString, 10) * ONE_MINUTE_IN_MS;
+      const secondInMs = parseInt(secondString, 10) * ONE_SECOND_IN_MS;
+      const timeInMs = hourInMs + minuteInMs + secondInMs;
+
+      const startOfDayTs = Date.UTC(
+        prevActiveDate.getUTCFullYear(),
+        prevActiveDate.getUTCMonth(),
+        prevActiveDate.getUTCDate()
+      );
+
+      const newActiveDate = new Date(startOfDayTs + timeInMs);
+      this._vm.setActiveDate(newActiveDate);
+    }
   }
 
   get scrubberScrollNode() {
