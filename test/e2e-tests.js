@@ -1259,7 +1259,7 @@ describe('matrix-public-archive', () => {
             //                                                 [1st page                   ]
             //                   [2nd page               ]
             testName:
-              'can jump backward from teh middle of one day with too many messages into the previous day with too many messages',
+              'can jump backward from the middle of one day with too many messages into the previous day with too many messages',
             dayAndMessageStructure: [2, 5, 7],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
@@ -1289,6 +1289,49 @@ describe('matrix-public-archive', () => {
                 'day2.event4',
                 // Some of day 3
                 'day3.event0',
+              ],
+              action: null,
+            },
+          },
+          {
+            // From the first page with too many messages, starting at event8 (page1
+            // rangeStart), we look backwards for the closest event. Because we find
+            // event7 as the closest, which is from a different day than event12 (page1
+            // rangeEnd), we can just display the day where event7 resides.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                   ]     [day3                                    ]
+            //                                           [1st page                  ]
+            //             [2nd page               ]
+            testName:
+              'can jump backward from the start of one day with too many messages into the previous day with exactly the limit',
+            dayAndMessageStructure: [2, 5, 7],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/03T05:00',
+            page1: {
+              urlDate: '2022/01/03T05:00',
+              events: [
+                // Some of day 3
+                'day3.event0',
+                'day3.event1',
+                'day3.event2',
+                'day3.event3',
+                'day3.event4',
+              ],
+              action: 'previous',
+            },
+            page2: {
+              urlDate: '2022/01/02',
+              continueAtEvent: 'day2.event4',
+              events: [
+                // All of day 2
+                'day2.event0',
+                'day2.event1',
+                'day2.event2',
+                'day2.event3',
+                'day2.event4',
               ],
               action: null,
             },
