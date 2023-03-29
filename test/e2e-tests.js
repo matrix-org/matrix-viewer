@@ -1050,9 +1050,6 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T04:00` because we're rendering part way
-              // through day3 and while we could get away with just hour precision, the
-              // default precision has hours and minutes.
               urlDate: '2022/01/03T03:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -1099,9 +1096,6 @@ describe('matrix-public-archive', () => {
               action: 'previous',
             },
             page2: {
-              // We expect the URL to look like `T02:00` because we're rendering part way
-              // through day3 and while we could get away with just hour precision, the
-              // default precision has hours and minutes.
               urlDate: '2022/01/03T01:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -1148,9 +1142,6 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              // We expect the URL to look like `T09:00` because we're rendering part way
-              // through day2 and while we could get away with just hour precision, the
-              // default precision has hours and minutes.
               urlDate: '2022/01/02T09:00',
               // Continuing from the first new event on the page
               continueAtEvent: 'day2.event6',
@@ -1196,9 +1187,6 @@ describe('matrix-public-archive', () => {
               action: 'previous',
             },
             page2: {
-              // We expect the URL to look like `T06:00` because we're rendering part way
-              // through day2 and while we could get away with just hour precision, the
-              // default precision has hours and minutes.
               urlDate: '2022/01/02T06:00',
               // Continuing from the first new event on the page
               continueAtEvent: 'day2.event5',
@@ -1209,6 +1197,98 @@ describe('matrix-public-archive', () => {
                 'day2.event3',
                 'day2.event4',
                 'day2.event5',
+              ],
+              action: null,
+            },
+          },
+          {
+            // We jump forward 4 messages (`archiveMessageLimit`) to event12, then
+            // back-track to the nearest hour which starts off at event11 and render the
+            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // to determine overflow.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                               ]     [day3                        ]
+            //                   [1st page               ]
+            //                                           |---jump-fwd-4-messages--->|
+            //                                     [2nd page                 ]
+            testName:
+              'can jump forward from the middle of one day with too many messages into the next day with too many messages',
+            dayAndMessageStructure: [2, 7, 5],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/02T06:00',
+            page1: {
+              urlDate: '2022/01/02T06:00',
+              events: [
+                // Some of day 2
+                'day2.event1',
+                'day2.event2',
+                'day2.event3',
+                'day2.event4',
+                'day2.event5',
+              ],
+              action: 'next',
+            },
+            page2: {
+              urlDate: '2022/01/03T02:00',
+              // Continuing from the unseen event in day2
+              continueAtEvent: 'day2.event6',
+              events: [
+                // Some of day 2
+                'day2.event4',
+                'day2.event5',
+                'day2.event6',
+                // Some of day 3
+                'day3.event0',
+                'day3.event1',
+              ],
+              action: null,
+            },
+          },
+          {
+            // From the first page with too many messages, starting at event10 (page1
+            // rangeStart), we look backwards for the closest event. Because we find
+            // event9 as the closest, which is from the same day as event14 (page1
+            // rangeEnd), we round up to the nearest hour so that the URL encompasses it
+            // when looking backwards.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+            // [day1 ]     [day2                   ]     [day3                                    ]
+            //                                                 [1st page                   ]
+            //                   [2nd page               ]
+            testName:
+              'can jump backward from teh middle of one day with too many messages into the previous day with too many messages',
+            dayAndMessageStructure: [2, 5, 7],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/03T06:00',
+            page1: {
+              urlDate: '2022/01/03T06:00',
+              events: [
+                // Some of day 3
+                'day3.event1',
+                'day3.event2',
+                'day3.event3',
+                'day3.event4',
+                'day3.event5',
+              ],
+              action: 'previous',
+            },
+            page2: {
+              urlDate: '2022/01/03T01:00',
+              // Continuing from the first event of day3
+              continueAtEvent: 'day3.event0',
+              events: [
+                // Some of day 2
+                'day2.event1',
+                'day2.event2',
+                'day2.event3',
+                'day2.event4',
+                // Some of day 3
+                'day3.event0',
               ],
               action: null,
             },
