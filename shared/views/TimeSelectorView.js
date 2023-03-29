@@ -7,7 +7,7 @@ const {
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
-function getTwentyFourHourDateStringFromDate(
+function getTwentyFourHourTimeStringFromDate(
   inputDate,
   preferredPrecision = TIME_PRECISION_VALUES.minutes
 ) {
@@ -134,6 +134,33 @@ class TimeSelectorView extends TemplateView {
       }
     );
 
+    const timeInput = t.input({
+      type: 'time',
+      value: (vm) => getTwentyFourHourTimeStringFromDate(vm.activeDate, vm.preferredPrecision),
+      onChange: (e) => {
+        this.onTimeInputChange(e);
+      },
+      className: 'TimeSelectorView_timeInput',
+      id: inputUniqueId,
+    });
+
+    // Set the time input `.value` property
+    t.mapSideEffect(
+      (vm) => vm.activeDate,
+      (activeDate /*, _oldActiveDate*/) => {
+        const newValue = getTwentyFourHourTimeStringFromDate(
+          activeDate,
+          this._vm.preferredPrecision
+        );
+        // Ideally, the input would reflect whatever the `value` attribute was set as in
+        // the DOM. But it seems to ignore the attribute after using the time input to
+        // select a time. We have to manually set the `.value` property of the input in
+        // order for it to actually reflect the value in the UI.
+
+        timeInput.value = newValue;
+      }
+    );
+
     return t.section(
       {
         className: {
@@ -146,16 +173,7 @@ class TimeSelectorView extends TemplateView {
           t.label({ for: inputUniqueId }, [
             t.span({ className: 'TimeSelectorView_primaryTimezoneLabel' }, 'UTC +0'),
           ]),
-          t.input({
-            type: 'time',
-            value: (vm) =>
-              getTwentyFourHourDateStringFromDate(vm.activeDate, vm.preferredPrecision),
-            onChange: (e) => {
-              this.onTimeInputChange(e);
-            },
-            className: 'TimeSelectorView_timeInput',
-            id: inputUniqueId,
-          }),
+          timeInput,
         ]),
         t.main(
           {
@@ -292,13 +310,14 @@ class TimeSelectorView extends TemplateView {
       const secondInMs = parseInt(secondString, 10) * ONE_SECOND_IN_MS;
       const timeInMs = hourInMs + minuteInMs + secondInMs;
 
-      const startOfDayTs = Date.UTC(
+      // Get the timestamp from the beginning of whatever day the active day is set to
+      const startOfDayTimestamp = Date.UTC(
         prevActiveDate.getUTCFullYear(),
         prevActiveDate.getUTCMonth(),
         prevActiveDate.getUTCDate()
       );
 
-      const newActiveDate = new Date(startOfDayTs + timeInMs);
+      const newActiveDate = new Date(startOfDayTimestamp + timeInMs);
       this._vm.setActiveDate(newActiveDate);
     }
   }
