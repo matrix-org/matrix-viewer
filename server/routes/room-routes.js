@@ -133,7 +133,9 @@ function parseArchiveRangeFromReq(req) {
   let toTimestamp;
   if (timeInMs) {
     toTimestamp = fromTimestamp + timeInMs;
-  } else {
+  }
+  // If no time specified, then we assume end-of-day
+  else {
     // We `- 1` from UTC midnight to get the timestamp that is a millisecond before the
     // next day T23:59:59.999
     toTimestamp = Date.UTC(yyyy, mm, dd + 1) - 1;
@@ -506,7 +508,6 @@ router.get(
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
-    const highlightEventId = req.query.at;
 
     const archiveMessageLimit = config.get('archiveMessageLimit');
     assert(archiveMessageLimit);
@@ -516,8 +517,7 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { fromTimestamp, toTimestamp, timeDefined, secondsDefined } =
-      parseArchiveRangeFromReq(req);
+    const { fromTimestamp, toTimestamp } = parseArchiveRangeFromReq(req);
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
@@ -577,68 +577,6 @@ router.get(
     } else {
       // Otherwise we only allow search engines to index `world_readable` rooms
       shouldIndex = roomData?.historyVisibility === `world_readable`;
-    }
-
-    // If we have over the `archiveMessageLimit` number of messages fetching
-    // from the given day, it's acceptable to have them be from surrounding
-    // days. But if all 500 messages (for example) are from the same day, let's
-    // redirect to a smaller time range to display.
-    if (
-      // If there are too many messages, check ...
-      events.length >= archiveMessageLimit
-    ) {
-      let preferredPrecision = null;
-
-      // Check if the first event is from the surroundings or not. Since we're only
-      // fetching previous days for the surroundings, we only need to look at the oldest
-      // event in the chronological list.
-      //
-      // XXX: In the future when we also fetch events from days after, we will
-      // probably need to change this next day check.
-      const isEventFromSurroundingDay = events[0].origin_server_ts < fromTimestamp;
-
-      // Since we're over the limit, if not specifying a time, then let's specify a
-      // time. By default the time includes hours and minutes `T23:59`
-      if (!timeDefined && !isEventFromSurroundingDay) {
-        preferredPrecision = TIME_PRECISION_VALUES.minutes;
-      }
-
-      // If we're already specifying minutes in the time but there are too many messages
-      // within the minute, let's go to seconds as well
-      const isEventFromSurroundingMinute =
-        toTimestamp - events[0].origin_server_ts > ONE_MINUTE_IN_MS;
-      if (!secondsDefined && !isEventFromSurroundingMinute) {
-        preferredPrecision = TIME_PRECISION_VALUES.seconds;
-      }
-
-      // If we're already specifying seconds in the time but there are too many messages
-      // within the second, let's give up for now ⏩
-      const isEventFromSurroundingSecond =
-        toTimestamp - events[0].origin_server_ts > ONE_SECOND_IN_MS;
-      if (!isEventFromSurroundingSecond) {
-        // 501 Not Implemented: the server does not support the functionality required to fulfill the request
-        res.status(501);
-        res.send(
-          `/date ran into a problem: ${getErrorStringForTooManyMessages(archiveMessageLimit)}`
-        );
-        return;
-      }
-
-      if (preferredPrecision) {
-        console.log('redirecting preferredPrecision', preferredPrecision, new Date(toTimestamp));
-        res.redirect(
-          matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(toTimestamp), {
-            preferredPrecision,
-            // Pass along the `?at` query parameter
-            scrollStartEventId: highlightEventId,
-            // We can avoid passing along the `via` query parameter because we already
-            // joined the room above (see `ensureRoomJoined`).
-            //
-            //viaServers: req.query.via,
-          })
-        );
-        return;
-      }
     }
 
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');

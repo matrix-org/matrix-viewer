@@ -12,17 +12,10 @@ const { readFile } = require('fs').promises;
 
 const RethrownError = require('../server/lib/rethrown-error');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const {
-  fetchEndpointAsText,
-  fetchEndpointAsJson,
-  HTTPResponseError,
-} = require('../server/lib/fetch-endpoint');
+const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');
-const {
-  MS_LOOKUP,
-  TIME_PRECISION_VALUES,
-} = require('matrix-public-archive-shared/lib/reference-values');
-const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
+const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS } = MS_LOOKUP;
 
 const {
   getTestClientForHs,
@@ -51,28 +44,6 @@ const HOMESERVER_URL_TO_PRETTY_NAME_MAP = {
   [testMatrixServerUrl1]: 'hs1',
   [testMatrixServerUrl2]: 'hs2',
 };
-
-function assertExpectedPrecisionAgainstUrl(expectedPrecision, url) {
-  const urlObj = new URL(url, basePath);
-  const urlPathname = urlObj.pathname;
-
-  // First check the URL has the appropriate time precision
-  if (expectedPrecision === null) {
-    assert.doesNotMatch(
-      urlPathname,
-      /T[\d:]*?$/,
-      `Expected the URL to *not* have any time precision but saw ${urlPathname}`
-    );
-  } else if (expectedPrecision === TIME_PRECISION_VALUES.minutes) {
-    assert.match(urlPathname, /T\d\d:\d\d$/);
-  } else if (expectedPrecision === TIME_PRECISION_VALUES.seconds) {
-    assert.match(urlPathname, /T\d\d:\d\d:\d\d$/);
-  } else {
-    throw new Error(
-      `\`expectedPrecision\` was an unexpected value ${expectedPrecision} which we don't know how to assert here`
-    );
-  }
-}
 
 describe('matrix-public-archive', () => {
   let server;
@@ -492,7 +463,7 @@ describe('matrix-public-archive', () => {
         );
       });
 
-      it('redirects to last day with message history', async () => {
+      it('redirects to most recent day with message history', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client);
 
@@ -507,7 +478,7 @@ describe('matrix-public-archive', () => {
         });
         const expectedEventIdsOnDay = [eventId];
 
-        // Visit `/:roomIdOrAlias` and expect to be redirected to the last day with events
+        // Visit `/:roomIdOrAlias` and expect to be redirected to the most recent day with events
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
         const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
 
@@ -587,171 +558,6 @@ describe('matrix-public-archive', () => {
             `[data-testid="not-enough-events-summary-kind-no-events-at-all"]`
           )
         );
-      });
-
-      describe('Too many messages (over `archiveMessageLimit`)', () => {
-        const tooManyMessagesTestCases = [
-          {
-            durationLabel: 'day',
-            durationMs: ONE_DAY_IN_MS,
-            timeSliceLabel: 'hours',
-            timeSliceMS: ONE_HOUR_IN_MS,
-            // We would expect `TIME_PRECISION_VALUES.minutes` here but of the nature of
-            // the end of the day and `toTimestamp`, it ends up being `T23:59:59` to not
-            // lose any messages.
-            expectedPrecision: TIME_PRECISION_VALUES.seconds,
-          },
-          {
-            durationLabel: 'hour',
-            durationMs: ONE_HOUR_IN_MS,
-            timeSliceLabel: 'minutes',
-            timeSliceMS: ONE_MINUTE_IN_MS,
-            // We would expect `TIME_PRECISION_VALUES.minutes` here but of the nature of
-            // the end of the day and `toTimestamp`, it ends up being `T23:59:59` to not
-            // lose any messages.
-            expectedPrecision: TIME_PRECISION_VALUES.seconds,
-          },
-          {
-            durationLabel: 'minute',
-            durationMs: ONE_MINUTE_IN_MS,
-            timeSliceLabel: 'seconds',
-            timeSliceMS: ONE_SECOND_IN_MS,
-            expectedPrecision: TIME_PRECISION_VALUES.seconds,
-          },
-          {
-            // We currently do not support when there are too many messages within a second.
-            durationLabel: 'second',
-            durationMs: ONE_SECOND_IN_MS,
-            timeSliceLabel: '<no-small-enough-time-slice-available-for-one-ms>',
-            timeSliceMS: 1,
-            failBecauseTooManyMessages: true,
-          },
-        ];
-
-        tooManyMessagesTestCases.forEach((testCase) => {
-          // It's acceptable to have messages be from surrounding days over the limit. But
-          // if all 500 messages (for example) are from the same day, we should be
-          // redirected to a smaller time slice range to display.
-          it(`will redirect to time slice of ${testCase.timeSliceLabel} when there are too many messages on the same ${testCase.durationLabel}`, async () => {
-            const client = await getTestClientForHs(testMatrixServerUrl1);
-            const roomId = await createTestRoom(client);
-            // Set this low so we can easily create more than the limit
-            config.set('archiveMessageLimit', 3);
-
-            const utcMidnightOfArchiveDayTs = Date.UTC(
-              archiveDate.getUTCFullYear(),
-              archiveDate.getUTCMonth(),
-              archiveDate.getUTCDate() + 1
-            );
-            // We minus 1 from UTC midnight to get be within the archive day
-            const endofArchiveDayTs = utcMidnightOfArchiveDayTs - 1;
-
-            // This is larger than the `archiveMessageLimit` we set
-            const numTestMessages = 5;
-            assert(
-              numTestMessages > config.get('archiveMessageLimit'),
-              'Expected number of messages we create to be larger than the `archiveMessageLimit`'
-            );
-            // Create more messages than the limit
-            const { eventIds: eventIdsOnDay } = await createMessagesInRoom({
-              client,
-              roomId: roomId,
-              numMessages: numTestMessages,
-              prefix: 'events in room',
-              timestamp: endofArchiveDayTs - numTestMessages * testCase.timeSliceMS,
-              // If we create each message every timeSlice then we can gurantee that we
-              // will create less than the duration but not all within the slice to
-              // trigger too many in the slice. i.e. sending a message every hour for 5
-              // hours, is less than the 24 hour day but doesn't overflow the
-              // `archiveMessageLimit` for the hour slice.
-              increment: testCase.timeSliceMS,
-            });
-
-            archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-
-            if (testCase.failBecauseTooManyMessages) {
-              try {
-                const { res } = await fetchEndpointAsText(archiveUrl);
-                assert.fail(
-                  `Expected fetch to throw error because it's a 501 "Not implemented" response but it returned ${res.status}`
-                );
-              } catch (err) {
-                if (err instanceof HTTPResponseError) {
-                  assert.match(err.message, /Too many messages were sent all within a second/);
-                } else {
-                  throw err;
-                }
-              }
-            } else {
-              const { res, data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-
-              // First check the URL has the appropriate time precision
-              assertExpectedPrecisionAgainstUrl(testCase.expectedPrecision, res.url);
-
-              const dom = parseHTML(archivePageHtml);
-
-              // Make sure the messages are displayed. 4 messages shown since the
-              // `archiveMessageLimit` is 3 and we display 1 more than that to check
-              // overflow
-              const expectedEventIdsToBeDisplayed = eventIdsOnDay.slice(-4);
-              assert.deepStrictEqual(
-                // eslint-disable-next-line max-nested-callbacks
-                expectedEventIdsToBeDisplayed.map((eventId) => {
-                  return dom.document
-                    .querySelector(`[data-event-id="${eventId}"]`)
-                    ?.getAttribute('data-event-id');
-                }),
-                expectedEventIdsToBeDisplayed
-              );
-            }
-          });
-        });
-
-        it(`will not redirect to time slice when there are too many messages from surrounding days`, async () => {
-          const client = await getTestClientForHs(testMatrixServerUrl1);
-          const roomId = await createTestRoom(client);
-          // Set this low so we can easily create more than the limit
-          config.set('archiveMessageLimit', 3);
-
-          // Create more messages than the limit on a previous day
-          const previousArchiveDate = new Date(Date.UTC(2022, 0, 2));
-          assert(
-            previousArchiveDate < archiveDate,
-            `The previousArchiveDate=${previousArchiveDate} should be before the archiveDate=${archiveDate}`
-          );
-          const { eventIds: surroundEventIds } = await createMessagesInRoom({
-            client,
-            roomId: roomId,
-            numMessages: 2,
-            prefix: 'events in room',
-            timestamp: previousArchiveDate.getTime(),
-          });
-
-          // Create more messages than the limit
-          const { eventIds: eventIdsOnDay } = await createMessagesInRoom({
-            client,
-            roomId: roomId,
-            numMessages: 2,
-            prefix: 'events in room',
-            timestamp: archiveDate.getTime(),
-          });
-
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-
-          const dom = parseHTML(archivePageHtml);
-
-          // Make sure the messages are displayed
-          const expectedEventIdsToBeDisplayed = [].concat(surroundEventIds).concat(eventIdsOnDay);
-          assert.deepStrictEqual(
-            expectedEventIdsToBeDisplayed.map((eventId) => {
-              return dom.document
-                .querySelector(`[data-event-id="${eventId}"]`)
-                ?.getAttribute('data-event-id');
-            }),
-            expectedEventIdsToBeDisplayed
-          );
-        });
       });
 
       it('404 when trying to view a future day', async () => {
@@ -1199,11 +1005,7 @@ describe('matrix-public-archive', () => {
               action: 'previous',
             },
             page2: {
-              // We expect the URL to look like `T23:59:59` because TODO
-              //
-              // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-              // and `2022/11/17T23:59:59` are equivalent?
-              urlDate: '2022/01/02T23:59:59',
+              urlDate: '2022/01/02',
               // Continuing from the last event of day2
               continueAtEvent: 'day2.event5',
               events: [
@@ -1236,11 +1038,7 @@ describe('matrix-public-archive', () => {
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02',
             page1: {
-              // We expect the URL to look like `T23:59:59` because TODO
-              //
-              // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-              // and `2022/11/17T23:59:59` are equivalent?
-              urlDate: '2022/01/02T23:59:59',
+              urlDate: '2022/01/02',
               events: [
                 // Some of day 2
                 'day2.event1',
@@ -1289,11 +1087,7 @@ describe('matrix-public-archive', () => {
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/03',
             page1: {
-              // We expect the URL to look like `T23:59:59` because TODO
-              //
-              // XXX: Can't we simplify and have the URL without any time since `2022/11/17`
-              // and `2022/11/17T23:59:59` are equivalent?
-              urlDate: '2022/01/03T23:59:59',
+              urlDate: '2022/01/03',
               events: [
                 // Some of day 3
                 'day3.event1',

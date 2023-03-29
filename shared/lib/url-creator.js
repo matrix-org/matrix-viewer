@@ -99,7 +99,7 @@ class URLCreator {
     // Get the `2022/02/16` part of it
     const urlDate = datePiece.replaceAll('-', '/');
 
-    // Get the `23:20:04` part of it
+    // Get the `23:20:04` part of it (TIME_PRECISION_VALUES.seconds)
     let urlTime = timePiece.split('.')[0];
     if (preferredPrecision === TIME_PRECISION_VALUES.minutes) {
       // We only want to replace the seconds part of the URL if its superfluous. `23:59:00`
