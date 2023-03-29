@@ -373,7 +373,7 @@ router.get(
         if (!messageResData.chunk?.length) {
           throw new StatusError(
             404,
-            `/messages response didn't contain any more messages to jump to`
+            `/jump?dir=${dir}: /messages response didn't contain any more messages to jump to`
           );
         }
 
@@ -406,8 +406,24 @@ router.get(
         console.log('moreThanMinuteGap', moreThanMinuteGap);
         console.log('moreThanSecondGap', moreThanSecondGap);
 
+        // If the `/messages` response returns less than the `archiveMessageLimit`
+        // looking forwards, it means we're looking at the latest events in the room. We
+        // can simply just display the day that the latest event occured on or given
+        // rangeEnd (whichever is later).
+        const haveReachedLatestMessagesInRoom = messageResData.chunk?.length < archiveMessageLimit;
+        if (haveReachedLatestMessagesInRoom) {
+          const latestDesiredTs = Math.max(currentRangeEndTs, timestampOfLastMessage);
+          const latestDesiredDate = new Date(latestDesiredTs);
+          const utcMidnightTs = Date.UTC(
+            latestDesiredDate.getUTCFullYear(),
+            latestDesiredDate.getUTCMonth(),
+            latestDesiredDate.getUTCDate()
+          );
+          newOriginServerTs = utcMidnightTs;
+          preferredPrecision = TIME_PRECISION_VALUES.none;
+        }
         // More than a day gap here, so we can just back-track to the nearest day
-        if (moreThanDayGap) {
+        else if (moreThanDayGap) {
           const utcMidnightOfDayBefore = Date.UTC(
             dateOfLastMessage.getUTCFullYear(),
             dateOfLastMessage.getUTCMonth(),
@@ -475,7 +491,11 @@ router.get(
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
       // Only throw if it's something other than a 404 error. 404 errors are fine, they
       // just mean there is no more messages to paginate in that room.
-      if (!is404Error) {
+      if (is404Error) {
+        console.log(
+          `/jump?dir=${dir}: /messages returned a 404 which just means we are already viewing the latest in the room`
+        );
+      } else {
         throw err;
       }
     }
@@ -511,7 +531,7 @@ router.get(
       }
     );
     console.log(
-      '/jump redirecting you to',
+      '/jump?dir=${dir} redirecting you to',
       archiveUrlToRedirecTo,
       newOriginServerTs,
       new Date(newOriginServerTs).toISOString(),

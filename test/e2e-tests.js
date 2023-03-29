@@ -22,6 +22,7 @@ const {
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 const {
+  getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
   getCanonicalAlias,
@@ -566,7 +567,7 @@ describe('matrix-public-archive', () => {
         );
       });
 
-      it('shows no events summary when no messages at or before the given day', async () => {
+      it('shows no events summary when no messages at or before the given day (empty view)', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client);
 
@@ -727,6 +728,153 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          {
+            // In order to jump from the 1st page to the 2nd, we first "jump" forward 4
+            // messages by paginating `/messages?limit=4` but it only returns 2x
+            // messages (event11 and event12) which is less than our limit of 4, so we
+            // know we reached the end and can simply display the day that the latest
+            // event occured on.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
+            //                               [1st page                ]
+            //                                                        |--jump-fwd-4-messages-->|
+            //                                           [2nd page                  ]
+            testName: 'can jump forward to the latest activity in the room (same day)',
+            dayAndMessageStructure: [3, 3, 3, 3],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/04T01:00',
+            page1: {
+              urlDate: '2022/01/04T01:00',
+              events: [
+                // Some of day2
+                'day2.event2',
+                // Some of day3
+                'day3.event0',
+                'day3.event1',
+                'day3.event2',
+                // All of day4
+                'day4.event0',
+              ],
+              action: 'next',
+            },
+            page2: {
+              urlDate: '2022/01/04',
+              continueAtEvent: 'day4.event1',
+              events: [
+                // Some of day3
+                'day3.event1',
+                'day3.event2',
+                // All of day4
+                'day4.event0',
+                'day4.event1',
+                'day4.event2',
+              ],
+              action: null,
+            },
+          },
+          {
+            // In order to jump from the 1st page to the 2nd, we first "jump" forward 4
+            // messages by paginating `/messages?limit=4` but it only returns 3x
+            // messages (event10, event11, event12) which is less than our limit of 4,
+            // so we know we reached the end and can simply display the day that the
+            // latest event occured on.
+            //
+            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
+            //                         [1st page               ]
+            //                                                 |---jump-fwd-4-messages--->|
+            //                                           [2nd page                  ]
+            testName: 'can jump forward to the latest activity in the room (different day)',
+            dayAndMessageStructure: [3, 3, 3, 3],
+            // The page limit is 4 but each page will show 5 messages because we
+            // fetch one extra to determine overflow.
+            archiveMessageLimit: 4,
+            startUrlDate: '2022/01/04T02:00',
+            page1: {
+              urlDate: '2022/01/04T02:00',
+              events: [
+                // Some of day3
+                'day3.event0',
+                'day3.event1',
+                'day3.event2',
+                // All of day4
+                'day4.event0',
+                'day4.event1',
+              ],
+              action: 'next',
+            },
+            page2: {
+              urlDate: '2022/01/04',
+              continueAtEvent: 'day4.event2',
+              events: [
+                // Some of day3
+                'day3.event1',
+                'day3.event2',
+                // All of day4
+                'day4.event0',
+                'day4.event1',
+                'day4.event2',
+              ],
+              action: null,
+            },
+          },
+          // This test currently doesn't work because it finds the primordial room
+          // creation events which are created in now time vs the timestamp massaging we
+          // do for the message fixtures. We can uncomment this once Synapse supports
+          // timestamp massaging for `/createRoom`, see
+          // https://github.com/matrix-org/synapse/issues/15346
+          //
+          // {
+          //   // In order to jump from the 1st page to the 2nd, we first "jump" forward 4
+          //   // messages by paginating `/messages?limit=4` but it returns no messages
+          //   // which is less than our limit of 4, so we know we reached the end and can
+          //   // simply TODO
+          //   //
+          //   // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+          //   // [day1       ]     [day2       ]     [day3       ]     [day4          ]
+          //   //                                           [1st page                  ]
+          //   //                                                                      |---jump-fwd-4-messages--->|
+          //   //                                           [2nd page                  ]
+          //   testName:
+          //     'can jump forward to the latest activity in the room (when already viewing the latest activity)',
+          //   dayAndMessageStructure: [3, 3, 3, 3],
+          //   // The page limit is 4 but each page will show 5 messages because we
+          //   // fetch one extra to determine overflow.
+          //   archiveMessageLimit: 4,
+          //   startUrlDate: '2022/01/04',
+          //   page1: {
+          //     urlDate: '2022/01/04',
+          //     events: [
+          //       // Some of day3
+          //       'day3.event1',
+          //       'day3.event2',
+          //       // All of day4
+          //       'day4.event0',
+          //       'day4.event1',
+          //       'day4.event2',
+          //     ],
+          //     action: 'next',
+          //   },
+          //   page2: {
+          //     // If we can't find any more messages to paginate to, we just progress the
+          //     // date forward by a day so we can display the empty view for that day.
+          //     urlDate: '2022/01/05',
+          //     continueAtEvent: 'day4.event2',
+          //     events: [
+          //       // Some of day3
+          //       'day3.event1',
+          //       'day3.event2',
+          //       // All of day4
+          //       'day4.event0',
+          //       'day4.event1',
+          //       'day4.event2',
+          //     ],
+          //     action: null,
+          //   },
+          // },
           {
             // Test to make sure we can jump from the 1st page to the 2nd page forwards
             // even when it exactly paginates to the last message of the next day. We're
@@ -1418,6 +1566,15 @@ describe('matrix-public-archive', () => {
 
             const client = await getTestClientForHs(testMatrixServerUrl1);
             const roomId = await createTestRoom(client);
+
+            // Join the archive user to the room before we create the test messages to
+            // avoid problems jumpting to the latest activity since we can't control the
+            // timestamp of the membership event.
+            const archiveAppServiceUserClient = await getTestClientForAs();
+            await joinRoom({
+              client: archiveAppServiceUserClient,
+              roomId: roomId,
+            });
 
             const dayIdentifierToDateMap = {};
             const numberOfDaysToConstruct = testCase.dayAndMessageStructure.length;
