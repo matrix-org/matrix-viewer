@@ -21,6 +21,7 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
+  DIRECTION,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
@@ -175,7 +176,7 @@ router.get(
       accessToken: matrixAccessToken,
       roomId,
       ts: dateBeforeJoin,
-      direction: 'b',
+      direction: DIRECTION.backward,
     });
     if (!originServerTs) {
       throw new StatusError(404, 'Unable to find day with history');
@@ -216,14 +217,23 @@ router.get(
     const currentRangeEndTs = parseInt(req.query.currentRangeEndTs, 10);
     assert(!Number.isNaN(currentRangeEndTs), '?currentRangeEndTs query parameter must be a number');
     const dir = req.query.dir;
-    assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
+    assert(
+      [DIRECTION.forward, DIRECTION.backward].includes(dir),
+      '?dir query parameter must be [f|b]'
+    );
 
     let ts;
-    if (dir === 'b') {
-      // We `- 1` so we don't jump to the same event because the endpoint is inclusive
+    if (dir === DIRECTION.backward) {
+      // We `- 1` so we don't jump to the same event because the endpoint is inclusive.
+      //
+      // XXX: This is probably an edge-case flaw when there could be multiple events at
+      // the same timestamp
       ts = currentRangeStartTs - 1;
-    } else if (dir === 'f') {
+    } else if (dir === DIRECTION.forward) {
       // We `+ 1` so we don't jump to the same event because the endpoint is inclusive
+      //
+      // XXX: This is probably an edge-case flaw when there could be multiple events at
+      // the same timestamp
       ts = currentRangeEndTs + 1;
     } else {
       throw new Error(`Unable to handle unknown dir=${dir} in /jump`);
@@ -272,7 +282,7 @@ router.get(
       // in the displayed range, say `T12:00:05` would still give us the same day
       // `/2020/01/02` and we want to redirect them to previous chunk from that same
       // day, like `/2020/01/02T12:00:00`
-      if (dir === 'b') {
+      if (dir === DIRECTION.backward) {
         const dateOfClosestEvent = new Date(tsForClosestEvent);
 
         const fromSameDay = areTimestampsFromSameDay(currentRangeEndTs, tsForClosestEvent);
@@ -286,11 +296,15 @@ router.get(
         console.log('fromSameSecond', fromSameSecond);
 
         // The closest event is from the same second we tried to jump from. Since we
-        // can't represent something smaller than a second in the URL (we could do ms
-        // but it's a concious choice to make the URL cleaner), we will need to just
-        // return the timestamp with a precision of seconds and hope that there isn't
-        // too many messages in this same second. The `/date/...` router will handle if
-        // there is too many messages.
+        // can't represent something smaller than a second in the URL yet (we could do
+        // ms but it's a concious choice to make the URL cleaner,
+        // #support-ms-time-slice), we will need to just return the timestamp with a
+        // precision of seconds and hope that there isn't too many messages in this same
+        // second.
+        //
+        // If there is too many messages all within the same second, people will be
+        // stuck visiting the same page over and over every time they try to jump
+        // backwards from that range.
         if (fromSameSecond) {
           newOriginServerTs = tsForClosestEvent;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
@@ -340,7 +354,7 @@ router.get(
       // `/messages?dir=f` backfills, we won't have this problem anymore because any
       // messages backfilled in the forwards direction would be picked up the same going
       // backwards.
-      if (dir === 'f') {
+      if (dir === DIRECTION.forward) {
         // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
         // then start the scroll from the top of the page so they can continue.
         //
@@ -352,7 +366,7 @@ router.get(
           accessToken: matrixAccessToken,
           roomId,
           eventId: eventIdForClosestEvent,
-          dir: 'f',
+          dir: DIRECTION.forward,
           limit: archiveMessageLimit,
         });
 
@@ -370,8 +384,8 @@ router.get(
         console.log('dateOfLastMessage', dateOfLastMessage);
 
         // Back-track from the last message timestamp to the nearest date boundary.
-        // Because we're back-tracking a couple events here, when paginate back out by
-        // the `archiveMessageLimit` later in the room route, it will gurantee some
+        // Because we're back-tracking a couple events here, when we paginate back out
+        // by the `archiveMessageLimit` later in the room route, it will gurantee some
         // overlap with the previous page we jumped from so we don't lose any messages
         // in the gap.
         //
@@ -444,7 +458,9 @@ router.get(
           newOriginServerTs = utcTopOfSecondBefore;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
-        // Less than a second gap here, we will give up
+        // Less than a second gap here, we will give up.
+        //
+        // XXX: Maybe we can support ms here (#support-ms-time-slice)
         else {
           // 501 Not Implemented: the server does not support the functionality required
           // to fulfill the request
@@ -473,7 +489,7 @@ router.get(
       const mm = tsDate.getUTCMonth();
       const dd = tsDate.getUTCDate();
 
-      const newDayDelta = dir === 'f' ? 1 : -1;
+      const newDayDelta = dir === DIRECTION.forward ? 1 : -1;
       newOriginServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
     }
 

@@ -14,8 +14,12 @@ const RethrownError = require('../server/lib/rethrown-error');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');
-const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
-const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS } = MS_LOOKUP;
+const {
+  MS_LOOKUP,
+  TIME_PRECISION_VALUES,
+  DIRECTION,
+} = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 const {
   getTestClientForHs,
@@ -44,6 +48,27 @@ const HOMESERVER_URL_TO_PRETTY_NAME_MAP = {
   [testMatrixServerUrl1]: 'hs1',
   [testMatrixServerUrl2]: 'hs2',
 };
+function assertExpectedTimePrecisionAgainstUrl(expectedTimePrecision, url) {
+  const urlObj = new URL(url, basePath);
+  const urlPathname = urlObj.pathname;
+
+  // First check the URL has the appropriate time precision
+  if (expectedTimePrecision === null) {
+    assert.doesNotMatch(
+      urlPathname,
+      /T[\d:]*?$/,
+      `Expected the URL to *not* have any time precision but saw ${urlPathname}`
+    );
+  } else if (expectedTimePrecision === TIME_PRECISION_VALUES.minutes) {
+    assert.match(urlPathname, /T\d\d:\d\d$/);
+  } else if (expectedTimePrecision === TIME_PRECISION_VALUES.seconds) {
+    assert.match(urlPathname, /T\d\d:\d\d:\d\d$/);
+  } else {
+    throw new Error(
+      `\`expectedTimePrecision\` was an unexpected value ${expectedTimePrecision} which we don't know how to assert here`
+    );
+  }
+}
 
 describe('matrix-public-archive', () => {
   let server;
@@ -1408,9 +1433,9 @@ describe('matrix-public-archive', () => {
 
               // The date should be just past midnight so we don't run into inclusive
               // bounds leaking messages from one day into another.
-              const previousArchiveDate = new Date(Date.UTC(2022, 0, dayNumber, 0, 0, 0, 1));
+              const archiveDate = new Date(Date.UTC(2022, 0, dayNumber, 0, 0, 0, 1));
 
-              dayIdentifierToDateMap[`day${dayNumber}`] = previousArchiveDate;
+              dayIdentifierToDateMap[`day${dayNumber}`] = archiveDate;
 
               const { eventIds: createdEventIds, eventMap: createdEventMap } =
                 await createMessagesInRoom({
@@ -1418,8 +1443,10 @@ describe('matrix-public-archive', () => {
                   roomId,
                   numMessages: numMessagesOnDay,
                   prefix: `day ${dayNumber} - events in room`,
-                  timestamp: previousArchiveDate.getTime(),
-                  // Just spread things out a bit so we don't run into time slice redirecting
+                  timestamp: archiveDate.getTime(),
+                  // Just spread things out a bit so the event times are more obvious
+                  // and stand out from each other while debugging and so we just have
+                  // to deal with hour time slicing
                   increment: ONE_HOUR_IN_MS,
                 });
               // Make sure we created the same number of events as we expect
@@ -1574,6 +1601,105 @@ describe('matrix-public-archive', () => {
                 throw errorWithContext;
               }
             }
+          });
+        });
+
+        const jumpPrecisionTestCases = [
+          {
+            durationMinLabel: 'day',
+            durationMinMs: ONE_DAY_IN_MS,
+            durationMaxLabel: 'multiple days',
+            durationMaxMs: 5 * ONE_DAY_IN_MS,
+            expectedTimePrecision: TIME_PRECISION_VALUES.none,
+          },
+          {
+            durationMinLabel: 'hour',
+            durationMinMs: ONE_HOUR_IN_MS,
+            durationMaxLabel: 'day',
+            durationMaxMs: ONE_DAY_IN_MS,
+            expectedTimePrecision: TIME_PRECISION_VALUES.minutes,
+          },
+          {
+            durationMinLabel: 'minute',
+            durationMinMs: ONE_MINUTE_IN_MS,
+            durationMaxLabel: 'hour',
+            durationMaxMs: ONE_HOUR_IN_MS,
+            expectedTimePrecision: TIME_PRECISION_VALUES.minutes,
+          },
+          {
+            durationMinLabel: 'second',
+            durationMinMs: ONE_SECOND_IN_MS,
+            durationMaxLabel: 'minute',
+            durationMaxMs: ONE_MINUTE_IN_MS,
+            expectedTimePrecision: TIME_PRECISION_VALUES.seconds,
+          },
+          // This one is expected to fail but we could support it (#support-ms-time-slice)
+          // {
+          //   durationMinLabel: 'millisecond',
+          //   durationMinMs: 1,
+          //   durationMaxLabel: 'second',
+          //   durationMaxMs: ONE_SECOND_IN_MS,
+          //   // #support-ms-time-slice
+          //   expectedTimePrecision: TIME_PRECISION_VALUES.milliseconds,
+          // },
+        ];
+
+        [
+          {
+            directionLabel: 'backward',
+            directionValue: DIRECTION.backward,
+          },
+          {
+            directionLabel: 'forward',
+            directionValue: DIRECTION.forward,
+          },
+        ].forEach(({ directionLabel, directionValue }) => {
+          describe(`/jump redirects to \`/date/...\` URL that encompasses closest event when looking ${directionLabel}`, () => {
+            // eslint-disable-next-line max-nested-callbacks
+            jumpPrecisionTestCases.forEach((testCase) => {
+              let testTitle;
+              if (directionValue === DIRECTION.backward) {
+                testTitle = `will jump to the nearest ${testCase.durationMinLabel} rounded up when the closest event is from the same ${testCase.durationMaxLabel} (but further than a ${testCase.durationMinLabel} away) as our currently displayed range of events`;
+              } else if (directionValue === DIRECTION.forward) {
+                testTitle = `will jump to the nearest ${testCase.durationMinLabel} rounded down when the last event in the next range is more than a ${testCase.durationMinLabel} away from our currently displayed range of events`;
+              }
+
+              // eslint-disable-next-line max-nested-callbacks
+              it(testTitle, async () => {
+                // The date should be just past midnight so we don't run into inclusive
+                // bounds leaking messages from one day into another.
+                const archiveDate = new Date(Date.UTC(2022, 0, 1, 0, 0, 0, 1));
+
+                config.set('archiveMessageLimit', 3);
+
+                const client = await getTestClientForHs(testMatrixServerUrl1);
+                const roomId = await createTestRoom(client);
+
+                const { eventIds, eventMap } = await createMessagesInRoom({
+                  client,
+                  roomId,
+                  // Make sure there is enough space before and after the selected range
+                  // for another page of history
+                  numMessages: 10,
+                  prefix: `foo`,
+                  timestamp: archiveDate.getTime(),
+                  increment: testCase.durationMinMs,
+                });
+                const fourthEvent = eventMap.get(eventIds[3]);
+                const sixthEvent = eventMap.get(eventIds[5]);
+
+                const jumpUrl = `${matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomId, {
+                  dir: directionValue,
+                  currentRangeStartTs: fourthEvent.originServerTs,
+                  currentRangeEndTs: sixthEvent.originServerTs,
+                })}`;
+                // Fetch the given page.
+                const { res } = await fetchEndpointAsText(jumpUrl);
+
+                // Assert the correct time precision in the URL
+                assertExpectedTimePrecisionAgainstUrl(testCase.expectedTimePrecision, res.url);
+              });
+            });
           });
         });
       });

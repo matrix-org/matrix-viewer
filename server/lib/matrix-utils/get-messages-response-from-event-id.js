@@ -3,6 +3,7 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 
+const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
 
 const config = require('../config');
@@ -39,7 +40,7 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
   let paginationToken = contextResData.end;
   // When going forwards, that means starting using the paginatin token before the event
   // so we can see it looking forwards again.
-  if (dir === 'f') {
+  if (dir === DIRECTION.forward) {
     paginationToken = contextResData.start;
   }
 

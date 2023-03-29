@@ -14,9 +14,17 @@ const TIME_PRECISION_VALUES = {
   minutes: 'minutes',
   // 23:59:59 - `/date/2022/11/16T23:59:59`
   seconds: 'seconds',
+  // 23:59:59.999 - `/date/2022/11/16T23:59:59.999`
+  millisecond: 'millisecond',
+};
+
+const DIRECTION = {
+  forward: 'f',
+  backward: 'b',
 };
 
 module.exports = {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
+  DIRECTION,
 };

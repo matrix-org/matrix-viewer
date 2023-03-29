@@ -3,6 +3,7 @@
 const assert = require('assert');
 const { traceFunction } = require('../../tracing/trace-utilities');
 
+const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
 const timestampToEvent = require('./timestamp-to-event');
 const getMessagesResponseFromEventId = require('./get-messages-response-from-event-id');
 
@@ -40,7 +41,7 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
       accessToken,
       roomId,
       ts,
-      direction: 'b',
+      direction: DIRECTION.backward,
     });
     eventIdForTimestamp = eventId;
   } catch (err) {
@@ -67,7 +68,7 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
     eventId: eventIdForTimestamp,
     // We go backwards because that's the direction that backfills events (Synapse
     // doesn't backfill in the forward direction)
-    dir: 'b',
+    dir: DIRECTION.backward,
     limit,
   });
 

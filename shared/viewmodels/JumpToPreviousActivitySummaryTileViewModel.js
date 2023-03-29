@@ -2,6 +2,7 @@
 
 const { SimpleTile } = require('hydrogen-view-sdk');
 
+const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const assert = require('../lib/assert');
 
@@ -33,7 +34,7 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
-        dir: 'b',
+        dir: DIRECTION.backward,
         currentRangeStartTs: this.rangeStartTimestamp,
         currentRangeEndTs: this.rangeEndTimestamp,
       }
