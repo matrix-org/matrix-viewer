@@ -862,7 +862,8 @@ describe('matrix-public-archive', () => {
           //     // If we can't find any more messages to paginate to, we just progress the
           //     // date forward by a day so we can display the empty view for that day.
           //     urlDate: '2022/01/05',
-          //     continueAtEvent: 'day4.event2',
+          //     // TODO: This page probably doesn't need a continue event
+          //     continueAtEvent: 'TODO',
           //     events: [
           //       // Some of day3
           //       'day3.event1',
