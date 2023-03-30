@@ -25,6 +25,9 @@ const {
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
 const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+const {
+  areTimestampsFromSameDay,
+} = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 let txnCount = 0;
 function getFakeEventId() {
@@ -65,7 +68,6 @@ class ArchiveRoomViewModel extends ViewModel {
     const {
       homeserverUrl,
       room,
-      dayTimestampFrom,
       dayTimestampTo,
       scrollStartEventId,
       events,
@@ -75,7 +77,6 @@ class ArchiveRoomViewModel extends ViewModel {
     } = options;
     assert(homeserverUrl);
     assert(room);
-    assert(dayTimestampFrom);
     assert(dayTimestampTo);
     assert(events);
     assert(stateEventMap);
@@ -83,7 +84,6 @@ class ArchiveRoomViewModel extends ViewModel {
     assert(events);
 
     this._room = room;
-    this._dayTimestampFrom = dayTimestampFrom;
     this._dayTimestampTo = dayTimestampTo;
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
@@ -91,6 +91,15 @@ class ArchiveRoomViewModel extends ViewModel {
 
     const navigation = this.navigation;
     const urlRouter = this.urlRouter;
+
+    // The start of the range to use as a jumping off point to the previous activity.
+    // This should be the first event in the timeline (oldest).
+    this._rangeStartTimestamp = events[0].origin_server_ts;
+    // The end of the range to use as a jumping off point to the next activity.
+    // This should be the last event in the timeline but since we paginate from
+    // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest
+    // timestamp to paginate from
+    this._rangeEndTimestamp = this._dayTimestampTo;
 
     // Setup events and tiles necessary to render
     const eventsToDisplay = this._addJumpSummaryEvents(events);
@@ -114,7 +123,7 @@ class ArchiveRoomViewModel extends ViewModel {
       entityId: this._room.id,
     });
 
-    const initialDate = new Date(dayTimestampFrom);
+    const initialDate = new Date(dayTimestampTo);
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
       activeDate: initialDate,
@@ -137,14 +146,8 @@ class ArchiveRoomViewModel extends ViewModel {
         }
         return TIME_PRECISION_VALUES.minutes;
       })(),
-      // The start of the range to use as a jumping off point to the previous activity
-      // This should be the first event in the timeline (different from
-      // `dayTimestampFrom`/`dayTimestampTo` which represents only one day from the
-      // URL).
-      timelineRangeStartTimestamp: events[0]?.origin_server_ts,
-      // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
-      // `_dayTimestampTo` is actually the newest timestamp to paginate from
-      timelineRangeEndTimestamp: events[events.length - 1]?.origin_server_ts,
+      timelineRangeStartTimestamp: this._rangeStartTimestamp,
+      timelineRangeEndTimestamp: this._rangeEndTimestamp,
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
@@ -298,8 +301,8 @@ class ArchiveRoomViewModel extends ViewModel {
     this._timeSelectorViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
   }
 
-  get dayTimestampFrom() {
-    return this._dayTimestampFrom;
+  get dayTimestampTo() {
+    return this._dayTimestampTo;
   }
 
   get roomDirectoryUrl() {
@@ -330,8 +333,10 @@ class ArchiveRoomViewModel extends ViewModel {
   _addJumpSummaryEvents(inputEventList) {
     const events = [...inputEventList];
 
-    const hasEventsFromGivenDay =
-      events[events.length - 1]?.origin_server_ts >= this._dayTimestampFrom;
+    const hasEventsFromGivenDay = areTimestampsFromSameDay(
+      events[events.length - 1]?.origin_server_ts,
+      this._dayTimestampTo
+    );
     let daySummaryKind;
     if (events.length === 0) {
       daySummaryKind = 'no-events-at-all';
@@ -340,18 +345,6 @@ class ArchiveRoomViewModel extends ViewModel {
     } else if (!hasEventsFromGivenDay) {
       daySummaryKind = 'no-events-in-day';
     }
-
-    // The start of the range to use as a jumping off point to the previous activity.
-    //
-    // This should be the first event in the timeline (different from `this._dayTimestampFrom`).
-    const rangeStartTimestamp = events[0].origin_server_ts;
-
-    // The end of the range to use as a jumping off point to the next activity.
-    //
-    // This should be the last event in the timeline but since we paginate from
-    // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest
-    // timestamp to paginate from
-    const rangeEndTimestamp = this._dayTimestampTo;
 
     // Add a summary item to the top of the timeline that allows you to jump to more
     // previous activity. Also explain that you might have hit the beginning of the room.
@@ -367,8 +360,8 @@ class ArchiveRoomViewModel extends ViewModel {
         origin_server_ts: events[0].origin_server_ts - 1,
         content: {
           canonicalAlias: this._room.canonicalAlias,
-          rangeStartTimestamp,
-          rangeEndTimestamp,
+          rangeStartTimestamp: this._rangeStartTimestamp,
+          rangeEndTimestamp: this._rangeEndTimestamp,
           // This is a bit cheating but I don't know how else to pass this kind of
           // info to the Tile viewmodel
           basePath: this._basePath,
@@ -389,9 +382,9 @@ class ArchiveRoomViewModel extends ViewModel {
         canonicalAlias: this._room.canonicalAlias,
         daySummaryKind,
         // The timestamp from the URL that was originally visited
-        dayTimestamp: this._dayTimestampFrom,
-        rangeStartTimestamp,
-        rangeEndTimestamp,
+        dayTimestamp: this._dayTimestampTo,
+        rangeStartTimestamp: this._rangeStartTimestamp,
+        rangeEndTimestamp: this._rangeEndTimestamp,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel
         basePath: this._basePath,

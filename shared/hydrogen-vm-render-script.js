@@ -14,8 +14,6 @@ const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-share
 const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
 const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
 
-const fromTimestamp = window.matrixPublicArchiveContext.fromTimestamp;
-assert(fromTimestamp);
 const toTimestamp = window.matrixPublicArchiveContext.toTimestamp;
 assert(toTimestamp);
 const roomData = window.matrixPublicArchiveContext.roomData;
@@ -105,7 +103,6 @@ async function mountHydrogen() {
     homeserverUrl: config.matrixServerUrl,
     room,
     // The timestamp from the URL that was originally visited
-    dayTimestampFrom: fromTimestamp,
     dayTimestampTo: toTimestamp,
     scrollStartEventId,
     events,

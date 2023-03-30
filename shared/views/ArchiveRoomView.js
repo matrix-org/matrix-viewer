@@ -92,8 +92,8 @@ class DisabledComposerView extends TemplateView {
             const activeDate = new Date(
               // If the date from our `archiveRoomViewModel` is available, use that
               vm?.currentTopPositionEventEntry?.timestamp ||
-                // Otherwise, use our initial `dayTimestampFrom`
-                vm.dayTimestampFrom
+                // Otherwise, use our initial `dayTimestampTo`
+                vm.dayTimestampTo
             );
             const dateString = activeDate.toISOString().split('T')[0];
             return t.span(`You're viewing an archive of events from ${dateString}. Use a `);

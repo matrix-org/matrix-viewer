@@ -130,10 +130,10 @@ function parseArchiveRangeFromReq(req) {
     timeInMs = hourInMs + minuteInMs + secondInMs;
   }
 
-  const fromTimestamp = Date.UTC(yyyy, mm, dd);
   let toTimestamp;
   if (timeInMs) {
-    toTimestamp = fromTimestamp + timeInMs;
+    const startOfDayTimestamp = Date.UTC(yyyy, mm, dd);
+    toTimestamp = startOfDayTimestamp + timeInMs;
   }
   // If no time specified, then we assume end-of-day
   else {
@@ -143,7 +143,6 @@ function parseArchiveRangeFromReq(req) {
   }
 
   return {
-    fromTimestamp,
     toTimestamp,
     yyyy,
     mm,
@@ -560,15 +559,15 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { fromTimestamp, toTimestamp } = parseArchiveRangeFromReq(req);
+    const { toTimestamp } = parseArchiveRangeFromReq(req);
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
-    if (fromTimestamp > nowTs) {
+    if (toTimestamp > nowTs) {
       throw new StatusError(
         404,
         `You can't view the history of a room on a future day (${new Date(
-          fromTimestamp
+          toTimestamp
         ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
       );
     }
@@ -629,7 +628,6 @@ router.get(
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {
-        fromTimestamp,
         toTimestamp,
         roomData: {
           ...roomData,

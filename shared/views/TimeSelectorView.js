@@ -137,6 +137,13 @@ class TimeSelectorView extends TemplateView {
     const timeInput = t.input({
       type: 'time',
       value: (vm) => getTwentyFourHourTimeStringFromDate(vm.activeDate, vm.preferredPrecision),
+      step: (vm) => {
+        if (vm.preferredPrecision === TIME_PRECISION_VALUES.seconds) {
+          return 1;
+        }
+
+        return undefined;
+      },
       onChange: (e) => {
         this.onTimeInputChange(e);
       },
