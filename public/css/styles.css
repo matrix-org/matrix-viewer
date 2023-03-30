@@ -307,6 +307,7 @@ summary {
 }
 
 .TimeSelectorView_primaryTimezoneLabel {
+  display: inline-block;
   padding: 2px 12px;
 
   background-color: var(--primary-access-color);
@@ -346,6 +347,30 @@ summary {
     padding: 3px;
     margin-left: 8px;
   }
+}
+
+.TimeSelectorView_goAction {
+  position: absolute;
+  right: 0;
+
+  display: inline-block;
+  padding: 4px 16px;
+  margin-right: 16px;
+
+  background-color: var(--primary-access-color);
+  /* Always make a pill shape */
+  border-radius: 9999px;
+  border: 0;
+
+  color: #ffffff;
+  line-height: 24px;
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.TimeSelectorView_goAction:hover {
+  background-color: var(--primary-access-color-hover);
 }
 
 .TimeSelectorView_footer {

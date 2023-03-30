@@ -121,10 +121,11 @@ class ArchiveRoomViewModel extends ViewModel {
       // The month displayed in the calendar
       calendarDate: initialDate,
       room,
-      basePath,
+      matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
     this._timeSelectorViewModel = new TimeSelectorViewModel({
+      room,
       // The time (within the given date) being displayed in the time scrubber.
       activeDate: initialDate,
       preferredPrecision: (() => {
@@ -144,6 +145,7 @@ class ArchiveRoomViewModel extends ViewModel {
       // This should be the last event in the timeline but since we paginate from `_dayTimestampTo` backwards,
       // `_dayTimestampTo` is actually the newest timestamp to paginate from
       timelineRangeEndTimestamp: events[events.length - 1]?.origin_server_ts,
+      matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(

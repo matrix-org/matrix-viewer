@@ -156,7 +156,6 @@ class TimeSelectorView extends TemplateView {
         // the DOM. But it seems to ignore the attribute after using the time input to
         // select a time. We have to manually set the `.value` property of the input in
         // order for it to actually reflect the value in the UI.
-
         timeInput.value = newValue;
       }
     );
@@ -174,6 +173,13 @@ class TimeSelectorView extends TemplateView {
             t.span({ className: 'TimeSelectorView_primaryTimezoneLabel' }, 'UTC +0'),
           ]),
           timeInput,
+          t.a(
+            {
+              className: 'TimeSelectorView_goAction',
+              href: (vm) => vm.goToActiveDateUrl,
+            },
+            'Go'
+          ),
         ]),
         t.main(
           {
@@ -237,8 +243,6 @@ class TimeSelectorView extends TemplateView {
                         style: (vm) => {
                           const msInRange =
                             vm.timelineRangeEndTimestamp - vm.timelineRangeStartTimestamp;
-
-                          console.log('msInRange', msInRange, '/', ONE_DAY_IN_MS);
 
                           // No messages in the timeline, means nothing to highlight
                           if (!msInRange) {

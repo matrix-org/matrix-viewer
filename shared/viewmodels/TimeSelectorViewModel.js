@@ -8,11 +8,16 @@ class TimeSelectorViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const {
+      room,
       activeDate,
       preferredPrecision = TIME_PRECISION_VALUES.minutes,
       timelineRangeStartTimestamp,
       timelineRangeEndTimestamp,
+      matrixPublicArchiveURLCreator,
     } = options;
+    assert(room);
+    assert(activeDate);
+    assert(matrixPublicArchiveURLCreator);
     assert(
       Object.values(TIME_PRECISION_VALUES).includes(preferredPrecision),
       `TimeSelectorViewModel: options.preferredPrecision must be one of ${JSON.stringify(
@@ -20,6 +25,7 @@ class TimeSelectorViewModel extends ViewModel {
       )}`
     );
 
+    this._room = room;
     // The time (within the given date) being displayed in the time scrubber.
     // And we will choose a time within this day.
     this._activeDate = activeDate;
@@ -27,6 +33,7 @@ class TimeSelectorViewModel extends ViewModel {
 
     this._timelineRangeStartTimestamp = timelineRangeStartTimestamp;
     this._timelineRangeEndTimestamp = timelineRangeEndTimestamp;
+    this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
 
     this._isDragging = false;
   }
@@ -39,6 +46,14 @@ class TimeSelectorViewModel extends ViewModel {
     const newActiveDate = new Date(newActiveDateInput);
     this._activeDate = newActiveDate;
     this.emitChange('activeDate');
+  }
+
+  get goToActiveDateUrl() {
+    return this._matrixPublicArchiveURLCreator.archiveUrlForDate(
+      this._room.canonicalAlias || this._room.id,
+      this.activeDate,
+      { preferredPrecision: this.preferredPrecision }
+    );
   }
 
   get preferredPrecision() {
