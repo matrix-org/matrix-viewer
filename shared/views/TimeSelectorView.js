@@ -77,7 +77,7 @@ class TimeSelectorView extends TemplateView {
     this._ignoreNextScrollEvent = false;
   }
 
-  render(t, vm) {
+  render(t /*, vm*/) {
     // Create a locally unique ID so all of the input labels correspond to only this <input>
     const inputUniqueId = `time-input-${Math.floor(Math.random() * 1000000000)}`;
 
@@ -138,6 +138,7 @@ class TimeSelectorView extends TemplateView {
       type: 'time',
       value: (vm) => getTwentyFourHourTimeStringFromDate(vm.activeDate, vm.preferredPrecision),
       step: (vm) => {
+        // `step="1"` is a "hack" to get the time selector to always show second precision
         if (vm.preferredPrecision === TIME_PRECISION_VALUES.seconds) {
           return 1;
         }

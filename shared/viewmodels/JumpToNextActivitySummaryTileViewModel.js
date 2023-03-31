@@ -29,13 +29,13 @@ class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
   }
 
   // The start of the range to use as a jumping off point to the previous activity
-  get rangeStartTimestamp() {
-    return this._entry?.content?.['rangeStartTimestamp'];
+  get jumpRangeStartTimestamp() {
+    return this._entry?.content?.['jumpRangeStartTimestamp'];
   }
 
   // The end of the range to use as a jumping off point to the next activity
-  get rangeEndTimestamp() {
-    return this._entry?.content?.['rangeEndTimestamp'];
+  get jumpRangeEndTimestamp() {
+    return this._entry?.content?.['jumpRangeEndTimestamp'];
   }
 
   get jumpToNextActivityUrl() {
@@ -43,8 +43,8 @@ class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
         dir: DIRECTION.forward,
-        currentRangeStartTs: this.rangeStartTimestamp,
-        currentRangeEndTs: this.rangeEndTimestamp,
+        currentRangeStartTs: this.jumpRangeStartTimestamp,
+        currentRangeEndTs: this.jumpRangeEndTimestamp,
       }
     );
   }

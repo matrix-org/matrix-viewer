@@ -92,15 +92,6 @@ class ArchiveRoomViewModel extends ViewModel {
     const navigation = this.navigation;
     const urlRouter = this.urlRouter;
 
-    // The start of the range to use as a jumping off point to the previous activity.
-    // This should be the first event in the timeline (oldest).
-    this._rangeStartTimestamp = events[0].origin_server_ts;
-    // The end of the range to use as a jumping off point to the next activity.
-    // This should be the last event in the timeline but since we paginate from
-    // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest
-    // timestamp to paginate from
-    this._rangeEndTimestamp = this._dayTimestampTo;
-
     // Setup events and tiles necessary to render
     const eventsToDisplay = this._addJumpSummaryEvents(events);
     const { eventEntriesByEventId, tiles } = this._createHydrogenTilesFromEvents({
@@ -133,6 +124,16 @@ class ArchiveRoomViewModel extends ViewModel {
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
+    const timelineRangeStartTimestamp = events[0]?.origin_server_ts;
+    const timelineRangeEndTimestamp = events[events.length - 1]?.origin_server_ts;
+    // Only show the time selector when we're showing events all from the same day. If
+    // there are no events, then it's possible the user navigated too far back before
+    // the room was created and we will let them pick a new time that might make more
+    // sense.
+    const shouldShowTimeSelector =
+      !events.length ||
+      areTimestampsFromSameDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp);
+
     this._timeSelectorViewModel = new TimeSelectorViewModel({
       room,
       // The time (within the given date) being displayed in the time scrubber.
@@ -146,8 +147,8 @@ class ArchiveRoomViewModel extends ViewModel {
         }
         return TIME_PRECISION_VALUES.minutes;
       })(),
-      timelineRangeStartTimestamp: this._rangeStartTimestamp,
-      timelineRangeEndTimestamp: this._rangeEndTimestamp,
+      timelineRangeStartTimestamp,
+      timelineRangeEndTimestamp,
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
@@ -191,6 +192,7 @@ class ArchiveRoomViewModel extends ViewModel {
         type: 'custom',
         customView: RightPanelContentView,
         calendarViewModel: this._calendarViewModel,
+        shouldShowTimeSelector,
         timeSelectorViewModel: this._timeSelectorViewModel,
         shouldIndex,
         get developerOptionsUrl() {
@@ -284,6 +286,7 @@ class ArchiveRoomViewModel extends ViewModel {
     return this._eventEntriesByEventId;
   }
 
+  // This is the event that appears at the very top of our visible timeline as you scroll around
   get currentTopPositionEventEntry() {
     return this._currentTopPositionEventEntry;
   }
@@ -292,6 +295,8 @@ class ArchiveRoomViewModel extends ViewModel {
     return this._shouldShowRightPanel;
   }
 
+  // This is the event that appears at the very top of our visible timeline as you
+  // scroll around (see the IntersectionObserver)
   setCurrentTopPositionEventEntry(currentTopPositionEventEntry) {
     this._currentTopPositionEventEntry = currentTopPositionEventEntry;
     this.emitChange('currentTopPositionEventEntry');
@@ -333,6 +338,17 @@ class ArchiveRoomViewModel extends ViewModel {
   _addJumpSummaryEvents(inputEventList) {
     const events = [...inputEventList];
 
+    // The start of the range to use as a jumping off point to the previous activity.
+    // This should be the first event in the timeline (oldest).
+    const jumpRangeStartTimestamp = events[0]?.origin_server_ts;
+    // The end of the range to use as a jumping off point to the next activity. You
+    // might expect this to be the last event in the timeline but since we paginate from
+    // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest timestamp
+    // to paginate from
+    const jumpRangeEndTimestamp = this._dayTimestampTo;
+
+    // Check whether the given day represented in the URL has any events on the
+    // page from that day.
     const hasEventsFromGivenDay = areTimestampsFromSameDay(
       events[events.length - 1]?.origin_server_ts,
       this._dayTimestampTo
@@ -360,8 +376,8 @@ class ArchiveRoomViewModel extends ViewModel {
         origin_server_ts: events[0].origin_server_ts - 1,
         content: {
           canonicalAlias: this._room.canonicalAlias,
-          rangeStartTimestamp: this._rangeStartTimestamp,
-          rangeEndTimestamp: this._rangeEndTimestamp,
+          jumpRangeStartTimestamp,
+          jumpRangeEndTimestamp,
           // This is a bit cheating but I don't know how else to pass this kind of
           // info to the Tile viewmodel
           basePath: this._basePath,
@@ -383,8 +399,8 @@ class ArchiveRoomViewModel extends ViewModel {
         daySummaryKind,
         // The timestamp from the URL that was originally visited
         dayTimestamp: this._dayTimestampTo,
-        rangeStartTimestamp: this._rangeStartTimestamp,
-        rangeEndTimestamp: this._rangeEndTimestamp,
+        jumpRangeStartTimestamp,
+        jumpRangeEndTimestamp,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel
         basePath: this._basePath,

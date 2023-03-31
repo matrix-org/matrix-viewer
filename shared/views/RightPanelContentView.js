@@ -9,6 +9,8 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 class RightPanelContentView extends TemplateView {
   render(t, vm) {
     assert(vm.shouldIndex !== undefined);
+    assert(vm.shouldShowTimeSelector !== undefined);
+
     let maybeIndexedMessage = 'This room is not being indexed by search engines.';
     if (vm.shouldIndex) {
       maybeIndexedMessage = 'This room is being indexed by search engines.';
@@ -21,7 +23,10 @@ class RightPanelContentView extends TemplateView {
       [
         t.div({ className: 'RightPanelContentView_mainContent' }, [
           t.view(new CalendarView(vm.calendarViewModel)),
-          t.view(new TimeSelectorView(vm.timeSelectorViewModel)),
+          t.ifView(
+            (vm) => vm.shouldShowTimeSelector,
+            (vm) => new TimeSelectorView(vm.timeSelectorViewModel)
+          ),
         ]),
         t.footer(
           {

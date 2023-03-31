@@ -25,6 +25,7 @@ const {
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
+  roundUpTimestampToDay,
   roundUpTimestampToHour,
   roundUpTimestampToMinute,
   roundUpTimestampToSecond,
@@ -563,7 +564,7 @@ router.get(
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
-    if (toTimestamp > nowTs) {
+    if (toTimestamp > roundUpTimestampToDay(nowTs)) {
       throw new StatusError(
         404,
         `You can't view the history of a room on a future day (${new Date(
