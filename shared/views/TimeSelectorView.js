@@ -72,6 +72,8 @@ class TimeSelectorView extends TemplateView {
     super(vm);
     this._vm = vm;
 
+    // Keep track of the `IntersectionObserver` so we can disconnect it when necessary
+    this._interSectionObserverForVisibility = null;
     // Keep track of the position we started dragging from so we can derive the delta movement
     this._dragPositionX = null;
     // Keep track of the momentum velocity over time
@@ -83,6 +85,16 @@ class TimeSelectorView extends TemplateView {
     // handler is only meant to capture the user changing the scroll and therefore a new
     // `activeDate` should be calculated.
     this._ignoreNextScrollEvent = false;
+  }
+
+  unmount() {
+    if (this._interSectionObserverForVisibility) {
+      this._interSectionObserverForVisibility.disconnect();
+    }
+
+    if (this._momentumRafId) {
+      cancelAnimationFrame(this._momentumRafId);
+    }
   }
 
   render(t /*, vm*/) {
@@ -101,60 +113,44 @@ class TimeSelectorView extends TemplateView {
       };
     });
 
-    // Set the scroll position based on the activeDate whenever it changes
+    // Set the scroll position based on the `activeDate` whenever it changes
     t.mapSideEffect(
       (vm) => vm.activeDate,
-      (activeDate /*, _oldActiveDate*/) => {
+      (/*activeDate , _oldActiveDate*/) => {
         // This makes the side-effect always run after the initial `render` and after
         // bindings evaluate.
         //
         // For the initial render, this does assume this view will be mounted in the
         // parent DOM straight away. #hydrogen-assume-view-mounted-right-away
         requestAnimationFrame(() => {
-          console.log('activeDate side-effect', activeDate.toISOString(), new Error().stack);
-          // Get the timestamp from the beginning of whatever day the active day is set to
-          const startOfDayTimestamp = Date.UTC(
-            activeDate.getUTCFullYear(),
-            activeDate.getUTCMonth(),
-            activeDate.getUTCDate()
-          );
+          this.updateScrubberScrollBasedOnActiveDate();
+        });
+      }
+    );
 
-          // Next, we'll find how many ms have elapsed so far in the day since the start of the day
-          const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
-          const timeInDayRatio = msSoFarInDay / ONE_DAY_IN_MS;
-
-          // Ignore scroll changes before the node is rendered to the page
-          console.log('activeDate side-effect', this.scrubberScrollNode);
-          if (this.scrubberScrollNode) {
-            // These will evaluate to `0` if this is `display: none;` which happens on
-            // mobile when the right-panel is hidden.
-            const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
-            const currentClientWidth = this.scrubberScrollNode.clientWidth;
-
-            // Change the scroll position to the represented date
-            this.scrubberScrollNode.scrollLeft =
-              timeInDayRatio * (currentScrollWidth - currentClientWidth);
-            console.log(
-              'updating scrollLeft',
-              this.scrubberScrollNode.scrollLeft,
-              currentScrollWidth,
-              currentClientWidth
-            );
-
-            // We can't just keep track of the `scrollLeft` position and compare it in the
-            // scroll event handler because there are rounding differences (Chrome rounds
-            // any decimal down). `scrollLeft` normally rounds down to integers but gets
-            // wonky once you introduce display scaling and will give decimal values. And
-            // we don't want to lookup `scrollLeft` from the element after we just set it
-            // because that will cause a layout recalculation (thrashing) which isn't
-            // performant.
-            //
-            // So instead, we rely on ignoring the next scroll event that will be fired
-            // from scroll change just above. We know that all of the DOM event stuff all
-            // happens in the main thread so should be no races there and assume that
-            // there are not other changes to the scroll in this same loop.
-            this._ignoreNextScrollEvent = true;
-          }
+    // Since this lives in the right-panel which is conditionally hidden from view with
+    // `display: none;`, we have to re-evaluate the scrubber scroll position when it
+    // becomes visible because client dimensions evaluate to `0` when something is
+    // hidden in the DOM.
+    t.mapSideEffect(
+      // We do this so it only runs once. We only need to run this once to bind the
+      // `IntersectionObserver`
+      (/*vm*/) => null,
+      () => {
+        // This makes the side-effect always run after the initial `render` and after
+        // bindings evaluate.
+        //
+        // For the initial render, this does assume this view will be mounted in the
+        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away
+        requestAnimationFrame(() => {
+          // Bind IntersectionObserver to the target element
+          this._interSectionObserverForVisibility = new IntersectionObserver((entries) => {
+            const isScrubberVisible = entries[0].isIntersecting;
+            if (isScrubberVisible) {
+              this.updateScrubberScrollBasedOnActiveDate();
+            }
+          });
+          this._interSectionObserverForVisibility.observe(this.scrubberScrollNode);
         });
       }
     );
@@ -193,7 +189,6 @@ class TimeSelectorView extends TemplateView {
       }
     );
 
-    console.log('render');
     return t.section(
       {
         className: {
@@ -337,6 +332,14 @@ class TimeSelectorView extends TemplateView {
     );
   }
 
+  get scrubberScrollNode() {
+    if (!this._scrubberScrollNode) {
+      this._scrubberScrollNode = this.root()?.querySelector('.js-scrubber');
+    }
+
+    return this._scrubberScrollNode;
+  }
+
   onTimeInputChange(event) {
     const prevActiveDate = this._vm.activeDate;
 
@@ -360,12 +363,46 @@ class TimeSelectorView extends TemplateView {
     }
   }
 
-  get scrubberScrollNode() {
-    if (!this._scrubberScrollNode) {
-      this._scrubberScrollNode = this.root()?.querySelector('.js-scrubber');
-    }
+  // Set the scrubber scroll position based on the `activeDate`
+  updateScrubberScrollBasedOnActiveDate() {
+    const activeDate = this._vm.activeDate;
 
-    return this._scrubberScrollNode;
+    // Get the timestamp from the beginning of whatever day the active day is set to
+    const startOfDayTimestamp = Date.UTC(
+      activeDate.getUTCFullYear(),
+      activeDate.getUTCMonth(),
+      activeDate.getUTCDate()
+    );
+
+    // Next, we'll find how many ms have elapsed so far in the day since the start of the day
+    const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
+    const timeInDayRatio = msSoFarInDay / ONE_DAY_IN_MS;
+
+    // Ignore scroll changes before the node is rendered to the page
+    if (this.scrubberScrollNode) {
+      // These will evaluate to `0` if this is `display: none;` which happens on
+      // mobile when the right-panel is hidden.
+      const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
+      const currentClientWidth = this.scrubberScrollNode.clientWidth;
+
+      // Change the scroll position to the represented date
+      this.scrubberScrollNode.scrollLeft =
+        timeInDayRatio * (currentScrollWidth - currentClientWidth);
+
+      // We can't just keep track of the `scrollLeft` position and compare it in the
+      // scroll event handler because there are rounding differences (Chrome rounds
+      // any decimal down). `scrollLeft` normally rounds down to integers but gets
+      // wonky once you introduce display scaling and will give decimal values. And
+      // we don't want to lookup `scrollLeft` from the element after we just set it
+      // because that will cause a layout recalculation (thrashing) which isn't
+      // performant.
+      //
+      // So instead, we rely on ignoring the next scroll event that will be fired
+      // from scroll change just above. We know that all of the DOM event stuff all
+      // happens in the main thread so should be no races there and assume that
+      // there are not other changes to the scroll in this same loop.
+      this._ignoreNextScrollEvent = true;
+    }
   }
 
   onScroll(/*event*/) {
@@ -386,15 +423,6 @@ class TimeSelectorView extends TemplateView {
     const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
     // The width of time selector that we can see
     const currentClientWidth = this.scrubberScrollNode.clientWidth;
-
-    console.log(
-      'currentScrollLeft',
-      currentScrollLeft,
-      'currentScrollWidth',
-      currentScrollWidth,
-      'currentClientWidth',
-      currentClientWidth
-    );
 
     // Ratio from 0-1 of how much has been scrolled in the scrubber (0 is the start of
     // the day, 1 is the end of the day). We clamp to protect from people overscrolling
@@ -427,8 +455,6 @@ class TimeSelectorView extends TemplateView {
 
     // And craft a new date based on the scroll position
     const newActiveDate = new Date(startOfDayTimestamp + msSoFarInDay);
-    console.log('scrollRatio', scrollRatio, msSoFarInDay, startOfDayTimestamp + msSoFarInDay);
-    console.log('newActiveDate', newActiveDate.toISOString(), newActiveDate.getTime());
     this._vm.setActiveDate(newActiveDate);
   }
 

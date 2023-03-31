@@ -114,6 +114,19 @@ class DisabledComposerView extends TemplateView {
 }
 
 class ArchiveRoomView extends TemplateView {
+  constructor(vm) {
+    super(vm);
+
+    // Keep track of the `IntersectionObserver` so we can disconnect it when necessary
+    this._interSectionObserverForUpdatedTopPositionEventEntry = null;
+  }
+
+  unmount() {
+    if (this._interSectionObserverForUpdatedTopPositionEventEntry) {
+      this._interSectionObserverForUpdatedTopPositionEventEntry.disconnect();
+    }
+  }
+
   render(t, vm) {
     const rootElement = t.div(
       {
@@ -162,9 +175,11 @@ class ArchiveRoomView extends TemplateView {
       ]
     );
 
+    // Avoid an error when server-side rendering (SSR) because it doesn't have all the
+    // DOM API's available (and doesn't need it for this case)
     if (typeof IntersectionObserver === 'function') {
       const scrollRoot = rootElement.querySelector('.Timeline_scroller');
-      const observer = new IntersectionObserver(
+      this._interSectionObserverForUpdatedTopPositionEventEntry = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
@@ -191,7 +206,7 @@ class ArchiveRoomView extends TemplateView {
         }
       );
       [...scrollRoot.querySelectorAll(`:scope > ul > [data-event-id]`)].forEach((el) => {
-        observer.observe(el);
+        this._interSectionObserverForUpdatedTopPositionEventEntry.observe(el);
       });
     }
 
