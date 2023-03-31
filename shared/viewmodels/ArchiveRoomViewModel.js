@@ -100,6 +100,11 @@ class ArchiveRoomViewModel extends ViewModel {
       stateEventMap,
     });
     this._eventEntriesByEventId = eventEntriesByEventId;
+    // Since we anchor our scroll to the bottom when we page-load, it makes sense to set
+    // this as the bottom-most event entry by default. This variable says "TopPosition"
+    // but it means the top of the viewport which in the extreme case of the viewport
+    // being very short, should be the bottom-most event.
+    this._currentTopPositionEventEntry = events && eventEntriesByEventId[events[events.length - 1]];
 
     this._roomAvatarViewModel = new AvatarViewModel({
       homeserverUrlToPullMediaFrom: homeserverUrl,
@@ -114,12 +119,19 @@ class ArchiveRoomViewModel extends ViewModel {
       entityId: this._room.id,
     });
 
+    const bottomMostEventDate = new Date(events[0]?.origin_server_ts);
     const initialDate = new Date(dayTimestampTo);
+    // The activeDate gets updated based on what the `currentTopPositionEventEntry` is
+    // sob ecause we initialize with the bottom-most event as the
+    // `currentTopPositionEventEntry`, the starting activeDate should also be the
+    // timestamp from the bottom-most event. Otherwise, just fallback to the initialDate
+    const initialActiveDate = bottomMostEventDate || initialDate;
+
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
-      activeDate: initialDate,
+      activeDate: initialActiveDate,
       // The month displayed in the calendar
-      calendarDate: initialDate,
+      calendarDate: initialActiveDate,
       room,
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
@@ -137,11 +149,10 @@ class ArchiveRoomViewModel extends ViewModel {
     this._timeSelectorViewModel = new TimeSelectorViewModel({
       room,
       // The time (within the given date) being displayed in the time scrubber.
-      activeDate: initialDate,
+      activeDate: initialActiveDate,
       preferredPrecision: (() => {
-        // Prevent extra precision if it's not needed.
-        //
-        // We only need to show seconds if the current archive page is worried about seconds.
+        // Prevent extra precision if it's not needed. We only need to show seconds if
+        // the page-loaded archive URL is worried about seconds.
         if (initialDate.getUTCSeconds() !== 0) {
           return TIME_PRECISION_VALUES.seconds;
         }

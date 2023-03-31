@@ -150,6 +150,9 @@ class ArchiveRoomView extends TemplateView {
             t.view(new DisabledComposerView(vm)),
           ]),
         ]),
+        // We can't just conditionally render the right-panel with `t.ifView(...)` based
+        // on `shouldShowRightPanel` because the right-panel being "hidden" only applies
+        // to the mobile break points and is always shown on desktop.
         t.view(new RightPanelView(vm.rightPanelModel)),
         t.mapView(
           (vm) => vm.lightboxViewModel,

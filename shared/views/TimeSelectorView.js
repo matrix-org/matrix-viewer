@@ -1,11 +1,19 @@
 'use strict';
 
+const assert = require('matrix-public-archive-shared/lib/assert');
 const { TemplateView } = require('hydrogen-view-sdk');
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
+
+function clamp(input, min, max) {
+  assert(input !== undefined);
+  assert(min !== undefined);
+  assert(max !== undefined);
+  return Math.min(Math.max(input, min), max);
+}
 
 function getTwentyFourHourTimeStringFromDate(
   inputDate,
@@ -93,44 +101,61 @@ class TimeSelectorView extends TemplateView {
       };
     });
 
-    // Set the scroll position
+    // Set the scroll position based on the activeDate whenever it changes
     t.mapSideEffect(
       (vm) => vm.activeDate,
       (activeDate /*, _oldActiveDate*/) => {
-        // Get the timestamp from the beginning of whatever day the active day is set to
-        const startOfDayTimestamp = Date.UTC(
-          activeDate.getUTCFullYear(),
-          activeDate.getUTCMonth(),
-          activeDate.getUTCDate()
-        );
+        // This makes the side-effect always run after the initial `render` and after
+        // bindings evaluate.
+        //
+        // For the initial render, this does assume this view will be mounted in the
+        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away
+        requestAnimationFrame(() => {
+          console.log('activeDate side-effect', activeDate.toISOString(), new Error().stack);
+          // Get the timestamp from the beginning of whatever day the active day is set to
+          const startOfDayTimestamp = Date.UTC(
+            activeDate.getUTCFullYear(),
+            activeDate.getUTCMonth(),
+            activeDate.getUTCDate()
+          );
 
-        // Next, we'll find how many ms have elapsed so far in the day since the start of the day
-        const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
-        const timeInDayRatio = msSoFarInDay / ONE_DAY_IN_MS;
+          // Next, we'll find how many ms have elapsed so far in the day since the start of the day
+          const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
+          const timeInDayRatio = msSoFarInDay / ONE_DAY_IN_MS;
 
-        // Ignore scroll changes before the node is rendered to the page
-        if (this.scrubberScrollNode) {
-          const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
-          const currentClientWidth = this.scrubberScrollNode.clientWidth;
+          // Ignore scroll changes before the node is rendered to the page
+          console.log('activeDate side-effect', this.scrubberScrollNode);
+          if (this.scrubberScrollNode) {
+            // These will evaluate to `0` if this is `display: none;` which happens on
+            // mobile when the right-panel is hidden.
+            const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
+            const currentClientWidth = this.scrubberScrollNode.clientWidth;
 
-          // Change the scroll position to the represented date
-          this.scrubberScrollNode.scrollLeft =
-            timeInDayRatio * (currentScrollWidth - currentClientWidth);
+            // Change the scroll position to the represented date
+            this.scrubberScrollNode.scrollLeft =
+              timeInDayRatio * (currentScrollWidth - currentClientWidth);
+            console.log(
+              'updating scrollLeft',
+              this.scrubberScrollNode.scrollLeft,
+              currentScrollWidth,
+              currentClientWidth
+            );
 
-          // We can't just keep track of the `scrollLeft` position and compare it in the
-          // scroll event handler because there are rounding differences (Chrome rounds
-          // any decimal down). `scrollLeft` normally rounds down to integers but gets
-          // wonky once you introduce display scaling and will give decimal values. And
-          // we don't want to lookup `scrollLeft` from the element after we just set it
-          // because that will cause a layout recalculation (thrashing) which isn't
-          // performant.
-          //
-          // So instead, we rely on ignoring the next scroll event that will be fired
-          // from scroll change just above. We know that all of the DOM event stuff all
-          // happens in the main thread so should be no races there and assume that
-          // there are not other changes to the scroll in this same loop.
-          this._ignoreNextScrollEvent = true;
-        }
+            // We can't just keep track of the `scrollLeft` position and compare it in the
+            // scroll event handler because there are rounding differences (Chrome rounds
+            // any decimal down). `scrollLeft` normally rounds down to integers but gets
+            // wonky once you introduce display scaling and will give decimal values. And
+            // we don't want to lookup `scrollLeft` from the element after we just set it
+            // because that will cause a layout recalculation (thrashing) which isn't
+            // performant.
+            //
+            // So instead, we rely on ignoring the next scroll event that will be fired
+            // from scroll change just above. We know that all of the DOM event stuff all
+            // happens in the main thread so should be no races there and assume that
+            // there are not other changes to the scroll in this same loop.
+            this._ignoreNextScrollEvent = true;
+          }
+        });
       }
     );
 
@@ -168,6 +193,7 @@ class TimeSelectorView extends TemplateView {
       }
     );
 
+    console.log('render');
     return t.section(
       {
         className: {
@@ -356,12 +382,41 @@ class TimeSelectorView extends TemplateView {
       return;
     }
 
+    // The width of content in the time selector scrubber
     const currentScrollWidth = this.scrubberScrollNode.scrollWidth;
+    // The width of time selector that we can see
     const currentClientWidth = this.scrubberScrollNode.clientWidth;
 
+    console.log(
+      'currentScrollLeft',
+      currentScrollLeft,
+      'currentScrollWidth',
+      currentScrollWidth,
+      'currentClientWidth',
+      currentClientWidth
+    );
+
     // Ratio from 0-1 of how much has been scrolled in the scrubber (0 is the start of
-    // the day, 1 is the end of the day)
-    const scrollRatio = currentScrollLeft / (currentScrollWidth - currentClientWidth);
+    // the day, 1 is the end of the day). We clamp to protect from people overscrolling
+    // in either direction and accidately advancing to the next/previous day.
+    const scrollRatio = clamp(currentScrollLeft / (currentScrollWidth - currentClientWidth), 0, 1);
+
+    // Next, we'll derive how many ms in the day are represented by that scroll
+    // position.
+    //
+    // We use a `clamp` instead of `scrollRatio * (ONE_DAY_IN_MS - 1)` to avoid every
+    // position we move to having 59 seconds (`03:25:59`) as the result. The math works
+    // out that way because there is exactly 60 pixels between each hour in the time
+    // selector and there are 60 minutes in an hour so we always get back minute
+    // increments.
+    const msSoFarInDay = clamp(
+      scrollRatio * ONE_DAY_IN_MS,
+      0,
+      // We `- 1` from `ONE_DAY_IN_MS` because we don't want to accidenatally
+      // advance to the next day at the extremity because midnight + 24 hours = the next
+      // day instead of the same day.
+      ONE_DAY_IN_MS - 1
+    );
 
     // Get the timestamp from the beginning of whatever day the active day is set to
     const startOfDayTimestamp = Date.UTC(
@@ -369,11 +424,11 @@ class TimeSelectorView extends TemplateView {
       this._vm.activeDate.getUTCMonth(),
       this._vm.activeDate.getUTCDate()
     );
-    // Next, we'll derive how many ms in day are represented by that scroll position
-    const msSoFarInDay = scrollRatio * ONE_DAY_IN_MS;
 
     // And craft a new date based on the scroll position
     const newActiveDate = new Date(startOfDayTimestamp + msSoFarInDay);
+    console.log('scrollRatio', scrollRatio, msSoFarInDay, startOfDayTimestamp + msSoFarInDay);
+    console.log('newActiveDate', newActiveDate.toISOString(), newActiveDate.getTime());
     this._vm.setActiveDate(newActiveDate);
   }
 

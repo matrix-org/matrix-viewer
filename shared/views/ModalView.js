@@ -78,8 +78,9 @@ class ModalView extends TemplateView {
     t.mapSideEffect(
       (vm) => vm.open,
       (open) => {
-        // The dialog has to be in the DOM before we can call `showModal`, etc.
-        // Assume this view will be mounted in the parent DOM straight away.
+        // The dialog has to be in the DOM before we can call `showModal`, etc. Assume
+        // this view will be mounted in the parent DOM straight away.
+        // #hydrogen-assume-view-mounted-right-away
         requestAnimationFrame(() => {
           // Prevent doing extra work if the modal is already closed or open and already
           // matches our intention
