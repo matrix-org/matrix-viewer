@@ -121,7 +121,10 @@ class ArchiveRoomViewModel extends ViewModel {
       entityId: this._room.id,
     });
 
-    const bottomMostEventDate = new Date(events[0]?.origin_server_ts);
+    const timelineRangeStartTimestamp = events[0]?.origin_server_ts;
+    const timelineRangeEndTimestamp = events[events.length - 1]?.origin_server_ts;
+
+    const bottomMostEventDate = timelineRangeEndTimestamp && new Date(timelineRangeEndTimestamp);
     const initialDate = new Date(dayTimestampTo);
     // The activeDate gets updated based on what the `currentTopPositionEventEntry` is
     // sob ecause we initialize with the bottom-most event as the
@@ -138,15 +141,14 @@ class ArchiveRoomViewModel extends ViewModel {
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
-    const timelineRangeStartTimestamp = events[0]?.origin_server_ts;
-    const timelineRangeEndTimestamp = events[events.length - 1]?.origin_server_ts;
-    // Only show the time selector when we're showing events all from the same day. If
-    // there are no events, then it's possible the user navigated too far back before
-    // the room was created and we will let them pick a new time that might make more
-    // sense.
     const shouldShowTimeSelector =
-      !events.length ||
-      areTimestampsFromSameDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp);
+      // If there are no events, then it's possible the user navigated too far back
+      // before the room was created and we will let them pick a new time that might make
+      // more sense. But only if they are worried about time precision in the URL already.
+      (precisionFromUrl !== TIME_PRECISION_VALUES.none && !events.length) ||
+      // Only show the time selector when we're showing events all from the same day.
+      (events.length &&
+        areTimestampsFromSameDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp));
 
     this._timeSelectorViewModel = new TimeSelectorViewModel({
       room,
@@ -347,20 +349,21 @@ class ArchiveRoomViewModel extends ViewModel {
     const events = [...inputEventList];
 
     // The start of the range to use as a jumping off point to the previous activity.
-    // This should be the first event in the timeline (oldest).
-    const jumpRangeStartTimestamp = events[0]?.origin_server_ts;
+    // This should be the first event in the timeline (oldest) or if there are no events
+    // in the timeline, we can jump from day.
+    const jumpRangeStartTimestamp = events[0]?.origin_server_ts || this._dayTimestampTo;
     // The end of the range to use as a jumping off point to the next activity. You
     // might expect this to be the last event in the timeline but since we paginate from
     // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest timestamp
     // to paginate from
     const jumpRangeEndTimestamp = this._dayTimestampTo;
 
-    // Check whether the given day represented in the URL has any events on the
-    // page from that day.
-    const hasEventsFromGivenDay = areTimestampsFromSameDay(
-      events[events.length - 1]?.origin_server_ts,
-      this._dayTimestampTo
-    );
+    // Check whether the given day represented in the URL has any events on the page
+    // from that day. We only need to check the last event which would be closest to
+    // `_dayTimestampTo` anyway.
+    const lastEventTs = events[events.length - 1]?.origin_server_ts;
+    const hasEventsFromGivenDay =
+      lastEventTs && areTimestampsFromSameDay(lastEventTs, this._dayTimestampTo);
     let daySummaryKind;
     if (events.length === 0) {
       daySummaryKind = 'no-events-at-all';
