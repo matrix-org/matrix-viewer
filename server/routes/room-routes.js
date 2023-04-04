@@ -560,7 +560,14 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { toTimestamp } = parseArchiveRangeFromReq(req);
+    const { toTimestamp, timeDefined, secondsDefined } = parseArchiveRangeFromReq(req);
+
+    let precisionFromUrl = TIME_PRECISION_VALUES.none;
+    if (secondsDefined) {
+      precisionFromUrl = TIME_PRECISION_VALUES.seconds;
+    } else if (timeDefined) {
+      precisionFromUrl = TIME_PRECISION_VALUES.minutes;
+    }
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
@@ -630,6 +637,7 @@ router.get(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {
         toTimestamp,
+        precisionFromUrl,
         roomData: {
           ...roomData,
           // The `canonicalAlias` will take precedence over the `roomId` when present so we only

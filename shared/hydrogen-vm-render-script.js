@@ -8,6 +8,7 @@
 const assert = require('matrix-public-archive-shared/lib/assert');
 const { Platform, MediaRepository, createNavigation, createRouter } = require('hydrogen-view-sdk');
 
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
 const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
 const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
@@ -16,6 +17,8 @@ const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub
 
 const toTimestamp = window.matrixPublicArchiveContext.toTimestamp;
 assert(toTimestamp);
+const precisionFromUrl = window.matrixPublicArchiveContext.precisionFromUrl;
+assert(Object.values(TIME_PRECISION_VALUES).includes(precisionFromUrl));
 const roomData = window.matrixPublicArchiveContext.roomData;
 assert(roomData);
 const events = window.matrixPublicArchiveContext.events;
@@ -104,6 +107,7 @@ async function mountHydrogen() {
     room,
     // The timestamp from the URL that was originally visited
     dayTimestampTo: toTimestamp,
+    precisionFromUrl,
     scrollStartEventId,
     events,
     stateEventMap,

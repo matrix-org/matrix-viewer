@@ -69,6 +69,7 @@ class ArchiveRoomViewModel extends ViewModel {
       homeserverUrl,
       room,
       dayTimestampTo,
+      precisionFromUrl,
       scrollStartEventId,
       events,
       stateEventMap,
@@ -78,6 +79,7 @@ class ArchiveRoomViewModel extends ViewModel {
     assert(homeserverUrl);
     assert(room);
     assert(dayTimestampTo);
+    assert(Object.values(TIME_PRECISION_VALUES).includes(precisionFromUrl));
     assert(events);
     assert(stateEventMap);
     assert(shouldIndex !== undefined);
@@ -150,14 +152,9 @@ class ArchiveRoomViewModel extends ViewModel {
       room,
       // The time (within the given date) being displayed in the time scrubber.
       activeDate: initialActiveDate,
-      preferredPrecision: (() => {
-        // Prevent extra precision if it's not needed. We only need to show seconds if
-        // the page-loaded archive URL is worried about seconds.
-        if (initialDate.getUTCSeconds() !== 0) {
-          return TIME_PRECISION_VALUES.seconds;
-        }
-        return TIME_PRECISION_VALUES.minutes;
-      })(),
+      // Prevent extra precision if it's not needed. We only need to show seconds if
+      // the page-loaded archive URL is worried about seconds.
+      preferredPrecision: precisionFromUrl,
       timelineRangeStartTimestamp,
       timelineRangeEndTimestamp,
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
