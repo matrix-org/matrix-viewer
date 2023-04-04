@@ -283,12 +283,14 @@ router.get(
       // `/2020/01/02` and we want to redirect them to previous chunk from that same
       // day, like `/2020/01/02T12:00:00`
       if (dir === DIRECTION.backward) {
-        const dateOfClosestEvent = new Date(tsForClosestEvent);
-
-        const fromSameDay = areTimestampsFromSameDay(currentRangeEndTs, tsForClosestEvent);
-        const fromSameHour = areTimestampsFromSameHour(currentRangeEndTs, tsForClosestEvent);
-        const fromSameMinute = areTimestampsFromSameMinute(currentRangeEndTs, tsForClosestEvent);
-        const fromSameSecond = areTimestampsFromSameSecond(currentRangeEndTs, tsForClosestEvent);
+        const fromSameDay =
+          tsForClosestEvent && areTimestampsFromSameDay(currentRangeEndTs, tsForClosestEvent);
+        const fromSameHour =
+          tsForClosestEvent && areTimestampsFromSameHour(currentRangeEndTs, tsForClosestEvent);
+        const fromSameMinute =
+          tsForClosestEvent && areTimestampsFromSameMinute(currentRangeEndTs, tsForClosestEvent);
+        const fromSameSecond =
+          tsForClosestEvent && areTimestampsFromSameSecond(currentRangeEndTs, tsForClosestEvent);
 
         console.log('fromSameDay', fromSameDay);
         console.log('fromSameHour', fromSameHour);
@@ -313,21 +315,21 @@ router.get(
         // to round up to the nearest second so that the URL encompasses the closest
         // event looking backwards
         else if (fromSameMinute) {
-          newOriginServerTs = roundUpTimestampToSecond(dateOfClosestEvent);
+          newOriginServerTs = roundUpTimestampToSecond(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // The closest event is from the same hour we tried to jump from, we will need
         // to round up to the nearest minute so that the URL encompasses the closest
         // event looking backwards
         else if (fromSameHour) {
-          newOriginServerTs = roundUpTimestampToMinute(dateOfClosestEvent);
+          newOriginServerTs = roundUpTimestampToMinute(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // The closest event is from the same day we tried to jump from, we will need to
         // round up to the nearest hour so that the URL encompasses the closest event
         // looking backwards
         else if (fromSameDay) {
-          newOriginServerTs = roundUpTimestampToHour(dateOfClosestEvent);
+          newOriginServerTs = roundUpTimestampToHour(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // We don't need to do anything. The next closest event is far enough away
