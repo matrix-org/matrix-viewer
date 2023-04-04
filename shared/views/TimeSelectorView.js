@@ -121,7 +121,8 @@ class TimeSelectorView extends TemplateView {
         // bindings evaluate.
         //
         // For the initial render, this does assume this view will be mounted in the
-        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away
+        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away -
+        // https://github.com/vector-im/hydrogen-web/issues/1069
         requestAnimationFrame(() => {
           this.updateScrubberScrollBasedOnActiveDate();
         });
@@ -141,7 +142,8 @@ class TimeSelectorView extends TemplateView {
         // bindings evaluate.
         //
         // For the initial render, this does assume this view will be mounted in the
-        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away
+        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away -
+        // https://github.com/vector-im/hydrogen-web/issues/1069
         requestAnimationFrame(() => {
           // Bind IntersectionObserver to the target element
           this._interSectionObserverForVisibility = new IntersectionObserver((entries) => {
