@@ -616,6 +616,144 @@ describe('matrix-public-archive', () => {
         }
       });
 
+      describe('time selector', () => {
+        it('shows time selector when there are too many messages from the same day', async () => {
+          // Set this low so it's easy to hit the limit
+          config.set('archiveMessageLimit', 3);
+
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+
+          await createMessagesInRoom({
+            client,
+            roomId,
+            // This should be greater than the `archiveMessageLimit`
+            numMessages: 10,
+            prefix: `foo`,
+            timestamp: archiveDate.getTime(),
+            // Just spread things out a bit so the event times are more obvious
+            // and stand out from each other while debugging
+            increment: ONE_HOUR_IN_MS,
+          });
+
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+          const dom = parseHTML(archivePageHtml);
+
+          // Make sure the time selector is visible
+          const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
+          assert(timeSelectorElement);
+        });
+
+        it('shows time selector when there are too many messages from the same day but paginated forward into days with no messages', async () => {
+          // Set this low so it's easy to hit the limit
+          config.set('archiveMessageLimit', 3);
+
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+
+          await createMessagesInRoom({
+            client,
+            roomId,
+            // This should be greater than the `archiveMessageLimit`
+            numMessages: 10,
+            prefix: `foo`,
+            timestamp: archiveDate.getTime(),
+            // Just spread things out a bit so the event times are more obvious
+            // and stand out from each other while debugging
+            increment: ONE_HOUR_IN_MS,
+          });
+
+          // Visit a day after when the messages were sent but there weren't
+          const visitArchiveDate = new Date(Date.UTC(2022, 0, 20));
+          assert(
+            visitArchiveDate > archiveDate,
+            'The date we visit the archive (`visitArchiveDate`) should be after where the messages were sent (`archiveDate`)'
+          );
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, visitArchiveDate);
+          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+          const dom = parseHTML(archivePageHtml);
+
+          // Make sure the time selector is visible
+          const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
+          assert(timeSelectorElement);
+        });
+
+        it('does not show time selector when all events from the same day but not over the limit', async () => {
+          // Set this low so we don't have to deal with many messages in the tests
+          config.set('archiveMessageLimit', 5);
+
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+
+          await createMessagesInRoom({
+            client,
+            roomId,
+            // This should be lesser than the `archiveMessageLimit`
+            numMessages: 3,
+            prefix: `foo`,
+            timestamp: archiveDate.getTime(),
+            // Just spread things out a bit so the event times are more obvious
+            // and stand out from each other while debugging
+            increment: ONE_HOUR_IN_MS,
+          });
+
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+          const dom = parseHTML(archivePageHtml);
+
+          // Make sure the time selector is *NOT* visible
+          const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
+          assert.strictEqual(timeSelectorElement, null);
+        });
+
+        it('does not show time selector when showing events from multiple days', async () => {
+          // Set this low so we don't have to deal with many messages in the tests
+          config.set('archiveMessageLimit', 5);
+
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+
+          // Create more messages than the archiveMessageLimit across many days but we
+          // should not go over the limit on a daily basis
+          const dayBeforeArchiveDateTs = Date.UTC(
+            archiveDate.getUTCFullYear(),
+            archiveDate.getUTCMonth(),
+            archiveDate.getUTCDate() - 1
+          );
+          await createMessagesInRoom({
+            client,
+            roomId,
+            // This should be lesser than the `archiveMessageLimit`
+            numMessages: 3,
+            prefix: `foo`,
+            timestamp: dayBeforeArchiveDateTs,
+            // Just spread things out a bit so the event times are more obvious
+            // and stand out from each other while debugging
+            increment: ONE_HOUR_IN_MS,
+          });
+          await createMessagesInRoom({
+            client,
+            roomId,
+            // This should be lesser than the `archiveMessageLimit`
+            numMessages: 3,
+            prefix: `foo`,
+            timestamp: archiveDate.getTime(),
+            // Just spread things out a bit so the event times are more obvious
+            // and stand out from each other while debugging
+            increment: ONE_HOUR_IN_MS,
+          });
+
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+          const dom = parseHTML(archivePageHtml);
+
+          // Make sure the time selector is *NOT* visible
+          const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
+          assert.strictEqual(timeSelectorElement, null);
+        });
+      });
+
       describe('Jump forwards and backwards', () => {
         const jumpTestCases = [
           {
