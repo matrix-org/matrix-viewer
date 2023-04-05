@@ -3,11 +3,14 @@
 const { TemplateView } = require('hydrogen-view-sdk');
 
 const CalendarView = require('matrix-public-archive-shared/views/CalendarView');
+const TimeSelectorView = require('matrix-public-archive-shared/views/TimeSelectorView');
 const assert = require('matrix-public-archive-shared/lib/assert');
 
 class RightPanelContentView extends TemplateView {
   render(t, vm) {
     assert(vm.shouldIndex !== undefined);
+    assert(vm.shouldShowTimeSelector !== undefined);
+
     let maybeIndexedMessage = 'This room is not being indexed by search engines.';
     if (vm.shouldIndex) {
       maybeIndexedMessage = 'This room is being indexed by search engines.';
@@ -15,25 +18,25 @@ class RightPanelContentView extends TemplateView {
 
     return t.div(
       {
-        className: {
-          RightPanelContentView: true,
-        },
+        className: 'RightPanelContentView',
       },
       [
-        t.view(new CalendarView(vm.calendarViewModel)),
-        t.div(
+        t.div({ className: 'RightPanelContentView_mainContent' }, [
+          t.view(new CalendarView(vm.calendarViewModel)),
+          t.ifView(
+            (vm) => vm.shouldShowTimeSelector,
+            (vm) => new TimeSelectorView(vm.timeSelectorViewModel)
+          ),
+        ]),
+        t.footer(
           {
-            className: {
-              RightPanelContentView_footer: true,
-            },
+            className: 'RightPanelContentView_footer',
           },
           [
             t.p(maybeIndexedMessage),
             t.div(
               {
-                className: {
-                  RightPanelContentView_footerLinkList: true,
-                },
+                className: 'RightPanelContentView_footerLinkList',
               },
               [
                 t.a(

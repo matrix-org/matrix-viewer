@@ -1,3 +1,10 @@
+:root {
+  --primary-access-color: #0dbd8b;
+  --primary-access-color-hover: #0a8f69;
+
+  --text-color-rgb: 46, 47, 50;
+}
+
 /* apply a natural box layout model to all elements, but allowing components to change */
 html {
   box-sizing: border-box;
@@ -131,10 +138,15 @@ summary {
 }
 
 .RightPanelContentView {
+  overflow: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+}
+
+.RightPanelContentView_mainContent > * + * {
+  margin-top: 1em;
 }
 
 .RightPanelContentView_footer {
@@ -270,16 +282,282 @@ summary {
 }
 
 .CalendarView_dayLink_active {
-  background-color: #0dbd8b;
+  background-color: var(--primary-access-color);
   color: #ffffff;
 }
 
 .CalendarView_dayLink_active:hover {
-  background-color: #0a8f69;
+  background-color: var(--primary-access-color-hover);
 }
 
 .CalendarView_dayLink_disabled {
   opacity: 0.5;
+}
+
+.TimeSelectorView {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.TimeSelectorView_header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.TimeSelectorView_primaryTimezoneLabel {
+  display: inline-block;
+  padding: 2px 12px;
+
+  background-color: var(--primary-access-color);
+  /* Always make a pill shape */
+  border-radius: 9999px;
+
+  color: #ffffff;
+}
+
+.TimeSelectorView_timeInput {
+  margin-top: 6px;
+  padding: 2px 18px;
+
+  background: transparent;
+  border: 0;
+  /* Always make a pill shape */
+  border-radius: 9999px;
+
+  color: var(--primary-access-color);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: bold;
+}
+
+/**
+ * The Chrome <input type="time"> has a little clock icon that makes the whole input
+ * appear off-center since we don't have any border/background on it. These styles just
+ * scoot the time text over to appear centered regardless of the icon.
+ */
+@supports selector(::-webkit-calendar-picker-indicator) {
+  .TimeSelectorView_timeInput {
+    margin-right: calc(-20px - 6px - 8px);
+  }
+
+  .TimeSelectorView_timeInput::-webkit-calendar-picker-indicator {
+    width: 20px;
+    padding: 3px;
+    margin-left: 8px;
+  }
+}
+
+.TimeSelectorView_goAction {
+  position: absolute;
+  right: 0;
+
+  display: inline-block;
+  padding: 4px 16px;
+  margin-right: 16px;
+
+  background-color: var(--primary-access-color);
+  /* Always make a pill shape */
+  border-radius: 9999px;
+  border: 0;
+
+  color: #ffffff;
+  line-height: 24px;
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.TimeSelectorView_goAction:hover {
+  background-color: var(--primary-access-color-hover);
+}
+
+.TimeSelectorView_footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-top: 16px;
+}
+
+.TimeSelectorView_secondaryTime {
+  color: rgba(var(--text-color-rgb), 0.75);
+  font-weight: bold;
+}
+
+.TimeSelectorView_secondaryTimezoneLabel {
+  display: inline-block;
+  margin-top: 6px;
+
+  color: rgba(var(--text-color-rgb), 0.75);
+}
+
+.TimeSelectorView_scrubber {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Current position triangle indicator */
+.TimeSelectorView_scrubber::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 32px;
+
+  transform: translateX(-50%) translateY(-50%);
+
+  /* Draw some pointer triangles at our current scroll position */
+  /* prettier-ignore */
+  background-image:
+    /* Arrow pointing down at the top */
+    linear-gradient(to top right, transparent 50%, var(--primary-access-color) 0),
+    linear-gradient(to bottom right, var(--primary-access-color) 50%, transparent 0),
+    /* Arrow pointing up at the bottom */
+    linear-gradient(to bottom right, transparent 50%, rgba(var(--text-color-rgb), 0.2) 0),
+    linear-gradient(to top right, rgba(var(--text-color-rgb), 0.2) 50%, transparent 0);
+  background-size: 50% 4px;
+  background-repeat: no-repeat;
+  /* prettier-ignore */
+  background-position:
+    /* Arrow pointing down at the top */
+    left top, right top,
+    /* Arrow pointing up at the bottom */
+    left bottom, right bottom;
+
+  /* This is just a visual thing, so don't mess with clicks or selection here */
+  pointer-events: none;
+}
+
+/* The magnifier highlights the time range of messages in the timeline on this page */
+.TimeSelectorView_magnifierBubble {
+  position: absolute;
+  top: 50%;
+  height: 24px;
+
+  transform: translateY(-50%);
+
+  /* Add slight highlight color to magnifier glass - Based on message highlight color */
+  background-color: rgb(255, 255, 138, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(var(--text-color-rgb), 0.3);
+
+  /* The magnifier is just a visual thing, so don't mess with clicks or selection here */
+  pointer-events: none;
+}
+
+.TimeSelectorView_scrubberScrollWrapper {
+  /**
+   * By having plain normal scrolling for this control, we get all the nice momentum
+   * scrolling that is native to peoples touch devices (Android, iOS, etc). We also
+   * emulate momentum scrolling for mouse click and dragging.
+   */
+  overflow-x: auto;
+  /* Hide scrollbar in Firefox. We want scroll but no scrollbar so mobile and touchpad
+  people can still scroll */
+  scrollbar-width: none;
+
+  display: flex;
+  width: 100%;
+  cursor: grab;
+}
+
+.TimeSelectorView_scrubberScrollWrapper::-webkit-scrollbar {
+  /* Hide scrollbar in Safari and Chrome. We want scroll but no scrollbar so mobile and touchpad
+  people can still scroll */
+  display: none;
+}
+
+.TimeSelectorView_scrubberScrollWrapper.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.TimeSelectorView_dial {
+  --tick-width: 1px;
+  --tick-major-height: 20px;
+  --tick-minor-height: 10px;
+  --tick-detail-height: 3px;
+
+  position: relative;
+  display: flex;
+  height: 68px;
+  margin: 0;
+  padding: 0;
+  /* Allow the dial to scroll to the ends with the start/end tick being in the middle */
+  margin: 0 50%;
+
+  list-style: none;
+
+  /* Draw some tick marks along the dial */
+  /* prettier-ignore */
+  background-image:
+    /* Ticks every hour */
+    linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
+    /* Last hour tick */
+    linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
+    /* Ticks every 10 mins */
+    linear-gradient(90deg, currentcolor var(--tick-width), transparent 0),
+    /* Ticks every 5 mins */
+    linear-gradient(90deg, rgba(var(--text-color-rgb), 0.4) var(--tick-width), transparent 0);
+  /* prettier-ignore */
+  background-repeat:
+  /* Ticks every hour */
+    repeat-x,
+    /* Last hour tick */
+    no-repeat,
+    /* Ticks every 10 mins */
+    repeat-x,
+    /* Ticks every 5 mins */
+    repeat-x;
+  /* prettier-ignore */
+  background-size:
+    /* Ticks every hour */
+    60px var(--tick-major-height),
+    /* Last hour tick */
+    var(--tick-width) var(--tick-major-height),
+    /* Ticks every 10 mins */
+    10px var(--tick-minor-height),
+    /* Ticks every 5 mins */
+    5px var(--tick-detail-height);
+  /* prettier-ignore */
+  background-position:
+    /* Ticks every hour */
+    center left,
+    /* Last hour tick */
+    center right,
+    /* Ticks every 10 mins */
+    center left,
+    /* Ticks every 5 mins */
+    center left;
+}
+
+.TimeSelectorView_incrementLabel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 60px;
+  margin: 0;
+  white-space: nowrap;
+
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.TimeSelectorView_incrementLabelText,
+.TimeSelectorView_incrementLabelTextSecondary {
+  transform: translateX(-50%);
+}
+
+.TimeSelectorView_incrementLabelTextSecondary {
+  color: rgba(var(--text-color-rgb), 0.75);
 }
 
 /* Some custom timeline, tiles stuff */

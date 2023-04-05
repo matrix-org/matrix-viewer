@@ -18,6 +18,26 @@ const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const {
+  MS_LOOKUP,
+  TIME_PRECISION_VALUES,
+  DIRECTION,
+} = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
+const {
+  roundUpTimestampToUtcDay,
+  roundUpTimestampToUtcHour,
+  roundUpTimestampToUtcMinute,
+  roundUpTimestampToUtcSecond,
+  getUtcStartOfDayTs,
+  getUtcStartOfHourTs,
+  getUtcStartOfMinuteTs,
+  getUtcStartOfSecondTs,
+  areTimestampsFromSameUtcDay,
+  areTimestampsFromSameUtcHour,
+  areTimestampsFromSameUtcMinute,
+  areTimestampsFromSameUtcSecond,
+} = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -43,6 +63,15 @@ const VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP = {
 const validSigilList = Object.values(VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP);
 const sigilRe = new RegExp(`^(${validSigilList.join('|')})`);
 
+function getErrorStringForTooManyMessages(archiveMessageLimit) {
+  const message =
+    `Too many messages were sent all within a second for us to display ` +
+    `(more than ${archiveMessageLimit} in one second). We're unable to redirect you to ` +
+    `a smaller time range to view them without losing a few between each page. ` +
+    `Since this is probably pretty rare, we've decided not to support it for now.`;
+  return message;
+}
+
 function getRoomIdOrAliasFromReq(req) {
   const entityDescriptor = req.params.entityDescriptor;
   // This could be with or with our without the sigil. Although the correct thing here
@@ -60,46 +89,73 @@ function getRoomIdOrAliasFromReq(req) {
   return `${sigil}${roomIdOrAliasWithoutSigil}`;
 }
 
+// eslint-disable-next-line max-statements, complexity
 function parseArchiveRangeFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
   // Month is the only zero-based index in this group
   const mm = parseInt(req.params.mm, 10) - 1;
   const dd = parseInt(req.params.dd, 10);
 
-  const hourRange = req.params.hourRange;
+  const timeString = req.params.time;
+  let timeInMs = 0;
+  let timeDefined = false;
+  let secondsDefined = false;
+  if (timeString) {
+    const timeMatches = timeString.match(/^T(\d\d?):(\d\d?)(?::(\d\d?))?$/);
 
-  let fromHour = 0;
-  let toHour = 0;
-  if (hourRange) {
-    const hourMatches = hourRange.match(/^(\d\d?)-(\d\d?)$/);
-
-    if (!hourMatches) {
-      throw new StatusError(404, 'Hour was unable to be parsed');
+    if (!timeMatches) {
+      throw new StatusError(
+        404,
+        'Time was unable to be parsed from URL. It should be in 24-hour format 23:59:59'
+      );
     }
 
-    fromHour = parseInt(hourMatches[1], 10);
-    toHour = parseInt(hourMatches[2], 10);
+    const hour = timeMatches[1] && parseInt(timeMatches[1], 10);
+    const minute = timeMatches[2] && parseInt(timeMatches[2], 10);
+    const second = timeMatches[3] ? parseInt(timeMatches[3], 10) : 0;
 
-    if (Number.isNaN(fromHour) || fromHour < 0 || fromHour > 23) {
-      throw new StatusError(404, 'From hour can only be in range 0-23');
+    timeDefined = !!timeMatches;
+    // Whether the timestamp included seconds
+    secondsDefined = !!timeMatches[3];
+
+    if (Number.isNaN(hour) || hour < 0 || hour > 23) {
+      throw new StatusError(404, `Hour can only be in range 0-23 -> ${hour}`);
     }
+    if (Number.isNaN(minute) || minute < 0 || minute > 59) {
+      throw new StatusError(404, `Minute can only be in range 0-59 -> ${minute}`);
+    }
+    if (Number.isNaN(second) || second < 0 || second > 59) {
+      throw new StatusError(404, `Second can only be in range 0-59 -> ${second}`);
+    }
+
+    const hourInMs = hour * ONE_HOUR_IN_MS;
+    const minuteInMs = minute * ONE_MINUTE_IN_MS;
+    const secondInMs = second * ONE_SECOND_IN_MS;
+
+    timeInMs = hourInMs + minuteInMs + secondInMs;
   }
 
-  const fromTimestamp = Date.UTC(yyyy, mm, dd, fromHour);
-  let toTimestamp = Date.UTC(yyyy, mm, dd + 1, fromHour);
-  if (hourRange) {
-    toTimestamp = Date.UTC(yyyy, mm, dd, toHour);
+  let toTimestamp;
+  if (timeInMs) {
+    const startOfDayTimestamp = Date.UTC(yyyy, mm, dd);
+    toTimestamp = startOfDayTimestamp + timeInMs;
+  }
+  // If no time specified, then we assume end-of-day
+  else {
+    // We `- 1` from UTC midnight to get the timestamp that is a millisecond before the
+    // next day T23:59:59.999
+    toTimestamp = Date.UTC(yyyy, mm, dd + 1) - 1;
   }
 
   return {
-    fromTimestamp,
     toTimestamp,
     yyyy,
     mm,
     dd,
-    hourRange,
-    fromHour,
-    toHour,
+    // Whether the req included time `T23:59`
+    timeDefined,
+    // Whether the req included seconds in the time `T23:59:59`
+    secondsDefined,
   };
 }
 
@@ -119,12 +175,12 @@ router.get(
     // any of the additional room info or messages.
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
-    // Find the closest day to today with messages
+    // Find the closest day to the current time with messages
     const { originServerTs } = await timestampToEvent({
       accessToken: matrixAccessToken,
       roomId,
       ts: dateBeforeJoin,
-      direction: 'b',
+      direction: DIRECTION.backward,
     });
     if (!originServerTs) {
       throw new StatusError(404, 'Unable to find day with history');
@@ -153,33 +209,139 @@ router.get(
 
 router.get(
   '/jump',
-  // eslint-disable-next-line max-statements
+  // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
-    const ts = parseInt(req.query.ts, 10);
-    assert(!Number.isNaN(ts), '?ts query parameter must be a number');
+    const currentRangeStartTs = parseInt(req.query.currentRangeStartTs, 10);
+    assert(
+      !Number.isNaN(currentRangeStartTs),
+      '?currentRangeStartTs query parameter must be a number'
+    );
+    const currentRangeEndTs = parseInt(req.query.currentRangeEndTs, 10);
+    assert(!Number.isNaN(currentRangeEndTs), '?currentRangeEndTs query parameter must be a number');
     const dir = req.query.dir;
-    assert(['f', 'b'].includes(dir), '?dir query parameter must be [f|b]');
+    assert(
+      [DIRECTION.forward, DIRECTION.backward].includes(dir),
+      '?dir query parameter must be [f|b]'
+    );
+
+    let ts;
+    if (dir === DIRECTION.backward) {
+      // We `- 1` so we don't jump to the same event because the endpoint is inclusive.
+      //
+      // XXX: This is probably an edge-case flaw when there could be multiple events at
+      // the same timestamp
+      ts = currentRangeStartTs - 1;
+    } else if (dir === DIRECTION.forward) {
+      // We `+ 1` so we don't jump to the same event because the endpoint is inclusive
+      //
+      // XXX: This is probably an edge-case flaw when there could be multiple events at
+      // the same timestamp
+      ts = currentRangeEndTs + 1;
+    } else {
+      throw new Error(`Unable to handle unknown dir=${dir} in /jump`);
+    }
 
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
 
-    let eventIdForTimestamp;
-    let originServerTs;
+    let eventIdForClosestEvent;
+    let tsForClosestEvent;
+    let newOriginServerTs;
+    let preferredPrecision = null;
     try {
-      // Find the closest day to today with messages
-      ({ eventId: eventIdForTimestamp, originServerTs } = await timestampToEvent({
-        accessToken: matrixAccessToken,
-        roomId,
-        ts: ts,
-        direction: dir,
-      }));
+      // We pull this fresh from the config for each request to ensure we have an
+      // updated value between each e2e test
+      const archiveMessageLimit = config.get('archiveMessageLimit');
 
-      // The goal is to go forward 100 messages, so that when we view the room at that
-      // point going backwards 100 messages, we end up at the perfect sam continuation
-      // spot in the room.
+      // Find the closest event to the given timestamp
+      ({ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent } =
+        await timestampToEvent({
+          accessToken: matrixAccessToken,
+          roomId,
+          ts: ts,
+          direction: dir,
+        }));
+
+      // Based on what we found was the closest, figure out the URL that will represent
+      // the next chunk in the desired direction.
+      // ==============================
+      //
+      // When jumping backwards, since a given room archive URL represents the end of
+      // the day/time-period looking backward (scroll is also anchored to the bottom),
+      // we just need to get the user to the previous time-period.
+      //
+      // We are trying to avoid sending the user to the same time period they were just
+      // viewing. i.e, if they were visiting `/2020/01/02T16:00:00` (displays messages
+      // backwards from that time up to the limit), which had more messages than we
+      // could display in that day, jumping backwards from the earliest displayed event
+      // in the displayed range, say `T12:00:05` would still give us the same day
+      // `/2020/01/02` and we want to redirect them to previous chunk from that same
+      // day, like `/2020/01/02T12:00:00`
+      if (dir === DIRECTION.backward) {
+        const fromSameDay =
+          tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
+        const fromSameHour =
+          tsForClosestEvent && areTimestampsFromSameUtcHour(currentRangeEndTs, tsForClosestEvent);
+        const fromSameMinute =
+          tsForClosestEvent && areTimestampsFromSameUtcMinute(currentRangeEndTs, tsForClosestEvent);
+        const fromSameSecond =
+          tsForClosestEvent && areTimestampsFromSameUtcSecond(currentRangeEndTs, tsForClosestEvent);
+
+        // The closest event is from the same second we tried to jump from. Since we
+        // can't represent something smaller than a second in the URL yet (we could do
+        // ms but it's a concious choice to make the URL cleaner,
+        // #support-ms-time-slice), we will need to just return the timestamp with a
+        // precision of seconds and hope that there isn't too many messages in this same
+        // second.
+        //
+        // XXX: If there is too many messages all within the same second, people will be
+        // stuck visiting the same page over and over every time they try to jump
+        // backwards from that range.
+        if (fromSameSecond) {
+          newOriginServerTs = tsForClosestEvent;
+          preferredPrecision = TIME_PRECISION_VALUES.seconds;
+        }
+        // The closest event is from the same minute we tried to jump from, we will need
+        // to round up to the nearest second so that the URL encompasses the closest
+        // event looking backwards
+        else if (fromSameMinute) {
+          newOriginServerTs = roundUpTimestampToUtcSecond(tsForClosestEvent);
+          preferredPrecision = TIME_PRECISION_VALUES.seconds;
+        }
+        // The closest event is from the same hour we tried to jump from, we will need
+        // to round up to the nearest minute so that the URL encompasses the closest
+        // event looking backwards
+        else if (fromSameHour) {
+          newOriginServerTs = roundUpTimestampToUtcMinute(tsForClosestEvent);
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
+        }
+        // The closest event is from the same day we tried to jump from, we will need to
+        // round up to the nearest hour so that the URL encompasses the closest event
+        // looking backwards
+        else if (fromSameDay) {
+          newOriginServerTs = roundUpTimestampToUtcHour(tsForClosestEvent);
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
+        }
+        // We don't need to do anything. The next closest event is far enough away
+        // (greater than 1 day) where we don't need to worry about the URL at all and
+        // can just render whatever day that the closest event is from because the
+        // archives biggest time-period represented in the URL is a day.
+        //
+        // We can display more than a day of content at a given URL (imagine lots of a
+        // quiet days in a room), but the URL will never represent a time-period
+        // greater than a day, ex. `/2023/01/01`. We don't allow someone to just
+        // specify the month like `/2023/01` ❌
+        else {
+          newOriginServerTs = tsForClosestEvent;
+        }
+      }
+      // When jumping forwards, the goal is to go forward 100 messages, so that when we
+      // view the room at that point going backwards 100 messages (which is how the
+      // archive works for any given date from the archive URL), we end up at the
+      // perfect continuation spot in the room (seamless).
       //
       // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
       // could backfill messages which will fill up the response before we perfectly
@@ -187,22 +349,26 @@ router.get(
       // `/messages?dir=f` backfills, we won't have this problem anymore because any
       // messages backfilled in the forwards direction would be picked up the same going
       // backwards.
-      if (dir === 'f') {
+      if (dir === DIRECTION.forward) {
         // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
         // then start the scroll from the top of the page so they can continue.
-        const archiveMessageLimit = config.get('archiveMessageLimit');
+        //
+        // XXX: It would be cool to somehow cache this response and re-use our work here
+        // for the actual room display that we redirect to from this route. No need for
+        // us go out 100 messages, only for us to go backwards 100 messages again in the
+        // next route.
         const messageResData = await getMessagesResponseFromEventId({
           accessToken: matrixAccessToken,
           roomId,
-          eventId: eventIdForTimestamp,
-          dir: 'f',
+          eventId: eventIdForClosestEvent,
+          dir: DIRECTION.forward,
           limit: archiveMessageLimit,
         });
 
         if (!messageResData.chunk?.length) {
           throw new StatusError(
             404,
-            `/messages response didn't contain any more messages to jump to`
+            `/jump?dir=${dir}: /messages response didn't contain any more messages to jump to`
           );
         }
 
@@ -210,32 +376,84 @@ router.get(
           messageResData.chunk[messageResData.chunk.length - 1].origin_server_ts;
         const dateOfLastMessage = new Date(timestampOfLastMessage);
 
-        // Back track from the last message timestamp to the date boundary. This will
-        // gurantee some overlap with the previous page we jumped from so we don't lose
-        // any messages in the gap.
+        // Back-track from the last message timestamp to the nearest date boundary.
+        // Because we're back-tracking a couple events here, when we paginate back out
+        // by the `archiveMessageLimit` later in the room route, it will gurantee some
+        // overlap with the previous page we jumped from so we don't lose any messages
+        // in the gap.
         //
-        // XXX: This date boundary logic may need to change once we introduce hour
-        // chunks or time slices
-        // (https://github.com/matrix-org/matrix-public-archive/issues/7). For example
-        // if we reached into the next day but it has too many messages to show for a
-        // given page, we would want to back track until a suitable time slice boundary.
-        // Maybe we need to add a new URL parameter here `?time-slice=true` to indicate
-        // that it's okay to break it up by time slice based on previously having to
-        // view by time slice. We wouldn't want to give
-        const utcMidnightOfDayBefore = Date.UTC(
-          dateOfLastMessage.getUTCFullYear(),
-          dateOfLastMessage.getUTCMonth(),
-          dateOfLastMessage.getUTCDate()
-        );
-        // We minus 1 from UTC midnight to get to the day before
-        const endOfDayBeforeDate = new Date(utcMidnightOfDayBefore - 1);
+        // We could choose to jump to the exact timestamp of the last message instead of
+        // back-tracking but then we get ugly URL's every time you jump instead of being
+        // able to back-track and round down to the nearest hour in a lot of cases. The
+        // other reason not to return the exact date is maybe there multiple messages at
+        // the same timestamp and we will lose messages in the gap it displays more than
+        // we thought.
+        const msGapFromJumpPointToLastMessage = timestampOfLastMessage - ts;
+        const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
+        const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
+        const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
+        const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
 
-        originServerTs = endOfDayBeforeDate;
+        // If the `/messages` response returns less than the `archiveMessageLimit`
+        // looking forwards, it means we're looking at the latest events in the room. We
+        // can simply just display the day that the latest event occured on or given
+        // rangeEnd (whichever is later).
+        const haveReachedLatestMessagesInRoom = messageResData.chunk?.length < archiveMessageLimit;
+        if (haveReachedLatestMessagesInRoom) {
+          const latestDesiredTs = Math.max(currentRangeEndTs, timestampOfLastMessage);
+          const latestDesiredDate = new Date(latestDesiredTs);
+          const utcMidnightTs = getUtcStartOfDayTs(latestDesiredDate);
+          newOriginServerTs = utcMidnightTs;
+          preferredPrecision = TIME_PRECISION_VALUES.none;
+        }
+        // More than a day gap here, so we can just back-track to the nearest day
+        else if (moreThanDayGap) {
+          const utcMidnightOfDayBefore = getUtcStartOfDayTs(dateOfLastMessage);
+          // We `- 1` from UTC midnight to get the timestamp that is a millisecond
+          // before the next day but we choose a no time precision so we jump to just
+          // the bare date without a time. A bare date in the `/date/2022/12/16`
+          // endpoint represents the end of that day looking backwards so this is
+          // exactly what we want.
+          const endOfDayBeforeTs = utcMidnightOfDayBefore - 1;
+          newOriginServerTs = endOfDayBeforeTs;
+          preferredPrecision = TIME_PRECISION_VALUES.none;
+        }
+        // More than a hour gap here, we will need to back-track to the nearest hour
+        else if (moreThanHourGap) {
+          const utcTopOfHourBefore = getUtcStartOfHourTs(dateOfLastMessage);
+          newOriginServerTs = utcTopOfHourBefore;
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
+        }
+        // More than a minute gap here, we will need to back-track to the nearest minute
+        else if (moreThanMinuteGap) {
+          const utcTopOfMinuteBefore = getUtcStartOfMinuteTs(dateOfLastMessage);
+          newOriginServerTs = utcTopOfMinuteBefore;
+          preferredPrecision = TIME_PRECISION_VALUES.minutes;
+        }
+        // More than a second gap here, we will need to back-track to the nearest second
+        else if (moreThanSecondGap) {
+          const utcTopOfSecondBefore = getUtcStartOfSecondTs(dateOfLastMessage);
+          newOriginServerTs = utcTopOfSecondBefore;
+          preferredPrecision = TIME_PRECISION_VALUES.seconds;
+        }
+        // Less than a second gap here, we will give up.
+        //
+        // XXX: Maybe we can support ms here (#support-ms-time-slice)
+        else {
+          // 501 Not Implemented: the server does not support the functionality required
+          // to fulfill the request
+          res.status(501);
+          res.send(
+            `/jump ran into a problem: ${getErrorStringForTooManyMessages(archiveMessageLimit)}`
+          );
+          return;
+        }
       }
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
       // Only throw if it's something other than a 404 error. 404 errors are fine, they
-      // just mean there is no more messages to paginate in that room.
+      // just mean there is no more messages to paginate in that room and we were
+      // already viewing the latest in the room.
       if (!is404Error) {
         throw err;
       }
@@ -244,37 +462,50 @@ router.get(
     // If we can't find any more messages to paginate to, just progress the date by a
     // day in whatever direction they wanted to go so we can display the empty view for
     // that day.
-    if (!originServerTs) {
-      const tsDate = new Date(ts);
-      const yyyy = tsDate.getUTCFullYear();
-      const mm = tsDate.getUTCMonth();
-      const dd = tsDate.getUTCDate();
+    if (!newOriginServerTs) {
+      let tsAtRangeBoundaryInDirection;
+      if (dir === DIRECTION.backward) {
+        tsAtRangeBoundaryInDirection = currentRangeStartTs;
+      } else if (dir === DIRECTION.forward) {
+        tsAtRangeBoundaryInDirection = currentRangeEndTs;
+      }
 
-      const newDayDelta = dir === 'f' ? 1 : -1;
-      originServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
+      const dateAtRangeBoundaryInDirection = new Date(tsAtRangeBoundaryInDirection);
+      const yyyy = dateAtRangeBoundaryInDirection.getUTCFullYear();
+      const mm = dateAtRangeBoundaryInDirection.getUTCMonth();
+      const dd = dateAtRangeBoundaryInDirection.getUTCDate();
+
+      const newDayDelta = dir === DIRECTION.forward ? 1 : -1;
+      newOriginServerTs = Date.UTC(yyyy, mm, dd + newDayDelta);
     }
 
     // Redirect to a day with messages
-    res.redirect(
-      // TODO: Add query parameter that causes the client to start the scroll at the top
-      // when jumping forwards so they can continue reading where they left off.
-      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
+    const archiveUrlToRedirecTo = matrixPublicArchiveURLCreator.archiveUrlForDate(
+      roomIdOrAlias,
+      new Date(newOriginServerTs),
+      {
         // Start the scroll at the next event from where they jumped from (seamless navigation)
-        scrollStartEventId: eventIdForTimestamp,
-      })
+        scrollStartEventId: eventIdForClosestEvent,
+        preferredPrecision,
+      }
     );
+    res.redirect(archiveUrlToRedirecTo);
   })
 );
 
-// Based off of the Gitter archive routes,
-// https://gitlab.com/gitterHQ/webapp/-/blob/14954e05c905e8c7cb675efebb89116c07cfaab5/server/handlers/app/archive.js#L190-297
+// Shows messages from the given date/time looking backwards up to the limit.
 router.get(
-  '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2})/:hourRange(\\d\\d?-\\d\\d?)?',
+  // The extra set of parenthesis around `((:\\d\\d?)?)` is to work around a
+  // `path-to-regex` bug where the `?` wasn't attaching to the capture group, see
+  // https://github.com/pillarjs/path-to-regexp/issues/287
+  '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2}):time(T\\d\\d?:\\d\\d?((:\\d\\d?)?))?',
   timeoutMiddleware,
-  // eslint-disable-next-line max-statements
+  // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
+    // We pull this fresh from the config for each request to ensure we have an
+    // updated value between each e2e test
     const archiveMessageLimit = config.get('archiveMessageLimit');
     assert(archiveMessageLimit);
     // Synapse has a max `/messages` limit of 1000
@@ -283,46 +514,25 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { fromTimestamp, toTimestamp, hourRange, fromHour, toHour } =
-      parseArchiveRangeFromReq(req);
+    const { toTimestamp, timeDefined, secondsDefined } = parseArchiveRangeFromReq(req);
+
+    let precisionFromUrl = TIME_PRECISION_VALUES.none;
+    if (secondsDefined) {
+      precisionFromUrl = TIME_PRECISION_VALUES.seconds;
+    } else if (timeDefined) {
+      precisionFromUrl = TIME_PRECISION_VALUES.minutes;
+    }
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
-    if (fromTimestamp > nowTs) {
+    if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
       throw new StatusError(
         404,
         `You can't view the history of a room on a future day (${new Date(
-          fromTimestamp
+          toTimestamp
         ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
       );
     }
-
-    // If the hourRange is defined, we force the range to always be 1 hour. If
-    // the format isn't correct, redirect to the correct hour range
-    if (hourRange && toHour !== fromHour + 1) {
-      // Pass through the query parameters
-      let queryParamterUrlPiece = '';
-      if (req.query) {
-        queryParamterUrlPiece = `?${new URLSearchParams(req.query).toString()}`;
-      }
-
-      res.redirect(
-        // FIXME: Can we use the matrixPublicArchiveURLCreator here?
-        `${urlJoin(
-          basePath,
-          roomIdOrAlias,
-          'date',
-          req.params.yyyy,
-          req.params.mm,
-          req.params.dd,
-          `${fromHour}-${fromHour + 1}`
-        )}${queryParamterUrlPiece}`
-      );
-      return;
-    }
-
-    // TODO: Highlight tile that matches ?at=$xxx
-    //const aroundId = req.query.at;
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
@@ -335,16 +545,19 @@ router.get(
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
+      //
+      // When given a bare date like `2022/11/16`, we want to paginate from the end of that
+      // day backwards. This is why we use the `toTimestamp` here and fetch backwards.
       fetchEventsFromTimestampBackwards({
         accessToken: matrixAccessToken,
         roomId,
         ts: toTimestamp,
-        // We fetch one more than the `archiveMessageLimit` so that we can see
-        // there are too many messages from the given day. If we have over the
-        // `archiveMessageLimit` number of messages fetching from the given day,
-        // it's acceptable to have them be from surrounding days. But if all 500
-        // messages (for example) are from the same day, let's redirect to a
-        // smaller hour range to display.
+        // We fetch one more than the `archiveMessageLimit` so that we can see if there
+        // are too many messages from the given day. If we have over the
+        // `archiveMessageLimit` number of messages fetching from the given day, it's
+        // acceptable to have them be from surrounding days. But if all 500 messages
+        // (for example) are from the same day, let's redirect to a smaller hour range
+        // to display.
         limit: archiveMessageLimit + 1,
       }),
     ]);
@@ -370,26 +583,6 @@ router.get(
       shouldIndex = roomData?.historyVisibility === `world_readable`;
     }
 
-    // If we have over the `archiveMessageLimit` number of messages fetching
-    // from the given day, it's acceptable to have them be from surrounding
-    // days. But if all 500 messages (for example) are from the same day, let's
-    // redirect to a smaller hour range to display.
-    if (
-      // If there are too many messages, check that the event is from a previous
-      // day in the surroundings.
-      events.length >= archiveMessageLimit &&
-      // Since we're only fetching previous days for the surroundings, we only
-      // need to look at the oldest event in the chronological list.
-      //
-      // XXX: In the future when we also fetch events from days after, we will
-      // need to change this next day check.
-      events[0].origin_server_ts >= fromTimestamp
-    ) {
-      res.send('TODO: Redirect user to smaller hour range');
-      res.status(204);
-      return;
-    }
-
     const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
@@ -397,8 +590,8 @@ router.get(
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {
-        fromTimestamp,
         toTimestamp,
+        precisionFromUrl,
         roomData: {
           ...roomData,
           // The `canonicalAlias` will take precedence over the `roomId` when present so we only

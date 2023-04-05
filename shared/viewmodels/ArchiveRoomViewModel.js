@@ -16,6 +16,7 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
+const TimeSelectorViewModel = require('matrix-public-archive-shared/viewmodels/TimeSelectorViewModel');
 const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
 const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
 const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarViewModel');
@@ -23,6 +24,10 @@ const {
   customTileClassForEntry,
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+const {
+  areTimestampsFromSameUtcDay,
+} = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 let txnCount = 0;
 function getFakeEventId() {
@@ -57,14 +62,14 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
 }
 
 class ArchiveRoomViewModel extends ViewModel {
-  // eslint-disable-next-line max-statements
+  // eslint-disable-next-line max-statements, complexity
   constructor(options) {
     super(options);
     const {
       homeserverUrl,
       room,
-      dayTimestampFrom,
       dayTimestampTo,
+      precisionFromUrl,
       scrollStartEventId,
       events,
       stateEventMap,
@@ -73,15 +78,14 @@ class ArchiveRoomViewModel extends ViewModel {
     } = options;
     assert(homeserverUrl);
     assert(room);
-    assert(dayTimestampFrom);
     assert(dayTimestampTo);
+    assert(Object.values(TIME_PRECISION_VALUES).includes(precisionFromUrl));
     assert(events);
     assert(stateEventMap);
     assert(shouldIndex !== undefined);
     assert(events);
 
     this._room = room;
-    this._dayTimestampFrom = dayTimestampFrom;
     this._dayTimestampTo = dayTimestampTo;
     this._currentTopPositionEventEntry = null;
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
@@ -98,6 +102,11 @@ class ArchiveRoomViewModel extends ViewModel {
       stateEventMap,
     });
     this._eventEntriesByEventId = eventEntriesByEventId;
+    // Since we anchor our scroll to the bottom when we page-load, it makes sense to set
+    // this as the bottom-most event entry by default. This variable says "TopPosition"
+    // but it means the top of the viewport which in the extreme case of the viewport
+    // being very short, should be the bottom-most event.
+    this._currentTopPositionEventEntry = events && eventEntriesByEventId[events[events.length - 1]];
 
     this._roomAvatarViewModel = new AvatarViewModel({
       homeserverUrlToPullMediaFrom: homeserverUrl,
@@ -112,14 +121,50 @@ class ArchiveRoomViewModel extends ViewModel {
       entityId: this._room.id,
     });
 
-    const initialDate = new Date(dayTimestampFrom);
+    const timelineRangeStartTimestamp = events[0]?.origin_server_ts;
+    const timelineRangeEndTimestamp = events[events.length - 1]?.origin_server_ts;
+
+    const bottomMostEventDate = timelineRangeEndTimestamp && new Date(timelineRangeEndTimestamp);
+    const initialDate = new Date(dayTimestampTo);
+    // The activeDate gets updated based on what the `currentTopPositionEventEntry` is
+    // sob ecause we initialize with the bottom-most event as the
+    // `currentTopPositionEventEntry`, the starting activeDate should also be the
+    // timestamp from the bottom-most event. Otherwise, just fallback to the initialDate
+    const initialActiveDate = bottomMostEventDate || initialDate;
+
     this._calendarViewModel = new CalendarViewModel({
       // The day being shown in the archive
-      activeDate: initialDate,
+      activeDate: initialActiveDate,
       // The month displayed in the calendar
-      calendarDate: initialDate,
+      calendarDate: initialActiveDate,
       room,
-      basePath,
+      matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
+    });
+
+    const shouldShowTimeSelector =
+      // If there are no events, then it's possible the user navigated too far back
+      // before the room was created and we will let them pick a new time that might make
+      // more sense. But only if they are worried about time precision in the URL already.
+      (precisionFromUrl !== TIME_PRECISION_VALUES.none && !events.length) ||
+      // Only show the time selector when we're showing events all from the same day.
+      (events.length &&
+        areTimestampsFromSameUtcDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp));
+
+    this._timeSelectorViewModel = new TimeSelectorViewModel({
+      room,
+      // The time (within the given date) being displayed in the time scrubber.
+      activeDate: initialActiveDate,
+      // Prevent extra precision if it's not needed. We only need to show seconds if
+      // the page-loaded archive URL is worried about seconds.
+      preferredPrecision:
+        // Default to minutes for the time selector otherwise use whatever more fine
+        // grained precision that the URL is using
+        precisionFromUrl === TIME_PRECISION_VALUES.none
+          ? TIME_PRECISION_VALUES.minutes
+          : precisionFromUrl,
+      timelineRangeStartTimestamp,
+      timelineRangeEndTimestamp,
+      matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
@@ -162,6 +207,8 @@ class ArchiveRoomViewModel extends ViewModel {
         type: 'custom',
         customView: RightPanelContentView,
         calendarViewModel: this._calendarViewModel,
+        shouldShowTimeSelector,
+        timeSelectorViewModel: this._timeSelectorViewModel,
         shouldIndex,
         get developerOptionsUrl() {
           return urlRouter.urlForSegments([
@@ -254,6 +301,7 @@ class ArchiveRoomViewModel extends ViewModel {
     return this._eventEntriesByEventId;
   }
 
+  // This is the event that appears at the very top of our visible timeline as you scroll around
   get currentTopPositionEventEntry() {
     return this._currentTopPositionEventEntry;
   }
@@ -262,16 +310,19 @@ class ArchiveRoomViewModel extends ViewModel {
     return this._shouldShowRightPanel;
   }
 
+  // This is the event that appears at the very top of our visible timeline as you
+  // scroll around (see the IntersectionObserver)
   setCurrentTopPositionEventEntry(currentTopPositionEventEntry) {
     this._currentTopPositionEventEntry = currentTopPositionEventEntry;
     this.emitChange('currentTopPositionEventEntry');
 
-    // Update the calendar
+    // Update the calendar and time scrubber
     this._calendarViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
+    this._timeSelectorViewModel.setActiveDate(currentTopPositionEventEntry.timestamp);
   }
 
-  get dayTimestampFrom() {
-    return this._dayTimestampFrom;
+  get dayTimestampTo() {
+    return this._dayTimestampTo;
   }
 
   get roomDirectoryUrl() {
@@ -302,8 +353,22 @@ class ArchiveRoomViewModel extends ViewModel {
   _addJumpSummaryEvents(inputEventList) {
     const events = [...inputEventList];
 
+    // The start of the range to use as a jumping off point to the previous activity.
+    // This should be the first event in the timeline (oldest) or if there are no events
+    // in the timeline, we can jump from day.
+    const jumpRangeStartTimestamp = events[0]?.origin_server_ts || this._dayTimestampTo;
+    // The end of the range to use as a jumping off point to the next activity. You
+    // might expect this to be the last event in the timeline but since we paginate from
+    // `_dayTimestampTo` backwards, `_dayTimestampTo` is actually the newest timestamp
+    // to paginate from
+    const jumpRangeEndTimestamp = this._dayTimestampTo;
+
+    // Check whether the given day represented in the URL has any events on the page
+    // from that day. We only need to check the last event which would be closest to
+    // `_dayTimestampTo` anyway.
+    const lastEventTs = events[events.length - 1]?.origin_server_ts;
     const hasEventsFromGivenDay =
-      events[events.length - 1]?.origin_server_ts >= this._dayTimestampFrom;
+      lastEventTs && areTimestampsFromSameUtcDay(lastEventTs, this._dayTimestampTo);
     let daySummaryKind;
     if (events.length === 0) {
       daySummaryKind = 'no-events-at-all';
@@ -323,12 +388,12 @@ class ArchiveRoomViewModel extends ViewModel {
         type: 'org.matrix.archive.jump_to_previous_activity_summary',
         room_id: this._room.id,
         // Even though this isn't used for sort, just using the time where the event
-        // would logically be (at the start of the day)
+        // would logically be (before any of the other events in the timeline)
         origin_server_ts: events[0].origin_server_ts - 1,
         content: {
           canonicalAlias: this._room.canonicalAlias,
-          // The start of the range to use as a jumping off point to the previous activity
-          rangeStartTimestamp: events[0].origin_server_ts - 1,
+          jumpRangeStartTimestamp,
+          jumpRangeEndTimestamp,
           // This is a bit cheating but I don't know how else to pass this kind of
           // info to the Tile viewmodel
           basePath: this._basePath,
@@ -343,17 +408,15 @@ class ArchiveRoomViewModel extends ViewModel {
       type: 'org.matrix.archive.jump_to_next_activity_summary',
       room_id: this._room.id,
       // Even though this isn't used for sort, just using the time where the event
-      // would logically be.
-      //
-      // -1 so we're not at 00:00:00 of the next day
-      origin_server_ts: this._dayTimestampTo - 1,
+      // would logically be (at the end of the day)
+      origin_server_ts: this._dayTimestampTo,
       content: {
         canonicalAlias: this._room.canonicalAlias,
         daySummaryKind,
         // The timestamp from the URL that was originally visited
-        dayTimestamp: this._dayTimestampFrom,
-        // The end of the range to use as a jumping off point to the next activity
-        rangeEndTimestamp: this._dayTimestampTo,
+        dayTimestamp: this._dayTimestampTo,
+        jumpRangeStartTimestamp,
+        jumpRangeEndTimestamp,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel
         basePath: this._basePath,

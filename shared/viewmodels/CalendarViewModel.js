@@ -3,23 +3,22 @@
 const { ViewModel } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 
 class CalendarViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { activeDate, calendarDate, room, basePath } = options;
+    const { activeDate, calendarDate, room, matrixPublicArchiveURLCreator } = options;
     assert(activeDate);
     assert(calendarDate);
     assert(room);
-    assert(basePath);
+    assert(matrixPublicArchiveURLCreator);
 
     // The day being shown in the archive
     this._activeDate = activeDate;
     // The month displayed in the calendar
     this._calendarDate = calendarDate;
     this._room = room;
-    this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+    this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
   }
 
   get activeDate() {

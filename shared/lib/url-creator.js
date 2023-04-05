@@ -3,6 +3,7 @@
 const urlJoin = require('url-join');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
+const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 
 function qsToUrlPiece(qs) {
   if (qs.toString()) {
@@ -65,9 +66,22 @@ class URLCreator {
     return `${urlJoin(this._basePath, `${urlPath}`)}${qsToUrlPiece(qs)}`;
   }
 
-  archiveUrlForDate(roomIdOrAlias, date, { viaServers = [], scrollStartEventId } = {}) {
+  archiveUrlForDate(
+    roomIdOrAlias,
+    date,
+    { preferredPrecision = null, viaServers = [], scrollStartEventId } = {}
+  ) {
     assert(roomIdOrAlias);
     assert(date);
+    // `preferredPrecision` is optional but if they gave a value, make sure it's something expected
+    if (preferredPrecision) {
+      assert(
+        Object.values(TIME_PRECISION_VALUES).includes(preferredPrecision),
+        `TimeSelectorViewModel: options.preferredPrecision must be one of ${JSON.stringify(
+          Object.values(TIME_PRECISION_VALUES)
+        )}`
+      );
+    }
 
     let qs = new URLSearchParams();
     [].concat(viaServers).forEach((viaServer) => {
@@ -81,19 +95,36 @@ class URLCreator {
 
     // Gives the date in YYYY/mm/dd format.
     // date.toISOString() -> 2022-02-16T23:20:04.709Z
-    const urlDate = date.toISOString().split('T')[0].replaceAll('-', '/');
+    const [datePiece, timePiece] = date.toISOString().split('T');
+    // Get the `2022/02/16` part of it
+    const urlDate = datePiece.replaceAll('-', '/');
 
-    return `${urlJoin(this._basePath, `${urlPath}/date/${urlDate}`)}${qsToUrlPiece(qs)}`;
+    // Get the `23:20:04` part of it (TIME_PRECISION_VALUES.seconds)
+    let urlTime = timePiece.split('.')[0];
+    if (preferredPrecision === TIME_PRECISION_VALUES.minutes) {
+      // We only want to replace the seconds part of the URL if its superfluous. `23:59:00`
+      // does not convey more information than `23:59` so we can safely remove it if the
+      // desired precision is in minutes.
+      urlTime = urlTime.replace(/:00$/, '');
+    }
+    const shouldIncludeTimeInUrl = !!preferredPrecision;
+
+    return `${urlJoin(
+      this._basePath,
+      `${urlPath}/date/${urlDate}${shouldIncludeTimeInUrl ? `T${urlTime}` : ''}`
+    )}${qsToUrlPiece(qs)}`;
   }
 
-  archiveJumpUrlForRoom(roomIdOrAlias, { ts, dir }) {
+  archiveJumpUrlForRoom(roomIdOrAlias, { dir, currentRangeStartTs, currentRangeEndTs }) {
     assert(roomIdOrAlias);
-    assert(ts);
     assert(dir);
+    assert(currentRangeStartTs);
+    assert(currentRangeEndTs);
 
     let qs = new URLSearchParams();
-    qs.append('ts', ts);
     qs.append('dir', dir);
+    qs.append('currentRangeStartTs', currentRangeStartTs);
+    qs.append('currentRangeEndTs', currentRangeEndTs);
 
     const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
 

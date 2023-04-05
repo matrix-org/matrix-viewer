@@ -2,6 +2,7 @@
 
 const { SimpleTile } = require('hydrogen-view-sdk');
 
+const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const assert = require('../lib/assert');
 
@@ -20,16 +21,22 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
   }
 
   // The start of the range to use as a jumping off point to the previous activity
-  get rangeStartTimestamp() {
-    return this._entry?.content?.['rangeStartTimestamp'];
+  get jumpRangeStartTimestamp() {
+    return this._entry?.content?.['jumpRangeStartTimestamp'];
+  }
+
+  // The end of the range to use as a jumping off point to the next activity
+  get jumpRangeEndTimestamp() {
+    return this._entry?.content?.['jumpRangeEndTimestamp'];
   }
 
   get jumpToPreviousActivityUrl() {
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
-        ts: this.rangeStartTimestamp,
-        dir: 'b',
+        dir: DIRECTION.backward,
+        currentRangeStartTs: this.jumpRangeStartTimestamp,
+        currentRangeEndTs: this.jumpRangeEndTimestamp,
       }
     );
   }

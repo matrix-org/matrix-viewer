@@ -92,8 +92,8 @@ class DisabledComposerView extends TemplateView {
             const activeDate = new Date(
               // If the date from our `archiveRoomViewModel` is available, use that
               vm?.currentTopPositionEventEntry?.timestamp ||
-                // Otherwise, use our initial `dayTimestampFrom`
-                vm.dayTimestampFrom
+                // Otherwise, use our initial `dayTimestampTo`
+                vm.dayTimestampTo
             );
             const dateString = activeDate.toISOString().split('T')[0];
             return t.span(`You're viewing an archive of events from ${dateString}. Use a `);
@@ -114,6 +114,19 @@ class DisabledComposerView extends TemplateView {
 }
 
 class ArchiveRoomView extends TemplateView {
+  constructor(vm) {
+    super(vm);
+
+    // Keep track of the `IntersectionObserver` so we can disconnect it when necessary
+    this._interSectionObserverForUpdatedTopPositionEventEntry = null;
+  }
+
+  unmount() {
+    if (this._interSectionObserverForUpdatedTopPositionEventEntry) {
+      this._interSectionObserverForUpdatedTopPositionEventEntry.disconnect();
+    }
+  }
+
   render(t, vm) {
     const rootElement = t.div(
       {
@@ -126,7 +139,7 @@ class ArchiveRoomView extends TemplateView {
         // The red border and yellow background trail around the event that is
         // driving the active date as you scroll around.
         t.if(
-          (vm) => vm._developerOptionsViewModel?.debugActiveDateIntersectionObserver,
+          (vm) => vm._developerOptionsContentViewModel?.debugActiveDateIntersectionObserver,
           (t /*, vm*/) => {
             return t.style({}, (vm) => {
               return `
@@ -150,6 +163,9 @@ class ArchiveRoomView extends TemplateView {
             t.view(new DisabledComposerView(vm)),
           ]),
         ]),
+        // We can't just conditionally render the right-panel with `t.ifView(...)` based
+        // on `shouldShowRightPanel` because the right-panel being "hidden" only applies
+        // to the mobile break points and is always shown on desktop.
         t.view(new RightPanelView(vm.rightPanelModel)),
         t.mapView(
           (vm) => vm.lightboxViewModel,
@@ -159,9 +175,11 @@ class ArchiveRoomView extends TemplateView {
       ]
     );
 
+    // Avoid an error when server-side rendering (SSR) because it doesn't have all the
+    // DOM API's available (and doesn't need it for this case)
     if (typeof IntersectionObserver === 'function') {
       const scrollRoot = rootElement.querySelector('.Timeline_scroller');
-      const observer = new IntersectionObserver(
+      this._interSectionObserverForUpdatedTopPositionEventEntry = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
@@ -188,7 +206,7 @@ class ArchiveRoomView extends TemplateView {
         }
       );
       [...scrollRoot.querySelectorAll(`:scope > ul > [data-event-id]`)].forEach((el) => {
-        observer.observe(el);
+        this._interSectionObserverForUpdatedTopPositionEventEntry.observe(el);
       });
     }
 
