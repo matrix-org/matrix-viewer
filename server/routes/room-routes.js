@@ -248,9 +248,9 @@ router.get(
     let newOriginServerTs;
     let preferredPrecision = null;
     try {
+      // We pull this fresh from the config for each request to ensure we have an
+      // updated value between each e2e test
       const archiveMessageLimit = config.get('archiveMessageLimit');
-
-      console.log('jumping from ts', ts, new Date(ts).toISOString());
 
       // Find the closest event to the given timestamp
       ({ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent } =
@@ -260,12 +260,6 @@ router.get(
           ts: ts,
           direction: dir,
         }));
-      console.log(
-        'timestamp_to_event found',
-        eventIdForClosestEvent,
-        tsForClosestEvent,
-        new Date(tsForClosestEvent).toISOString()
-      );
 
       // Based on what we found was the closest, figure out the URL that will represent
       // the next chunk in the desired direction.
@@ -291,11 +285,6 @@ router.get(
           tsForClosestEvent && areTimestampsFromSameMinute(currentRangeEndTs, tsForClosestEvent);
         const fromSameSecond =
           tsForClosestEvent && areTimestampsFromSameSecond(currentRangeEndTs, tsForClosestEvent);
-
-        console.log('fromSameDay', fromSameDay);
-        console.log('fromSameHour', fromSameHour);
-        console.log('fromSameMinute', fromSameMinute);
-        console.log('fromSameSecond', fromSameSecond);
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -383,8 +372,6 @@ router.get(
           messageResData.chunk[messageResData.chunk.length - 1].origin_server_ts;
         const dateOfLastMessage = new Date(timestampOfLastMessage);
 
-        console.log('dateOfLastMessage', dateOfLastMessage);
-
         // Back-track from the last message timestamp to the nearest date boundary.
         // Because we're back-tracking a couple events here, when we paginate back out
         // by the `archiveMessageLimit` later in the room route, it will gurantee some
@@ -402,11 +389,6 @@ router.get(
         const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
         const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
         const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
-
-        console.log('moreThanDayGap', moreThanDayGap);
-        console.log('moreThanHourGap', moreThanHourGap);
-        console.log('moreThanMinuteGap', moreThanMinuteGap);
-        console.log('moreThanSecondGap', moreThanSecondGap);
 
         // If the `/messages` response returns less than the `archiveMessageLimit`
         // looking forwards, it means we're looking at the latest events in the room. We
@@ -492,12 +474,9 @@ router.get(
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
       // Only throw if it's something other than a 404 error. 404 errors are fine, they
-      // just mean there is no more messages to paginate in that room.
-      if (is404Error) {
-        console.log(
-          `/jump?dir=${dir}: /messages returned a 404 which just means we are already viewing the latest in the room`
-        );
-      } else {
+      // just mean there is no more messages to paginate in that room and we were
+      // already viewing the latest in the room.
+      if (!is404Error) {
         throw err;
       }
     }
@@ -532,13 +511,6 @@ router.get(
         preferredPrecision,
       }
     );
-    console.log(
-      '/jump?dir=${dir} redirecting you to',
-      archiveUrlToRedirecTo,
-      newOriginServerTs,
-      new Date(newOriginServerTs).toISOString(),
-      eventIdForClosestEvent
-    );
     res.redirect(archiveUrlToRedirecTo);
   })
 );
@@ -554,6 +526,8 @@ router.get(
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
+    // We pull this fresh from the config for each request to ensure we have an
+    // updated value between each e2e test
     const archiveMessageLimit = config.get('archiveMessageLimit');
     assert(archiveMessageLimit);
     // Synapse has a max `/messages` limit of 1000
