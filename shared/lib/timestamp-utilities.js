@@ -4,55 +4,98 @@ const assert = require('matrix-public-archive-shared/lib/assert');
 const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
-// TODO: It would be good to add a few test for these
-
-function roundUpTimestampToDay(ts) {
-  assert(typeof ts === 'number');
+function roundUpTimestampToUtcDay(ts) {
+  // A `Date` object will cast just fine to a timestamp integer
+  assert(typeof ts === 'number' || ts instanceof Date);
   const dateRountedUp = new Date(Math.ceil(ts / ONE_DAY_IN_MS) * ONE_DAY_IN_MS);
   return dateRountedUp.getTime();
 }
 
-function roundUpTimestampToHour(ts) {
-  assert(typeof ts === 'number');
+function roundUpTimestampToUtcHour(ts) {
+  // A `Date` object will cast just fine to a timestamp integer
+  assert(typeof ts === 'number' || ts instanceof Date);
   const dateRountedUp = new Date(Math.ceil(ts / ONE_HOUR_IN_MS) * ONE_HOUR_IN_MS);
   return dateRountedUp.getTime();
 }
 
-function roundUpTimestampToMinute(ts) {
-  assert(typeof ts === 'number');
+function roundUpTimestampToUtcMinute(ts) {
+  // A `Date` object will cast just fine to a timestamp integer
+  assert(typeof ts === 'number' || ts instanceof Date);
   const dateRountedUp = new Date(Math.ceil(ts / ONE_MINUTE_IN_MS) * ONE_MINUTE_IN_MS);
   return dateRountedUp.getTime();
 }
 
-function roundUpTimestampToSecond(ts) {
-  assert(typeof ts === 'number');
+function roundUpTimestampToUtcSecond(ts) {
+  // A `Date` object will cast just fine to a timestamp integer
+  assert(typeof ts === 'number' || ts instanceof Date);
   const dateRountedUp = new Date(Math.ceil(ts / ONE_SECOND_IN_MS) * ONE_SECOND_IN_MS);
   return dateRountedUp.getTime();
 }
 
-function areTimestampsFromSameDay(aTs, bTs) {
-  return roundUpTimestampToDay(aTs) === roundUpTimestampToDay(bTs);
+function getUtcStartOfDayTs(ts) {
+  assert(typeof ts === 'number' || ts instanceof Date);
+  const date = new Date(ts);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
-function areTimestampsFromSameHour(aTs, bTs) {
-  return roundUpTimestampToHour(aTs) === roundUpTimestampToHour(bTs);
+function getUtcStartOfHourTs(ts) {
+  assert(typeof ts === 'number' || ts instanceof Date);
+  const date = new Date(ts);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours());
 }
 
-function areTimestampsFromSameMinute(aTs, bTs) {
-  return roundUpTimestampToMinute(aTs) === roundUpTimestampToMinute(bTs);
+function getUtcStartOfMinuteTs(ts) {
+  assert(typeof ts === 'number' || ts instanceof Date);
+  const date = new Date(ts);
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes()
+  );
 }
 
-function areTimestampsFromSameSecond(aTs, bTs) {
-  return roundUpTimestampToSecond(aTs) === roundUpTimestampToSecond(bTs);
+function getUtcStartOfSecondTs(ts) {
+  assert(typeof ts === 'number' || ts instanceof Date);
+  const date = new Date(ts);
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds()
+  );
+}
+
+function areTimestampsFromSameUtcDay(aTs, bTs) {
+  return getUtcStartOfDayTs(aTs) === getUtcStartOfDayTs(bTs);
+}
+
+function areTimestampsFromSameUtcHour(aTs, bTs) {
+  return getUtcStartOfHourTs(aTs) === getUtcStartOfHourTs(bTs);
+}
+
+function areTimestampsFromSameUtcMinute(aTs, bTs) {
+  return getUtcStartOfMinuteTs(aTs) === getUtcStartOfMinuteTs(bTs);
+}
+
+function areTimestampsFromSameUtcSecond(aTs, bTs) {
+  return getUtcStartOfSecondTs(aTs) === getUtcStartOfSecondTs(bTs);
 }
 
 module.exports = {
-  roundUpTimestampToDay,
-  roundUpTimestampToHour,
-  roundUpTimestampToMinute,
-  roundUpTimestampToSecond,
-  areTimestampsFromSameDay,
-  areTimestampsFromSameHour,
-  areTimestampsFromSameMinute,
-  areTimestampsFromSameSecond,
+  roundUpTimestampToUtcDay,
+  roundUpTimestampToUtcHour,
+  roundUpTimestampToUtcMinute,
+  roundUpTimestampToUtcSecond,
+  getUtcStartOfDayTs,
+  getUtcStartOfHourTs,
+  getUtcStartOfMinuteTs,
+  getUtcStartOfSecondTs,
+  areTimestampsFromSameUtcDay,
+  areTimestampsFromSameUtcHour,
+  areTimestampsFromSameUtcMinute,
+  areTimestampsFromSameUtcSecond,
 };

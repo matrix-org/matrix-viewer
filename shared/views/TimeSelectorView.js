@@ -7,6 +7,7 @@ const {
   TIME_PRECISION_VALUES,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
+const { getUtcStartOfDayTs } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 function clamp(input, min, max) {
   assert(input !== undefined);
@@ -290,11 +291,7 @@ class TimeSelectorView extends TemplateView {
                           }
 
                           // Get the timestamp from the beginning of whatever day the active day is set to
-                          const startOfDayTimestamp = Date.UTC(
-                            this._vm.activeDate.getUTCFullYear(),
-                            this._vm.activeDate.getUTCMonth(),
-                            this._vm.activeDate.getUTCDate()
-                          );
+                          const startOfDayTimestamp = getUtcStartOfDayTs(this._vm.activeDate);
 
                           const widthRatio = msInRange / ONE_DAY_IN_MS;
                           const msFromStartOfDay =
@@ -354,11 +351,7 @@ class TimeSelectorView extends TemplateView {
       const timeInMs = hourInMs + minuteInMs + secondInMs;
 
       // Get the timestamp from the beginning of whatever day the active day is set to
-      const startOfDayTimestamp = Date.UTC(
-        prevActiveDate.getUTCFullYear(),
-        prevActiveDate.getUTCMonth(),
-        prevActiveDate.getUTCDate()
-      );
+      const startOfDayTimestamp = getUtcStartOfDayTs(prevActiveDate);
 
       const newActiveDate = new Date(startOfDayTimestamp + timeInMs);
       this._vm.setActiveDate(newActiveDate);
@@ -370,11 +363,7 @@ class TimeSelectorView extends TemplateView {
     const activeDate = this._vm.activeDate;
 
     // Get the timestamp from the beginning of whatever day the active day is set to
-    const startOfDayTimestamp = Date.UTC(
-      activeDate.getUTCFullYear(),
-      activeDate.getUTCMonth(),
-      activeDate.getUTCDate()
-    );
+    const startOfDayTimestamp = getUtcStartOfDayTs(activeDate);
 
     // Next, we'll find how many ms have elapsed so far in the day since the start of the day
     const msSoFarInDay = activeDate.getTime() - startOfDayTimestamp;
@@ -449,11 +438,7 @@ class TimeSelectorView extends TemplateView {
     );
 
     // Get the timestamp from the beginning of whatever day the active day is set to
-    const startOfDayTimestamp = Date.UTC(
-      this._vm.activeDate.getUTCFullYear(),
-      this._vm.activeDate.getUTCMonth(),
-      this._vm.activeDate.getUTCDate()
-    );
+    const startOfDayTimestamp = getUtcStartOfDayTs(this._vm.activeDate);
 
     // And craft a new date based on the scroll position
     const newActiveDate = new Date(startOfDayTimestamp + msSoFarInDay);

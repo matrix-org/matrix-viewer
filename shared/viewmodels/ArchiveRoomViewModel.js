@@ -26,7 +26,7 @@ const {
 const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
 const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
 const {
-  areTimestampsFromSameDay,
+  areTimestampsFromSameUtcDay,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 let txnCount = 0;
@@ -148,7 +148,7 @@ class ArchiveRoomViewModel extends ViewModel {
       (precisionFromUrl !== TIME_PRECISION_VALUES.none && !events.length) ||
       // Only show the time selector when we're showing events all from the same day.
       (events.length &&
-        areTimestampsFromSameDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp));
+        areTimestampsFromSameUtcDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp));
 
     this._timeSelectorViewModel = new TimeSelectorViewModel({
       room,
@@ -363,7 +363,7 @@ class ArchiveRoomViewModel extends ViewModel {
     // `_dayTimestampTo` anyway.
     const lastEventTs = events[events.length - 1]?.origin_server_ts;
     const hasEventsFromGivenDay =
-      lastEventTs && areTimestampsFromSameDay(lastEventTs, this._dayTimestampTo);
+      lastEventTs && areTimestampsFromSameUtcDay(lastEventTs, this._dayTimestampTo);
     let daySummaryKind;
     if (events.length === 0) {
       daySummaryKind = 'no-events-at-all';

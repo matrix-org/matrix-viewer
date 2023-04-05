@@ -25,14 +25,18 @@ const {
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
-  roundUpTimestampToDay,
-  roundUpTimestampToHour,
-  roundUpTimestampToMinute,
-  roundUpTimestampToSecond,
-  areTimestampsFromSameDay,
-  areTimestampsFromSameHour,
-  areTimestampsFromSameMinute,
-  areTimestampsFromSameSecond,
+  roundUpTimestampToUtcDay,
+  roundUpTimestampToUtcHour,
+  roundUpTimestampToUtcMinute,
+  roundUpTimestampToUtcSecond,
+  getUtcStartOfDayTs,
+  getUtcStartOfHourTs,
+  getUtcStartOfMinuteTs,
+  getUtcStartOfSecondTs,
+  areTimestampsFromSameUtcDay,
+  areTimestampsFromSameUtcHour,
+  areTimestampsFromSameUtcMinute,
+  areTimestampsFromSameUtcSecond,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 const config = require('../lib/config');
@@ -278,13 +282,13 @@ router.get(
       // day, like `/2020/01/02T12:00:00`
       if (dir === DIRECTION.backward) {
         const fromSameDay =
-          tsForClosestEvent && areTimestampsFromSameDay(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
         const fromSameHour =
-          tsForClosestEvent && areTimestampsFromSameHour(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcHour(currentRangeEndTs, tsForClosestEvent);
         const fromSameMinute =
-          tsForClosestEvent && areTimestampsFromSameMinute(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcMinute(currentRangeEndTs, tsForClosestEvent);
         const fromSameSecond =
-          tsForClosestEvent && areTimestampsFromSameSecond(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcSecond(currentRangeEndTs, tsForClosestEvent);
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -293,7 +297,7 @@ router.get(
         // precision of seconds and hope that there isn't too many messages in this same
         // second.
         //
-        // If there is too many messages all within the same second, people will be
+        // XXX: If there is too many messages all within the same second, people will be
         // stuck visiting the same page over and over every time they try to jump
         // backwards from that range.
         if (fromSameSecond) {
@@ -304,21 +308,21 @@ router.get(
         // to round up to the nearest second so that the URL encompasses the closest
         // event looking backwards
         else if (fromSameMinute) {
-          newOriginServerTs = roundUpTimestampToSecond(tsForClosestEvent);
+          newOriginServerTs = roundUpTimestampToUtcSecond(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // The closest event is from the same hour we tried to jump from, we will need
         // to round up to the nearest minute so that the URL encompasses the closest
         // event looking backwards
         else if (fromSameHour) {
-          newOriginServerTs = roundUpTimestampToMinute(tsForClosestEvent);
+          newOriginServerTs = roundUpTimestampToUtcMinute(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // The closest event is from the same day we tried to jump from, we will need to
         // round up to the nearest hour so that the URL encompasses the closest event
         // looking backwards
         else if (fromSameDay) {
-          newOriginServerTs = roundUpTimestampToHour(tsForClosestEvent);
+          newOriginServerTs = roundUpTimestampToUtcHour(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // We don't need to do anything. The next closest event is far enough away
@@ -398,21 +402,13 @@ router.get(
         if (haveReachedLatestMessagesInRoom) {
           const latestDesiredTs = Math.max(currentRangeEndTs, timestampOfLastMessage);
           const latestDesiredDate = new Date(latestDesiredTs);
-          const utcMidnightTs = Date.UTC(
-            latestDesiredDate.getUTCFullYear(),
-            latestDesiredDate.getUTCMonth(),
-            latestDesiredDate.getUTCDate()
-          );
+          const utcMidnightTs = getUtcStartOfDayTs(latestDesiredDate);
           newOriginServerTs = utcMidnightTs;
           preferredPrecision = TIME_PRECISION_VALUES.none;
         }
         // More than a day gap here, so we can just back-track to the nearest day
         else if (moreThanDayGap) {
-          const utcMidnightOfDayBefore = Date.UTC(
-            dateOfLastMessage.getUTCFullYear(),
-            dateOfLastMessage.getUTCMonth(),
-            dateOfLastMessage.getUTCDate()
-          );
+          const utcMidnightOfDayBefore = getUtcStartOfDayTs(dateOfLastMessage);
           // We `- 1` from UTC midnight to get the timestamp that is a millisecond
           // before the next day but we choose a no time precision so we jump to just
           // the bare date without a time. A bare date in the `/date/2022/12/16`
@@ -424,37 +420,19 @@ router.get(
         }
         // More than a hour gap here, we will need to back-track to the nearest hour
         else if (moreThanHourGap) {
-          const utcTopOfHourBefore = Date.UTC(
-            dateOfLastMessage.getUTCFullYear(),
-            dateOfLastMessage.getUTCMonth(),
-            dateOfLastMessage.getUTCDate(),
-            dateOfLastMessage.getUTCHours()
-          );
+          const utcTopOfHourBefore = getUtcStartOfHourTs(dateOfLastMessage);
           newOriginServerTs = utcTopOfHourBefore;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a minute gap here, we will need to back-track to the nearest minute
         else if (moreThanMinuteGap) {
-          const utcTopOfMinuteBefore = Date.UTC(
-            dateOfLastMessage.getUTCFullYear(),
-            dateOfLastMessage.getUTCMonth(),
-            dateOfLastMessage.getUTCDate(),
-            dateOfLastMessage.getUTCHours(),
-            dateOfLastMessage.getUTCMinutes()
-          );
+          const utcTopOfMinuteBefore = getUtcStartOfMinuteTs(dateOfLastMessage);
           newOriginServerTs = utcTopOfMinuteBefore;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a second gap here, we will need to back-track to the nearest second
         else if (moreThanSecondGap) {
-          const utcTopOfSecondBefore = Date.UTC(
-            dateOfLastMessage.getUTCFullYear(),
-            dateOfLastMessage.getUTCMonth(),
-            dateOfLastMessage.getUTCDate(),
-            dateOfLastMessage.getUTCHours(),
-            dateOfLastMessage.getUTCMinutes(),
-            dateOfLastMessage.getUTCSeconds()
-          );
+          const utcTopOfSecondBefore = getUtcStartOfSecondTs(dateOfLastMessage);
           newOriginServerTs = utcTopOfSecondBefore;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
@@ -547,7 +525,7 @@ router.get(
 
     // Just 404 if anyone is trying to view the future, no need to waste resources on that
     const nowTs = Date.now();
-    if (toTimestamp > roundUpTimestampToDay(nowTs)) {
+    if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
       throw new StatusError(
         404,
         `You can't view the history of a room on a future day (${new Date(

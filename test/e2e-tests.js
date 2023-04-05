@@ -32,8 +32,8 @@ const {
   createMessagesInRoom,
   updateProfile,
   uploadContent,
-} = require('./lib/client-utils');
-const TestError = require('./lib/test-error');
+} = require('./test-utils/client-utils');
+const TestError = require('./test-utils/test-error');
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
