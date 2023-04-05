@@ -139,7 +139,7 @@ class ArchiveRoomView extends TemplateView {
         // The red border and yellow background trail around the event that is
         // driving the active date as you scroll around.
         t.if(
-          (vm) => vm._developerOptionsViewModel?.debugActiveDateIntersectionObserver,
+          (vm) => vm._developerOptionsContentViewModel?.debugActiveDateIntersectionObserver,
           (t /*, vm*/) => {
             return t.style({}, (vm) => {
               return `
