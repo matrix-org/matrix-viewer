@@ -62,7 +62,7 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
 }
 
 class ArchiveRoomViewModel extends ViewModel {
-  // eslint-disable-next-line max-statements
+  // eslint-disable-next-line max-statements, complexity
   constructor(options) {
     super(options);
     const {
@@ -156,7 +156,12 @@ class ArchiveRoomViewModel extends ViewModel {
       activeDate: initialActiveDate,
       // Prevent extra precision if it's not needed. We only need to show seconds if
       // the page-loaded archive URL is worried about seconds.
-      preferredPrecision: precisionFromUrl,
+      preferredPrecision:
+        // Default to minutes for the time selector otherwise use whatever more fine
+        // grained precision that the URL is using
+        precisionFromUrl === TIME_PRECISION_VALUES.none
+          ? TIME_PRECISION_VALUES.minutes
+          : precisionFromUrl,
       timelineRangeStartTimestamp,
       timelineRangeEndTimestamp,
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
