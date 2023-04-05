@@ -138,6 +138,7 @@ summary {
 }
 
 .RightPanelContentView {
+  overflow: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -294,6 +295,7 @@ summary {
 }
 
 .TimeSelectorView {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
