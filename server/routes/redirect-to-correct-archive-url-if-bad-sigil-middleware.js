@@ -6,11 +6,9 @@ const escapeStringRegexp = require('escape-string-regexp');
 const config = require('../lib/config');
 const basePath = config.get('basePath');
 assert(basePath);
-
-const VALID_SIGIL_TO_ENTITY_DESCRIPTOR_MAP = {
-  '#': 'r',
-  '!': 'roomid',
-};
+const {
+  VALID_SIGIL_TO_ENTITY_DESCRIPTOR_MAP,
+} = require('matrix-public-archive-shared/lib/reference-values');
 
 // Create a regex string that will match a normal string or the URI encoded string or
 // any combination of some characters being URI encoded. Only worries about characters

@@ -23,8 +23,14 @@ const DIRECTION = {
   backward: 'b',
 };
 
+const VALID_SIGIL_TO_ENTITY_DESCRIPTOR_MAP = {
+  '#': 'r',
+  '!': 'roomid',
+};
+
 module.exports = {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
+  VALID_SIGIL_TO_ENTITY_DESCRIPTOR_MAP,
 };
