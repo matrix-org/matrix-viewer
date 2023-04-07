@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "eslint **/*.js",
-    "build": "node ./build/do-client-build.js",
+    "build": "node ./build-scripts/do-client-build.js",
     "start": "node server/server.js",
     "start-dev": "node server/start-dev.js",
     "test": "npm run mocha -- test/**/*-tests.js --timeout 15000",
