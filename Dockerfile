@@ -24,7 +24,7 @@ RUN npm install
 
 # Copy what we need for the client-side build
 COPY config /app/config/
-COPY build /app/build/
+COPY build-scripts /app/build-scripts/
 COPY public /app/public/
 COPY shared /app/shared/
 # Build the client-side bundle
