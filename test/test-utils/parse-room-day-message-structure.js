@@ -20,8 +20,9 @@ function findEventRangeFromBracketPairsInLine({ inputLine, regexPattern, eventLi
   const stringIndiciceToEventMap = new Map();
   eventLine.replace(/\d+/g, (match, offset /*, string, groups*/) => {
     const eventNumber = match;
-    stringIndiciceToEventMap[offset] = eventNumber;
+    stringIndiciceToEventMap.set(offset, parseInt(eventNumber, 10));
   });
+  assert(stringIndiciceToEventMap.size > 0, `Expected to find at least one event in ${eventLine}`);
   // Ensure the person defined the events in order
   assertSequentialNumbersStartingFromOne(stringIndiciceToEventMap.values());
 
@@ -33,8 +34,11 @@ function findEventRangeFromBracketPairsInLine({ inputLine, regexPattern, eventLi
   // ... <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
   // [day1                              ]
   const stringIndiceNumberEndToEventMap = new Map();
-  stringIndiciceToEventMap.entries().forEach(([stringIndiceNumber, eventNumber]) => {
-    stringIndiceNumberEndToEventMap.set(stringIndiceNumber + eventNumber.length, eventNumber);
+  Array.from(stringIndiciceToEventMap.entries()).forEach(([stringIndiceNumber, eventNumber]) => {
+    stringIndiceNumberEndToEventMap.set(
+      stringIndiceNumber + String(eventNumber).length,
+      eventNumber
+    );
   });
 
   const matchMap = new Map();
@@ -42,28 +46,34 @@ function findEventRangeFromBracketPairsInLine({ inputLine, regexPattern, eventLi
     const startEventIndice = offset;
     const endEventIndice = offset + match.length;
 
-    const startEvent = stringIndiciceToEventMap[startEventIndice];
-    const endEvent = stringIndiceNumberEndToEventMap[endEventIndice];
+    const startEventNumber = stringIndiciceToEventMap.get(startEventIndice);
+    const endEventNumber = stringIndiceNumberEndToEventMap.get(endEventIndice);
     assert(
-      startEvent,
+      startEventNumber,
       `For match ${numberLabel}, the opening bracket does not line up exactly with an event in the eventLine:\n` +
         `${eventLine}\n` +
-        `${inputLine}`
+        `${inputLine}\n` +
+        `Looking for event at startEventIndice=${startEventIndice} in ${JSON.stringify(
+          Object.fromEntries(stringIndiciceToEventMap.entries())
+        )}`
     );
     assert(
-      endEvent,
+      endEventNumber,
       `For match ${numberLabel}, the closing bracket does not line up exactly with an event in the eventLine:\n` +
         `${eventLine}\n` +
-        `${inputLine}`
+        `${inputLine}\n` +
+        `Looking for event at endEventIndice=${endEventIndice} in ${JSON.stringify(
+          Object.fromEntries(stringIndiceNumberEndToEventMap.entries())
+        )}`
     );
     assert(
-      endEvent > startEvent,
-      `For match ${numberLabel}, expected endEvent ${endEvent} to be greater than startEvent ${startEvent}`
+      endEventNumber > startEventNumber,
+      `For match ${numberLabel}, expected endEventNumber=${endEventNumber} to be greater than startEventNumber=${startEventNumber}`
     );
 
     matchMap.set(numberLabel, {
-      startEvent,
-      endEvent,
+      startEventNumber,
+      endEventNumber,
     });
   });
 
@@ -87,8 +97,9 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
   assert(roomDayMessageStructureString && roomDayMessageStructureString.length > 0);
 
   // Strip the leading whitespace from each line
-  const rawLines = roomDayMessageStructureString.split(/\\r?\\n/);
-  const numWhiteSpaceToStripFromEachLine = rawLines[0].match(/^\s*/)[0].length;
+  const rawLines = roomDayMessageStructureString.split(/\r?\n/);
+  // We choose the second line because the first line is likely to be empty
+  const numWhiteSpaceToStripFromEachLine = rawLines[1].match(/^\s*/)[0].length;
   const lines = rawLines
     .map((line) => line.slice(numWhiteSpaceToStripFromEachLine))
     .filter((line) => {
@@ -108,8 +119,8 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
   assertSequentialNumbersStartingFromOne(dayToEventRangeMap.keys());
   // Make a map so it's easier to lookup which day an event is in
   const eventToDayMap = new Map();
-  dayToEventRangeMap.forEach(({ startEvent, endEvent }, dayNumber) => {
-    for (let eventNumber = startEvent; eventNumber <= endEvent; eventNumber++) {
+  dayToEventRangeMap.forEach(({ startEventNumber, endEventNumber }, dayNumber) => {
+    for (let eventNumber = startEventNumber; eventNumber <= endEventNumber; eventNumber++) {
       eventToDayMap.set(eventNumber, dayNumber);
     }
   });
@@ -126,22 +137,25 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
     const dayNumber = eventToDayMap.get(eventNumber);
     assert(
       dayNumber,
-      `Could not find ${eventNumber} associated with any day (check the brackets for "[roomX   ]" things])`
+      `Could not find event${eventNumber} associated with any day (check the brackets for "[dayX   ]" to make sure it encompasses that event)\n` +
+        `${eventLine}\n` +
+        `${dayLine}\n` +
+        `eventToDayMap=${JSON.stringify(Object.fromEntries(eventToDayMap.entries()))}`
     );
     const eventRangeInDay = dayToEventRangeMap.get(dayNumber);
     const event = {
       eventNumber,
-      eventIndexInDay: eventNumber - eventRangeInDay.startEvent,
+      eventIndexInDay: eventNumber - eventRangeInDay.startEventNumber,
       dayNumber,
     };
     return event;
   }
 
   // Get a list of events that should be in each room
-  const rooms = roomToEventRangeMap.keys().map((roomNumber) => {
-    const { startEvent, endEvent } = roomToEventRangeMap.get(roomNumber);
+  const rooms = Array.from(roomToEventRangeMap.keys()).map((roomNumber) => {
+    const { startEventNumber, endEventNumber } = roomToEventRangeMap.get(roomNumber);
     const events = [];
-    for (let eventNumber = startEvent; eventNumber <= endEvent; eventNumber++) {
+    for (let eventNumber = startEventNumber; eventNumber <= endEventNumber; eventNumber++) {
       events.push(getEventMetaFromEventNumber(eventNumber));
     }
 
@@ -151,7 +165,7 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
   });
 
   // Get a list of events that should be displayed on each page
-  const pages = pageLines.forEach((pageLine) => {
+  const pages = pageLines.map((pageLine, index) => {
     const pageToEventRangeMap = findEventRangeFromBracketPairsInLine({
       inputLine: pageLine,
       regexPattern: /\[page(\d+)\s*\]/g,
@@ -163,10 +177,13 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
         `Because pages can overlap on the events they display, they should be on their own lines`
     );
 
-    const { startEvent, endEvent } = Array.from(pageToEventRangeMap.values())[0];
+    // Ensure the person defined the pages in order
+    assert(Array.from(pageToEventRangeMap.keys())[0], index + 1);
+
+    const { startEventNumber, endEventNumber } = Array.from(pageToEventRangeMap.values())[0];
 
     const events = [];
-    for (let eventNumber = startEvent; eventNumber <= endEvent; eventNumber++) {
+    for (let eventNumber = startEventNumber; eventNumber <= endEventNumber; eventNumber++) {
       events.push(getEventMetaFromEventNumber(eventNumber));
     }
 
@@ -180,8 +197,8 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
   // extra to determine overflow.
   const archiveMessageLimit = numEventsOnEachPage[0] - 1;
   assert(
-    numEventsOnEachPage.every((numEvents) => numEvents === archiveMessageLimit),
-    `Expected all pages to have the same number of events but found ${numEventsOnEachPage}`
+    numEventsOnEachPage.every((numEvents) => numEvents === archiveMessageLimit + 1),
+    `Expected all pages to have the same number of events (archiveMessageLimit + 1) where archiveMessageLimit=${archiveMessageLimit} but found ${numEventsOnEachPage}`
   );
 
   return {

@@ -34,6 +34,8 @@ const {
   uploadContent,
 } = require('./test-utils/client-utils');
 const TestError = require('./test-utils/test-error');
+const parseRoomDayMessageStructure = require('./test-utils/parse-room-day-message-structure');
+const parseArchiveUrlForRoom = require('./test-utils/parse-archive-url-for-room');
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
@@ -799,7 +801,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03?continue=event7',
+              url: '/r/room1/date/2022/01/03?at=$event7',
               action: null,
               urlDate: '2022/01/03',
               // Continuing from the first event of day3
@@ -859,7 +861,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03?continue=event7',
+              url: '/r/room1/date/2022/01/03?at=$event7',
               action: null,
               urlDate: '2022/01/03',
               // Continuing from the first event of day3
@@ -904,7 +906,7 @@ describe('matrix-public-archive', () => {
               events: [
                 // Some of day2
                 'day2.event2',
-                // Some of day3
+                // All of day3
                 'day3.event0',
                 'day3.event1',
                 'day3.event2',
@@ -913,7 +915,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/04?continue=event10',
+              url: '/r/room1/date/2022/01/04?at=$event11',
               action: null,
               urlDate: '2022/01/04',
               continueAtEvent: 'day4.event1',
@@ -943,28 +945,28 @@ describe('matrix-public-archive', () => {
                                                               |---jump-fwd-4-messages--->|
                                                         [page2                     ]
             `,
-            startUrl: '/r/room1/date/2022/01/04T02:00',
+            startUrl: '/r/room1/date/2022/01/03',
             dayAndMessageStructure: [3, 3, 3, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
-            startUrlDate: '2022/01/04T02:00',
+            startUrlDate: '2022/01/03',
             page1: {
-              url: '/r/room1/date/2022/01/04T02:00',
+              url: '/r/room1/date/2022/01/03',
               action: 'next',
-              urlDate: '2022/01/04T02:00',
+              urlDate: '2022/01/03',
               events: [
-                // Some of day3
+                // All of day3
                 'day3.event0',
                 'day3.event1',
                 'day3.event2',
-                // All of day4
+                // Some of day4
                 'day4.event0',
                 'day4.event1',
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/04?continue=event10',
+              url: '/r/room1/date/2022/01/04?at=$event10',
               action: null,
               urlDate: '2022/01/04',
               continueAtEvent: 'day4.event2',
@@ -1022,7 +1024,7 @@ describe('matrix-public-archive', () => {
           //   },
           //   page2: {
           //     // TODO: This page probably doesn't need a continue event
-          //     url: '/r/room1/date/2022/01/05?continue=TODO',
+          //     url: '/r/room1/date/2022/01/05?at=TODO',
           //     action: null,
           //     // If we can't find any more messages to paginate to, we just progress the
           //     // date forward by a day so we can display the empty view for that day.
@@ -1082,7 +1084,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T02:00?continue=event7',
+              url: '/r/room1/date/2022/01/03T02:00?at=$event7',
               action: null,
               // We expect the URL to look like `T02:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
@@ -1137,7 +1139,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/02?continue=event6',
+              url: '/r/room1/date/2022/01/02?at=$event4',
               action: null,
               urlDate: '2022/01/02',
               // Continuing from the first event of day2 since we already saw the rest
@@ -1164,10 +1166,10 @@ describe('matrix-public-archive', () => {
             roomDayMessageStructureString: `
               [room1                                                                                                                              ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
-              [day1       ]     [day2       ]     [day3       ]     [day4          ]     [day5   ]     [day6   ]     [day7    ]    [day8          ]
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]     [day5   ]     [day6   ]     [day7   ]     [day8          ]
                                 [page1                                             ]
-                                                                                  |------------------jump-fwd-8-msg---------------------->|
-                                                                    [page2                                                    ]
+                                                                                   |------------------jump-fwd-8-msg---------------------->|
+                                                                    [page2                                                   ]
             `,
             startUrl: '/r/room1/date/2022/01/04',
             dayAndMessageStructure: [3, 3, 3, 3, 2, 2, 2, 3],
@@ -1195,7 +1197,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/07?continue=event13',
+              url: '/r/room1/date/2022/01/07?at=$event13',
               action: null,
               urlDate: '2022/01/07',
               // Continuing from the first event of day5
@@ -1226,7 +1228,7 @@ describe('matrix-public-archive', () => {
             roomDayMessageStructureString: `
               [room1                                                                                                                              ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
-              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5   ]    [day6   ]     [day7          ]     [day8          ]     [day9          ]
+              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5  ]     [day6   ]     [day7          ]     [day8          ]     [day9          ]
                                                                                          [page1                                                   ]
                                 [page2                                             ]
             `,
@@ -1256,7 +1258,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/06?continue=event12',
+              url: '/r/room1/date/2022/01/06?at=$event12',
               urlDate: '2022/01/06',
               // Continuing from the last event of day6
               continueAtEvent: 'day6.event1',
@@ -1317,7 +1319,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T03:00?continue=event7',
+              url: '/r/room1/date/2022/01/03T03:00?at=$event7',
               action: null,
               // We expect the URL to look like `T03:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
@@ -1373,7 +1375,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/02?continue=event9',
+              url: '/r/room1/date/2022/01/02?at=$event9',
               action: null,
               urlDate: '2022/01/02',
               // Continuing from the last event of day2
@@ -1423,7 +1425,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T03:00?continue=event9',
+              url: '/r/room1/date/2022/01/03T03:00?at=$event9',
               action: null,
               urlDate: '2022/01/03T03:00',
               // Continuing from the first event of day3
@@ -1474,7 +1476,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T01:00?continue=event9',
+              url: '/r/room1/date/2022/01/03T01:00?at=$event9',
               action: null,
               urlDate: '2022/01/03T01:00',
               // Continuing from the first event of day3
@@ -1525,7 +1527,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/02T09:00?continue=event9',
+              url: '/r/room1/date/2022/01/02T09:00?at=$event9',
               action: null,
               urlDate: '2022/01/02T09:00',
               // Continuing from the first new event on the page
@@ -1575,7 +1577,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/02T06:00?continue=event8',
+              url: '/r/room1/date/2022/01/02T06:00?at=$event8',
               action: null,
               urlDate: '2022/01/02T06:00',
               // Continuing from the first new event on the page
@@ -1625,7 +1627,7 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T02:00?continue=event9',
+              url: '/r/room1/date/2022/01/03T02:00?at=$event9',
               action: null,
               urlDate: '2022/01/03T02:00',
               // Continuing from the unseen event in day2
@@ -1676,7 +1678,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T01:00?continue=event8',
+              url: '/r/room1/date/2022/01/03T01:00?at=$event8',
               action: null,
               urlDate: '2022/01/03T01:00',
               // Continuing from the first event of day3
@@ -1727,7 +1729,7 @@ describe('matrix-public-archive', () => {
               ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/02?continue=event7',
+              url: '/r/room1/date/2022/01/02?at=$event7',
               action: null,
               urlDate: '2022/01/02',
               continueAtEvent: 'day2.event4',
@@ -1744,28 +1746,29 @@ describe('matrix-public-archive', () => {
         ];
 
         jumpTestCases.forEach((testCase) => {
-          // eslint-disable-next-line max-statements
+          // eslint-disable-next-line max-statements, complexity
           it(testCase.testName, async () => {
             // Setup
             // --------------------------------------
             // --------------------------------------
-            const eventMap = {};
-            const fancyIdentifierToEventMap = {};
+            const eventMap = new Map();
+            const fancyIdentifierToEventIdMap = new Map();
+            const eventIdToFancyIdentifierMap = new Map();
 
             function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
               // eslint-disable-next-line max-nested-callbacks
               return fancyEventIdentifiers.map((fancyId) => {
-                const eventId = fancyIdentifierToEventMap[fancyId];
+                const eventId = fancyIdentifierToEventIdMap.get(fancyId);
                 if (!eventId) {
                   throw new Error(
                     `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
-                      fancyIdentifierToEventMap,
+                      Object.fromEntries(fancyIdentifierToEventIdMap.entries()),
                       null,
                       2
                     )}`
                   );
                 }
-                const ts = eventMap[eventId]?.originServerTs;
+                const ts = eventMap.get(eventId)?.originServerTs;
                 const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
                 return `${eventId} (${fancyId}) - ${tsDebugString}`;
               });
@@ -1774,78 +1777,114 @@ describe('matrix-public-archive', () => {
             function convertEventIdsToDebugEventIds(eventIds) {
               // eslint-disable-next-line max-nested-callbacks
               return eventIds.map((eventId) => {
-                const [fancyId] =
-                  Object.entries(fancyIdentifierToEventMap).find(
-                    // eslint-disable-next-line max-nested-callbacks, no-unused-vars -- It's more clear to leave `fancyId` so we can see what we're destructuring from
-                    ([fancyId, eventIdFromFancyMap]) => {
-                      return eventIdFromFancyMap === eventId;
-                    }
-                  ) ?? [];
-                if (!fancyId) {
+                const fancyEventId = eventIdToFancyIdentifierMap.get(eventId);
+                if (!fancyEventId) {
                   throw new Error(
-                    `Unable to find ${eventId} in the fancyIdentifierToEventMap=${JSON.stringify(
-                      fancyIdentifierToEventMap,
+                    `Unable to find ${eventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
+                      Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
                       null,
                       2
                     )}`
                   );
                 }
-                const ts = eventMap[eventId]?.originServerTs;
+                const ts = eventMap.get(eventId)?.originServerTs;
                 const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
-                return `${eventId} (${fancyId}) - ${tsDebugString}`;
+                return `${eventId} (${fancyEventId}) - ${tsDebugString}`;
               });
             }
 
             const client = await getTestClientForHs(testMatrixServerUrl1);
-            const roomId = await createTestRoom(client);
 
-            // Join the archive user to the room before we create the test messages to
-            // avoid problems jumpting to the latest activity since we can't control the
-            // timestamp of the membership event.
-            const archiveAppServiceUserClient = await getTestClientForAs();
-            await joinRoom({
-              client: archiveAppServiceUserClient,
-              roomId: roomId,
-            });
+            // const dayIdentifierToDateMap = {};
+            // const numberOfDaysToConstruct = testCase.dayAndMessageStructure.length;
+            // for (let i = 0; i < numberOfDaysToConstruct; i++) {
+            //   const dayNumber = i + 1;
+            //   const numMessagesOnDay = testCase.dayAndMessageStructure[i];
+            //   assert(
+            //     numMessagesOnDay < 24,
+            //     'Expected less than 24 messages on any given day. Because we increment by an hour ' +
+            //       ' for each message, having more than 24 messages would mean that messages would ' +
+            //       'leak into the next day.'
+            //   );
 
-            const dayIdentifierToDateMap = {};
-            const numberOfDaysToConstruct = testCase.dayAndMessageStructure.length;
-            for (let i = 0; i < numberOfDaysToConstruct; i++) {
-              const dayNumber = i + 1;
-              const numMessagesOnDay = testCase.dayAndMessageStructure[i];
-              assert(
-                numMessagesOnDay < 24,
-                'Expected less than 24 messages on any given day. Because we increment by an hour ' +
-                  ' for each message, having more than 24 messages would mean that messages would ' +
-                  'leak into the next day.'
-              );
+            //   // The date should be just past midnight so we don't run into inclusive
+            //   // bounds leaking messages from one day into another.
+            //   const archiveDate = new Date(Date.UTC(2022, 0, dayNumber, 0, 0, 0, 1));
 
-              // The date should be just past midnight so we don't run into inclusive
-              // bounds leaking messages from one day into another.
-              const archiveDate = new Date(Date.UTC(2022, 0, dayNumber, 0, 0, 0, 1));
+            //   dayIdentifierToDateMap[`day${dayNumber}`] = archiveDate;
 
-              dayIdentifierToDateMap[`day${dayNumber}`] = archiveDate;
+            //   const { eventIds: createdEventIds, eventMap: createdEventMap } =
+            //     await createMessagesInRoom({
+            //       client,
+            //       roomId,
+            //       numMessages: numMessagesOnDay,
+            //       prefix: `day ${dayNumber} - events in room`,
+            //       timestamp: archiveDate.getTime(),
+            //       // Just spread things out a bit so the event times are more obvious
+            //       // and stand out from each other while debugging and so we just have
+            //       // to deal with hour time slicing
+            //       increment: ONE_HOUR_IN_MS,
+            //     });
+            //   // Make sure we created the same number of events as we expect
+            //   assert.strictEqual(createdEventIds.length, numMessagesOnDay);
 
-              const { eventIds: createdEventIds, eventMap: createdEventMap } =
-                await createMessagesInRoom({
+            //   // eslint-disable-next-line max-nested-callbacks
+            //   createdEventIds.forEach((eventId, i) => {
+            //     fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
+            //     eventMap[eventId] = createdEventMap.get(eventId);
+            //   });
+            // }
+
+            const { rooms, archiveMessageLimit, pages } = parseRoomDayMessageStructure(
+              testCase.roomDayMessageStructureString
+            );
+            const fancyIdentifierToRoomIdMap = new Map();
+            const roomIdToFancyIdentifierMap = new Map();
+            for (const [roomIndex, room] of rooms.entries()) {
+              const roomId = await createTestRoom(client);
+              const fancyRoomId = `#room${roomIndex + 1}`;
+              fancyIdentifierToRoomIdMap.set(fancyRoomId, roomId);
+              roomIdToFancyIdentifierMap.set(roomId, fancyRoomId);
+
+              // Join the archive user to the room before we create the test messages to
+              // avoid problems jumping to the latest activity since we can't control the
+              // timestamp of the membership event.
+              const archiveAppServiceUserClient = await getTestClientForAs();
+              await joinRoom({
+                client: archiveAppServiceUserClient,
+                roomId: roomId,
+              });
+
+              // Just spread things out a bit so the event times are more obvious
+              // and stand out from each other while debugging and so we just have
+              // to deal with hour time slicing
+              const eventSendTimeIncrement = ONE_HOUR_IN_MS;
+
+              for (const eventMeta of room.events) {
+                const archiveDate = new Date(Date.UTC(2022, 0, eventMeta.dayNumber, 0, 0, 0, 1));
+                const originServerTs =
+                  archiveDate.getTime() + eventMeta.eventIndexInDay * eventSendTimeIncrement;
+                const content = {
+                  msgtype: 'm.text',
+                  body: `event${eventMeta.eventNumber} - day${eventMeta.dayNumber}.${eventMeta.eventIndexInDay}`,
+                };
+                const eventId = await sendMessage({
                   client,
                   roomId,
-                  numMessages: numMessagesOnDay,
-                  prefix: `day ${dayNumber} - events in room`,
-                  timestamp: archiveDate.getTime(),
-                  // Just spread things out a bit so the event times are more obvious
-                  // and stand out from each other while debugging and so we just have
-                  // to deal with hour time slicing
-                  increment: ONE_HOUR_IN_MS,
+                  content,
+                  // Technically, we don't have to set the timestamp to be unique or sequential but
+                  // it still seems like a good idea to make the tests more clear.
+                  timestamp: originServerTs,
                 });
-              // Make sure we created the same number of events as we expect
-              assert.strictEqual(createdEventIds.length, numMessagesOnDay);
-
-              // eslint-disable-next-line max-nested-callbacks
-              createdEventIds.forEach((eventId, i) => {
-                fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
-                eventMap[eventId] = createdEventMap.get(eventId);
-              });
+                eventMap.set(eventId, {
+                  roomId,
+                  originServerTs,
+                  content,
+                });
+                const fancyEventId = `$event${eventMeta.eventNumber}`;
+                fancyIdentifierToEventIdMap.set(fancyEventId, eventId);
+                eventIdToFancyIdentifierMap.set(eventId, fancyEventId);
+              }
             }
 
             // Now Test
@@ -1853,11 +1892,9 @@ describe('matrix-public-archive', () => {
             // --------------------------------------
 
             // Make sure the archive is configured as the test expects
-            assert(
-              Number.isInteger(testCase.archiveMessageLimit) && testCase.archiveMessageLimit > 0,
-              `testCase.archiveMessageLimit=${testCase.archiveMessageLimit} must be an integer and greater than 0`
-            );
-            config.set('archiveMessageLimit', testCase.archiveMessageLimit);
+            // TODO: Remove assert once we're confident the test is working the same way as the old way
+            assert.strictEqual(archiveMessageLimit, testCase.archiveMessageLimit);
+            config.set('archiveMessageLimit', archiveMessageLimit);
 
             // eslint-disable-next-line max-nested-callbacks
             const pagesKeyList = Object.keys(testCase).filter((key) => {
@@ -1888,18 +1925,20 @@ describe('matrix-public-archive', () => {
             // Get the URL for the first page to fetch
             //
             // Set the `archiveUrl` for debugging if the test fails here
-            const startUrlDate = testCase.startUrlDate;
+            const { roomIdOrAlias: startRoomFancyKey, urlDateTime: startUrlDateTime } =
+              parseArchiveUrlForRoom(urlJoin('https://example.com', testCase.startUrl));
+            const startRoomIdOrAlias = fancyIdentifierToRoomIdMap.get(startRoomFancyKey);
             assert(
-              startUrlDate,
-              `\`startUrlDate\` must be defined in your test case: ${JSON.stringify(
-                testCase,
-                null,
-                2
+              startRoomIdOrAlias,
+              `Could not find room ID for ${startRoomFancyKey} in our list of known rooms ${JSON.stringify(
+                Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
               )}`
             );
+            // TODO: Remove assert once we're confident the test is working the same way as the old way
+            assert.strictEqual(startUrlDateTime, testCase.startUrlDate);
             archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
-              roomId
-            )}/date/${startUrlDate}`;
+              startRoomIdOrAlias
+            )}/date/${startUrlDateTime}`;
 
             // Loop through all of the pages of the test and ensure expectations
             let alreadyEncounteredLastPage = false;
@@ -1914,21 +1953,72 @@ describe('matrix-public-archive', () => {
                 }
 
                 const pageTestMeta = testCase[pageKey];
+                const {
+                  roomIdOrAlias: expectedRoomFancyId,
+                  urlDateTime: expectedUrlDateTime,
+                  continueAtEvent: expectedContinueAtEvent,
+                } = parseArchiveUrlForRoom(urlJoin('https://example.com', pageTestMeta.url));
+                const expectedRoomId = fancyIdentifierToRoomIdMap.get(expectedRoomFancyId);
+                assert(
+                  expectedRoomId,
+                  `Could not find room ID for ${expectedRoomFancyId} in our list of known rooms ${JSON.stringify(
+                    Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
+                  )}`
+                );
 
                 // Fetch the given page.
                 const { data: archivePageHtml, res: pageRes } = await fetchEndpointAsText(
                   archiveUrl
                 );
                 const pageDom = parseHTML(archivePageHtml);
+                const {
+                  roomIdOrAliasUrlPart: actualRoomIdOrAliasUrlPart,
+                  roomIdOrAlias: actualRoomId,
+                  //urlDateTime: actualUrlDateTime,
+                  continueAtEvent: actualContinueAtEventId,
+                } = parseArchiveUrlForRoom(pageRes.url);
+                const actualRoomFancyId = roomIdToFancyIdentifierMap.get(actualRoomId);
+                assert(
+                  actualRoomFancyId,
+                  `Could not find room ID for ${actualRoomId} in our list of known rooms ${JSON.stringify(
+                    Object.fromEntries(roomIdToFancyIdentifierMap.entries())
+                  )}`
+                );
+                let actualContinueAtEventFancyId;
+                if (actualContinueAtEventId) {
+                  actualContinueAtEventFancyId =
+                    eventIdToFancyIdentifierMap.get(actualContinueAtEventId);
+                  assert(
+                    actualContinueAtEventFancyId,
+                    `Could not find event ID for ${actualContinueAtEventId} in our list of known events ${JSON.stringify(
+                      Object.fromEntries(eventIdToFancyIdentifierMap.entries())
+                    )}`
+                  );
+                }
 
-                // Assert the correct time precision in the URL
-                assert.match(pageRes.url, new RegExp(`/date/${pageTestMeta.urlDate}(\\?|$)`));
+                // Assert the correct room and time precision in the URL
+                // TODO: Remove assert once we're confident the test is working the same way as the old way
+                assert.strictEqual(expectedUrlDateTime, pageTestMeta.urlDate);
+                // Replace messy room ID's and event ID's that change with every test
+                // run with their fancy ID's which correlate with the test meta so it's
+                // easier to reason about things when the assertion fails.
+                let actualUrlWithFancyIdentifies = pageRes.url
+                  .replace(
+                    `/roomid/${actualRoomIdOrAliasUrlPart}`,
+                    // Slice to remove the sigil
+                    `/r/${actualRoomFancyId.slice(1)}`
+                  )
+                  .replace(actualContinueAtEventId, actualContinueAtEventFancyId);
+                assert.match(
+                  actualUrlWithFancyIdentifies,
+                  new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`)
+                );
 
                 // If provided, assert that it's a smooth continuation to more messages.
                 // First by checking where the scroll is going to start from
-                if (pageTestMeta.continueAtEvent) {
+                if (expectedContinueAtEvent) {
                   const [expectedContinuationDebugEventId] =
-                    convertFancyIdentifierListToDebugEventIds([pageTestMeta.continueAtEvent]);
+                    convertFancyIdentifierListToDebugEventIds([expectedContinueAtEvent]);
                   const urlObj = new URL(pageRes.url, basePath);
                   const qs = new URLSearchParams(urlObj.search);
                   const continuationEventId = qs.get('at');
@@ -1949,10 +2039,18 @@ describe('matrix-public-archive', () => {
                     return eventEl.getAttribute('data-event-id');
                   });
 
+                const pageNumber = pageKey.replace('page', '');
+                const page = pages[pageNumber - 1];
+                const expectedEventsOnPage = page.events;
+                const expectedFancyIdsOnPage = expectedEventsOnPage.map(
+                  // eslint-disable-next-line max-nested-callbacks
+                  (event) => `$event${event.eventNumber}`
+                );
+
                 // Assert that the page contains all expected events
                 assert.deepEqual(
                   convertEventIdsToDebugEventIds(eventIdsOnPage),
-                  convertFancyIdentifierListToDebugEventIds(pageTestMeta.events),
+                  convertFancyIdentifierListToDebugEventIds(expectedFancyIdsOnPage),
                   `Events on ${pageKey} should be as expected`
                 );
 

@@ -7,7 +7,9 @@ const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/refe
 
 function qsToUrlPiece(qs) {
   if (qs.toString()) {
-    return `?${qs.toString()}`;
+    // We allow `$` to be unencoded in the query string because it's a valid character
+    // in a Matrix event ID
+    return `?${qs.toString().replace(/%24/g, '$')}`;
   } else {
     return '';
   }
