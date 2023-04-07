@@ -767,6 +767,10 @@ describe('matrix-public-archive', () => {
             // Even though there is overlap between the pages, our scroll continues from
             // the event where the 1st page starts.
             testName: 'can jump forward to the next activity',
+            // Create enough surround messages on nearby days that overflow the page
+            // limit but don't overflow the limit on a single day basis. We create 4
+            // days of messages so we can see a seamless continuation from page1 to
+            // page2.
             roomDayMessageStructureString: `
               [room1                                                               ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
@@ -776,46 +780,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/02',
-            // Create enough surround messages on nearby days that overflow the page
-            // limit but don't overflow the limit on a single day basis. We create 4
-            // days of messages so we can see a seamless continuation from page1 to
-            // page2.
-            dayAndMessageStructure: [3, 3, 3, 3],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
               action: 'next',
-              urlDate: '2022/01/02',
-              // (end of day2 backwards)
-              events: [
-                // Some of day1
-                'day1.event1',
-                'day1.event2',
-                // All of day2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/03?at=$event7',
               action: null,
-              urlDate: '2022/01/03',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              // (end of day3 backwards)
-              events: [
-                // Some of day2
-                'day2.event1',
-                'day2.event2',
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-              ],
             },
           },
           {
@@ -840,42 +811,13 @@ describe('matrix-public-archive', () => {
                                 [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/02',
-            dayAndMessageStructure: [3, 3, 2, 3],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
               action: 'next',
-              urlDate: '2022/01/02',
-              // (end of day2 backwards)
-              events: [
-                // Some of day1
-                'day1.event1',
-                'day1.event2',
-                // All of day2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/03?at=$event7',
               action: null,
-              urlDate: '2022/01/03',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              // (end of day3 backwards)
-              events: [
-                // All of day2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-              ],
             },
           },
           {
@@ -894,40 +836,13 @@ describe('matrix-public-archive', () => {
                                                         [page2                     ]
             `,
             startUrl: '/r/room1/date/2022/01/04T01:00',
-            dayAndMessageStructure: [3, 3, 3, 3],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/04T01:00',
             page1: {
               url: '/r/room1/date/2022/01/04T01:00',
               action: 'next',
-              urlDate: '2022/01/04T01:00',
-              events: [
-                // Some of day2
-                'day2.event2',
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-                // All of day4
-                'day4.event0',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/04?at=$event11',
               action: null,
-              urlDate: '2022/01/04',
-              continueAtEvent: 'day4.event1',
-              events: [
-                // Some of day3
-                'day3.event1',
-                'day3.event2',
-                // All of day4
-                'day4.event0',
-                'day4.event1',
-                'day4.event2',
-              ],
             },
           },
           {
@@ -946,39 +861,13 @@ describe('matrix-public-archive', () => {
                                                         [page2                     ]
             `,
             startUrl: '/r/room1/date/2022/01/03',
-            dayAndMessageStructure: [3, 3, 3, 3],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/03',
             page1: {
               url: '/r/room1/date/2022/01/03',
               action: 'next',
-              urlDate: '2022/01/03',
-              events: [
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-                // Some of day4
-                'day4.event0',
-                'day4.event1',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/04?at=$event10',
               action: null,
-              urlDate: '2022/01/04',
-              continueAtEvent: 'day4.event2',
-              events: [
-                // Some of day3
-                'day3.event1',
-                'day3.event2',
-                // All of day4
-                'day4.event0',
-                'day4.event1',
-                'day4.event2',
-              ],
             },
           },
           // This test currently doesn't work because it finds the primordial room
@@ -1003,43 +892,17 @@ describe('matrix-public-archive', () => {
           //                                               [page2                     ]
           //   `,
           //   startUrl: '/r/room1/date/2022/01/04',
-          //   dayAndMessageStructure: [3, 3, 3, 3],
-          //   // The page limit is 4 but each page will show 5 messages because we
-          //   // fetch one extra to determine overflow.
-          //   archiveMessageLimit: 4,
-          //   startUrlDate: '2022/01/04',
           //   page1: {
           //     url: '/r/room1/date/2022/01/04',
           //     action: 'next',
-          //     urlDate: '2022/01/04',
-          //     events: [
-          //       // Some of day3
-          //       'day3.event1',
-          //       'day3.event2',
-          //       // All of day4
-          //       'day4.event0',
-          //       'day4.event1',
-          //       'day4.event2',
-          //     ],
           //   },
           //   page2: {
-          //     // TODO: This page probably doesn't need a continue event
-          //     url: '/r/room1/date/2022/01/05?at=TODO',
-          //     action: null,
           //     // If we can't find any more messages to paginate to, we just progress the
           //     // date forward by a day so we can display the empty view for that day.
-          //     urlDate: '2022/01/05',
-          //     // TODO: This page probably doesn't need a continue event
-          //     continueAtEvent: 'TODO',
-          //     events: [
-          //       // Some of day3
-          //       'day3.event1',
-          //       'day3.event2',
-          //       // All of day4
-          //       'day4.event0',
-          //       'day4.event1',
-          //       'day4.event2',
-          //     ],
+          //     //
+          //     // TODO: This page probably doesn't need a `?at=` continue event
+          //     url: '/r/room1/date/2022/01/05?at=TODO',
+          //     action: null,
           //   },
           // },
           {
@@ -1065,41 +928,16 @@ describe('matrix-public-archive', () => {
                                       [page2            ]
             `,
             startUrl: '/r/room1/date/2022/01/02',
-            dayAndMessageStructure: [3, 3, 3, 3],
-            // The page limit is 3 but each page will show 4 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 3,
-            startUrlDate: '2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
               action: 'next',
-              urlDate: '2022/01/02',
-              events: [
-                // Some of day1
-                'day1.event2',
-                // All of day2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-              ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T02:00?at=$event7',
-              action: null,
               // We expect the URL to look like `T02:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
-              urlDate: '2022/01/03T02:00',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              events: [
-                // Some of day2
-                'day2.event1',
-                'day2.event2',
-                // Some of day3
-                'day3.event0',
-                'day3.event1',
-              ],
+              url: '/r/room1/date/2022/01/03T02:00?at=$event7',
+              action: null,
             },
           },
           {
@@ -1119,41 +957,15 @@ describe('matrix-public-archive', () => {
                     [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/03',
-            dayAndMessageStructure: [3, 3, 3, 3],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/03',
             page1: {
               url: '/r/room1/date/2022/01/03',
               action: 'previous',
-              urlDate: '2022/01/03',
-              events: [
-                // Some of day2
-                'day2.event1',
-                'day2.event2',
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-              ],
             },
             page2: {
-              url: '/r/room1/date/2022/01/02?at=$event4',
-              action: null,
-              urlDate: '2022/01/02',
               // Continuing from the first event of day2 since we already saw the rest
               // of day2 in the first page
-              continueAtEvent: 'day2.event0',
-              events: [
-                // Some of day1
-                'day1.event1',
-                'day1.event2',
-                // All of day2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-              ],
+              url: '/r/room1/date/2022/01/02?at=$event4',
+              action: null,
             },
           },
           {
@@ -1172,51 +984,13 @@ describe('matrix-public-archive', () => {
                                                                     [page2                                                   ]
             `,
             startUrl: '/r/room1/date/2022/01/04',
-            dayAndMessageStructure: [3, 3, 3, 3, 2, 2, 2, 3],
-            // The page limit is 8 but each page will show 9 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 8,
-            startUrlDate: '2022/01/04',
             page1: {
               url: '/r/room1/date/2022/01/04',
               action: 'next',
-              urlDate: '2022/01/04',
-              events: [
-                // All of day2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-                // All of day4
-                'day4.event0',
-                'day4.event1',
-                'day4.event2',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/07?at=$event13',
               action: null,
-              urlDate: '2022/01/07',
-              // Continuing from the first event of day5
-              continueAtEvent: 'day5.event0',
-              events: [
-                // All of day4
-                'day4.event0',
-                'day4.event1',
-                'day4.event2',
-                // All of day5
-                'day5.event0',
-                'day5.event1',
-                // All of day6
-                'day6.event0',
-                'day6.event1',
-                // All of day7
-                'day7.event0',
-                'day7.event1',
-              ],
             },
           },
           {
@@ -1233,51 +1007,12 @@ describe('matrix-public-archive', () => {
                                 [page2                                             ]
             `,
             startUrl: '/r/room1/date/2022/01/09',
-            dayAndMessageStructure: [2, 2, 2, 2, 2, 2, 3, 3, 3],
-            // The page limit is 8 but each page will show 9 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 8,
-            startUrlDate: '2022/01/09',
             page1: {
               url: '/r/room1/date/2022/01/09',
               action: 'previous',
-              urlDate: '2022/01/09',
-              events: [
-                // All of day7
-                'day7.event0',
-                'day7.event1',
-                'day7.event2',
-                // All of day8
-                'day8.event0',
-                'day8.event1',
-                'day8.event2',
-                // All of day9
-                'day9.event0',
-                'day9.event1',
-                'day9.event2',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/06?at=$event12',
-              urlDate: '2022/01/06',
-              // Continuing from the last event of day6
-              continueAtEvent: 'day6.event1',
-              events: [
-                // Some of day2
-                'day2.event1',
-                // All of day3
-                'day3.event0',
-                'day3.event1',
-                // All of day4
-                'day4.event0',
-                'day4.event1',
-                // All of day5
-                'day5.event0',
-                'day5.event1',
-                // All of day6
-                'day6.event0',
-                'day6.event1',
-              ],
               action: null,
             },
           },
@@ -1299,43 +1034,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/02',
-            dayAndMessageStructure: [3, 3, 6, 3],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
               action: 'next',
-              urlDate: '2022/01/02',
-              events: [
-                // Some of day 1
-                'day1.event1',
-                'day1.event2',
-                // All of day 2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/03T03:00?at=$event7',
               action: null,
-              // We expect the URL to look like `T03:00` because we're rendering part way
-              // through day3 and while we could get away with just hour precision, the
-              // default precision has hours and minutes.
-              urlDate: '2022/01/03T03:00',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              events: [
-                // Some of day 2
-                'day2.event1',
-                'day2.event2',
-                // Some of day 3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-              ],
             },
           },
           {
@@ -1355,39 +1060,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/04',
-            dayAndMessageStructure: [3, 6, 3, 2],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/04',
             page1: {
               url: '/r/room1/date/2022/01/04',
               action: 'previous',
-              urlDate: '2022/01/04',
-              events: [
-                // All of day 3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-                // All of day 4
-                'day4.event0',
-                'day4.event1',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/02?at=$event9',
               action: null,
-              urlDate: '2022/01/02',
-              // Continuing from the last event of day2
-              continueAtEvent: 'day2.event5',
-              events: [
-                // Most of day 2
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                'day2.event5',
-              ],
             },
           },
           {
@@ -1406,39 +1085,13 @@ describe('matrix-public-archive', () => {
                                                   [page2                    ]
             `,
             startUrl: '/r/room1/date/2022/01/02',
-            dayAndMessageStructure: [2, 6, 6],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
               action: 'next',
-              urlDate: '2022/01/02',
-              events: [
-                // Some of day 2
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                'day2.event5',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/03T03:00?at=$event9',
               action: null,
-              urlDate: '2022/01/03T03:00',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              events: [
-                // Some of day 2
-                'day2.event4',
-                'day2.event5',
-                // Some of day 3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-              ],
             },
           },
           {
@@ -1457,39 +1110,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/03',
-            dayAndMessageStructure: [2, 6, 6],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/03',
             page1: {
               url: '/r/room1/date/2022/01/03',
               action: 'previous',
-              urlDate: '2022/01/03',
-              events: [
-                // Some of day 3
-                'day3.event1',
-                'day3.event2',
-                'day3.event3',
-                'day3.event4',
-                'day3.event5',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/03T01:00?at=$event9',
               action: null,
-              urlDate: '2022/01/03T01:00',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              events: [
-                // Some of day 2
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                'day2.event5',
-                // Some of day 3
-                'day3.event0',
-              ],
             },
           },
           {
@@ -1508,38 +1135,13 @@ describe('matrix-public-archive', () => {
                                                   [page2                    ]
             `,
             startUrl: '/r/room1/date/2022/01/02T6:00',
-            dayAndMessageStructure: [2, 12],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02T6:00',
             page1: {
               url: '/r/room1/date/2022/01/02T6:00',
               action: 'next',
-              urlDate: '2022/01/02T6:00',
-              events: [
-                // Some of day 2
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                'day2.event5',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/02T09:00?at=$event9',
               action: null,
-              urlDate: '2022/01/02T09:00',
-              // Continuing from the first new event on the page
-              continueAtEvent: 'day2.event6',
-              events: [
-                // More of day 2
-                'day2.event4',
-                'day2.event5',
-                'day2.event6',
-                'day2.event7',
-                'day2.event8',
-              ],
             },
           },
           {
@@ -1558,38 +1160,13 @@ describe('matrix-public-archive', () => {
                                 [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/02T11:00',
-            dayAndMessageStructure: [2, 12],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02T11:00',
             page1: {
               url: '/r/room1/date/2022/01/02T11:00',
               action: 'previous',
-              urlDate: '2022/01/02T11:00',
-              events: [
-                // Some of day 2
-                'day2.event6',
-                'day2.event7',
-                'day2.event8',
-                'day2.event9',
-                'day2.event10',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/02T06:00?at=$event8',
               action: null,
-              urlDate: '2022/01/02T06:00',
-              // Continuing from the first new event on the page
-              continueAtEvent: 'day2.event5',
-              events: [
-                // More of day 2
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                'day2.event5',
-              ],
             },
           },
           {
@@ -1608,39 +1185,14 @@ describe('matrix-public-archive', () => {
                                                   [page2                    ]
             `,
             startUrl: '/r/room1/date/2022/01/02T06:00',
-            dayAndMessageStructure: [2, 7, 5],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/02T06:00',
             page1: {
               url: '/r/room1/date/2022/01/02T06:00',
-              urlDate: '2022/01/02T06:00',
-              events: [
-                // Some of day 2
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                'day2.event5',
-              ],
               action: 'next',
             },
             page2: {
+              // Continuing from the unseen event in day2
               url: '/r/room1/date/2022/01/03T02:00?at=$event9',
               action: null,
-              urlDate: '2022/01/03T02:00',
-              // Continuing from the unseen event in day2
-              continueAtEvent: 'day2.event6',
-              events: [
-                // Some of day 2
-                'day2.event4',
-                'day2.event5',
-                'day2.event6',
-                // Some of day 3
-                'day3.event0',
-                'day3.event1',
-              ],
             },
           },
           {
@@ -1659,39 +1211,13 @@ describe('matrix-public-archive', () => {
                                 [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/03T06:00',
-            dayAndMessageStructure: [2, 5, 7],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/03T06:00',
             page1: {
               url: '/r/room1/date/2022/01/03T06:00',
               action: 'previous',
-              urlDate: '2022/01/03T06:00',
-              events: [
-                // Some of day 3
-                'day3.event1',
-                'day3.event2',
-                'day3.event3',
-                'day3.event4',
-                'day3.event5',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/03T01:00?at=$event8',
               action: null,
-              urlDate: '2022/01/03T01:00',
-              // Continuing from the first event of day3
-              continueAtEvent: 'day3.event0',
-              events: [
-                // Some of day 2
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-                // Some of day 3
-                'day3.event0',
-              ],
             },
           },
           {
@@ -1710,37 +1236,13 @@ describe('matrix-public-archive', () => {
                           [page2                  ]
             `,
             startUrl: '/r/room1/date/2022/01/03T05:00',
-            dayAndMessageStructure: [2, 5, 7],
-            // The page limit is 4 but each page will show 5 messages because we
-            // fetch one extra to determine overflow.
-            archiveMessageLimit: 4,
-            startUrlDate: '2022/01/03T05:00',
             page1: {
               url: '/r/room1/date/2022/01/03T05:00',
               action: 'previous',
-              urlDate: '2022/01/03T05:00',
-              events: [
-                // Some of day 3
-                'day3.event0',
-                'day3.event1',
-                'day3.event2',
-                'day3.event3',
-                'day3.event4',
-              ],
             },
             page2: {
               url: '/r/room1/date/2022/01/02?at=$event7',
               action: null,
-              urlDate: '2022/01/02',
-              continueAtEvent: 'day2.event4',
-              events: [
-                // All of day 2
-                'day2.event0',
-                'day2.event1',
-                'day2.event2',
-                'day2.event3',
-                'day2.event4',
-              ],
             },
           },
         ];
@@ -1795,52 +1297,13 @@ describe('matrix-public-archive', () => {
 
             const client = await getTestClientForHs(testMatrixServerUrl1);
 
-            // const dayIdentifierToDateMap = {};
-            // const numberOfDaysToConstruct = testCase.dayAndMessageStructure.length;
-            // for (let i = 0; i < numberOfDaysToConstruct; i++) {
-            //   const dayNumber = i + 1;
-            //   const numMessagesOnDay = testCase.dayAndMessageStructure[i];
-            //   assert(
-            //     numMessagesOnDay < 24,
-            //     'Expected less than 24 messages on any given day. Because we increment by an hour ' +
-            //       ' for each message, having more than 24 messages would mean that messages would ' +
-            //       'leak into the next day.'
-            //   );
-
-            //   // The date should be just past midnight so we don't run into inclusive
-            //   // bounds leaking messages from one day into another.
-            //   const archiveDate = new Date(Date.UTC(2022, 0, dayNumber, 0, 0, 0, 1));
-
-            //   dayIdentifierToDateMap[`day${dayNumber}`] = archiveDate;
-
-            //   const { eventIds: createdEventIds, eventMap: createdEventMap } =
-            //     await createMessagesInRoom({
-            //       client,
-            //       roomId,
-            //       numMessages: numMessagesOnDay,
-            //       prefix: `day ${dayNumber} - events in room`,
-            //       timestamp: archiveDate.getTime(),
-            //       // Just spread things out a bit so the event times are more obvious
-            //       // and stand out from each other while debugging and so we just have
-            //       // to deal with hour time slicing
-            //       increment: ONE_HOUR_IN_MS,
-            //     });
-            //   // Make sure we created the same number of events as we expect
-            //   assert.strictEqual(createdEventIds.length, numMessagesOnDay);
-
-            //   // eslint-disable-next-line max-nested-callbacks
-            //   createdEventIds.forEach((eventId, i) => {
-            //     fancyIdentifierToEventMap[`day${dayNumber}.event${i}`] = eventId;
-            //     eventMap[eventId] = createdEventMap.get(eventId);
-            //   });
-            // }
-
             const { rooms, archiveMessageLimit, pages } = parseRoomDayMessageStructure(
               testCase.roomDayMessageStructureString
             );
             const fancyIdentifierToRoomIdMap = new Map();
             const roomIdToFancyIdentifierMap = new Map();
             for (const [roomIndex, room] of rooms.entries()) {
+              // TODO: upgradeRoom to link one room to another
               const roomId = await createTestRoom(client);
               const fancyRoomId = `#room${roomIndex + 1}`;
               fancyIdentifierToRoomIdMap.set(fancyRoomId, roomId);
@@ -1892,8 +1355,6 @@ describe('matrix-public-archive', () => {
             // --------------------------------------
 
             // Make sure the archive is configured as the test expects
-            // TODO: Remove assert once we're confident the test is working the same way as the old way
-            assert.strictEqual(archiveMessageLimit, testCase.archiveMessageLimit);
             config.set('archiveMessageLimit', archiveMessageLimit);
 
             // eslint-disable-next-line max-nested-callbacks
@@ -1934,8 +1395,6 @@ describe('matrix-public-archive', () => {
                 Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
               )}`
             );
-            // TODO: Remove assert once we're confident the test is working the same way as the old way
-            assert.strictEqual(startUrlDateTime, testCase.startUrlDate);
             archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
               startRoomIdOrAlias
             )}/date/${startUrlDateTime}`;
@@ -1955,7 +1414,7 @@ describe('matrix-public-archive', () => {
                 const pageTestMeta = testCase[pageKey];
                 const {
                   roomIdOrAlias: expectedRoomFancyId,
-                  urlDateTime: expectedUrlDateTime,
+                  //urlDateTime: expectedUrlDateTime,
                   continueAtEvent: expectedContinueAtEvent,
                 } = parseArchiveUrlForRoom(urlJoin('https://example.com', pageTestMeta.url));
                 const expectedRoomId = fancyIdentifierToRoomIdMap.get(expectedRoomFancyId);
@@ -1996,9 +1455,6 @@ describe('matrix-public-archive', () => {
                   );
                 }
 
-                // Assert the correct room and time precision in the URL
-                // TODO: Remove assert once we're confident the test is working the same way as the old way
-                assert.strictEqual(expectedUrlDateTime, pageTestMeta.urlDate);
                 // Replace messy room ID's and event ID's that change with every test
                 // run with their fancy ID's which correlate with the test meta so it's
                 // easier to reason about things when the assertion fails.
@@ -2009,6 +1465,7 @@ describe('matrix-public-archive', () => {
                     `/r/${actualRoomFancyId.slice(1)}`
                   )
                   .replace(actualContinueAtEventId, actualContinueAtEventFancyId);
+                // Assert the correct room and time precision in the URL
                 assert.match(
                   actualUrlWithFancyIdentifies,
                   new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`)
