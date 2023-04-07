@@ -124,6 +124,12 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
   return roomId;
 }
 
+async function upgradeRoom(client, oldRoomId, overrideCreateOptions = {}) {
+  // TODO
+  // TODO: Add option to upgrade using `m.room.create` `predecessor` vs
+  // `org.matrix.msc3946.room_predecessor`
+}
+
 async function getCanonicalAlias({ client, roomId }) {
   const { data: stateCanonicalAliasRes } = await fetchEndpointAsJson(
     urlJoin(

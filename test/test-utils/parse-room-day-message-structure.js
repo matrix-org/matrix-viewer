@@ -124,6 +124,10 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
 
   function getEventMetaFromEventNumber(eventNumber) {
     const dayNumber = eventToDayMap.get(eventNumber);
+    assert(
+      dayNumber,
+      `Could not find ${eventNumber} associated with any day (check the brackets for "[roomX   ]" things])`
+    );
     const eventRangeInDay = dayToEventRangeMap.get(dayNumber);
     const event = {
       eventNumber,
@@ -172,7 +176,9 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
   });
   // Ensure that each page has the same number of events on it
   const numEventsOnEachPage = pages.map((page) => page.events.length);
-  const archiveMessageLimit = numEventsOnEachPage[0];
+  // The page limit is X but each page will display X + 1 messages because we fetch one
+  // extra to determine overflow.
+  const archiveMessageLimit = numEventsOnEachPage[0] - 1;
   assert(
     numEventsOnEachPage.every((numEvents) => numEvents === archiveMessageLimit),
     `Expected all pages to have the same number of events but found ${numEventsOnEachPage}`

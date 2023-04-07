@@ -764,13 +764,16 @@ describe('matrix-public-archive', () => {
             //
             // Even though there is overlap between the pages, our scroll continues from
             // the event where the 1st page starts.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
-            //       [1st page               ]
-            //                               |--jump-fwd-4-messages-->|
-            //                         [2nd page               ]
             testName: 'can jump forward to the next activity',
+            roomDayMessageStructureString: `
+              [room1                                                               ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]
+                    [page1                  ]
+                                            |--jump-fwd-4-messages-->|
+                                      [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02',
             // Create enough surround messages on nearby days that overflow the page
             // limit but don't overflow the limit on a single day basis. We create 4
             // days of messages so we can see a seamless continuation from page1 to
@@ -781,6 +784,8 @@ describe('matrix-public-archive', () => {
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02',
             page1: {
+              url: '/r/room1/date/2022/01/02',
+              action: 'next',
               urlDate: '2022/01/02',
               // (end of day2 backwards)
               events: [
@@ -792,9 +797,10 @@ describe('matrix-public-archive', () => {
                 'day2.event1',
                 'day2.event2',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03?continue=event7',
+              action: null,
               urlDate: '2022/01/03',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -808,7 +814,6 @@ describe('matrix-public-archive', () => {
                 'day3.event1',
                 'day3.event2',
               ],
-              action: null,
             },
           },
           {
@@ -823,19 +828,24 @@ describe('matrix-public-archive', () => {
             //
             // Even though there is overlap between the pages, our scroll continues from
             // the event where the 1st page starts.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11
-            // [day1       ]     [day2       ]     [day3 ]     [day4         ]
-            //       [1st page               ]
-            //                               |--jump-fwd-4-messages-->|
-            //                   [2nd page               ]
             testName: 'can jump forward to the next activity2',
+            roomDayMessageStructureString: `
+              [room1                                                        ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11
+              [day1       ]     [day2       ]     [day3 ]     [day4         ]
+                    [page1                  ]
+                                            |--jump-fwd-4-messages-->|
+                                [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02',
             dayAndMessageStructure: [3, 3, 2, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02',
             page1: {
+              url: '/r/room1/date/2022/01/02',
+              action: 'next',
               urlDate: '2022/01/02',
               // (end of day2 backwards)
               events: [
@@ -847,9 +857,10 @@ describe('matrix-public-archive', () => {
                 'day2.event1',
                 'day2.event2',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03?continue=event7',
+              action: null,
               urlDate: '2022/01/03',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -863,7 +874,6 @@ describe('matrix-public-archive', () => {
                 'day3.event0',
                 'day3.event1',
               ],
-              action: null,
             },
           },
           {
@@ -872,19 +882,24 @@ describe('matrix-public-archive', () => {
             // messages (event11 and event12) which is less than our limit of 4, so we
             // know we reached the end and can simply display the day that the latest
             // event occured on.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
-            //                               [1st page                ]
-            //                                                        |--jump-fwd-4-messages-->|
-            //                                           [2nd page                  ]
             testName: 'can jump forward to the latest activity in the room (same day)',
+            roomDayMessageStructureString: `
+              [room1                                                               ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]
+                                            [page1                   ]
+                                                                     |--jump-fwd-4-messages-->|
+                                                        [page2                     ]
+            `,
+            startUrl: '/r/room1/date/2022/01/04T01:00',
             dayAndMessageStructure: [3, 3, 3, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/04T01:00',
             page1: {
+              url: '/r/room1/date/2022/01/04T01:00',
+              action: 'next',
               urlDate: '2022/01/04T01:00',
               events: [
                 // Some of day2
@@ -896,9 +911,10 @@ describe('matrix-public-archive', () => {
                 // All of day4
                 'day4.event0',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/04?continue=event10',
+              action: null,
               urlDate: '2022/01/04',
               continueAtEvent: 'day4.event1',
               events: [
@@ -910,7 +926,6 @@ describe('matrix-public-archive', () => {
                 'day4.event1',
                 'day4.event2',
               ],
-              action: null,
             },
           },
           {
@@ -919,19 +934,24 @@ describe('matrix-public-archive', () => {
             // messages (event10, event11, event12) which is less than our limit of 4,
             // so we know we reached the end and can simply display the day that the
             // latest event occured on.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
-            //                         [1st page               ]
-            //                                                 |---jump-fwd-4-messages--->|
-            //                                           [2nd page                  ]
             testName: 'can jump forward to the latest activity in the room (different day)',
+            roomDayMessageStructureString: `
+              [room1                                                               ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]
+                                      [page1                  ]
+                                                              |---jump-fwd-4-messages--->|
+                                                        [page2                     ]
+            `,
+            startUrl: '/r/room1/date/2022/01/04T02:00',
             dayAndMessageStructure: [3, 3, 3, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/04T02:00',
             page1: {
+              url: '/r/room1/date/2022/01/04T02:00',
+              action: 'next',
               urlDate: '2022/01/04T02:00',
               events: [
                 // Some of day3
@@ -942,9 +962,10 @@ describe('matrix-public-archive', () => {
                 'day4.event0',
                 'day4.event1',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/04?continue=event10',
+              action: null,
               urlDate: '2022/01/04',
               continueAtEvent: 'day4.event2',
               events: [
@@ -956,7 +977,6 @@ describe('matrix-public-archive', () => {
                 'day4.event1',
                 'day4.event2',
               ],
-              action: null,
             },
           },
           // This test currently doesn't work because it finds the primordial room
@@ -970,20 +990,25 @@ describe('matrix-public-archive', () => {
           //   // messages by paginating `/messages?limit=4` but it returns no messages
           //   // which is less than our limit of 4, so we know we reached the end and can
           //   // simply TODO
-          //   //
-          //   // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-          //   // [day1       ]     [day2       ]     [day3       ]     [day4          ]
-          //   //                                           [1st page                  ]
-          //   //                                                                      |---jump-fwd-4-messages--->|
-          //   //                                           [2nd page                  ]
           //   testName:
           //     'can jump forward to the latest activity in the room (when already viewing the latest activity)',
+          //   roomDayMessageStructureString: `
+          //     [room1                                                               ]
+          //     1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+          //     [day1       ]     [day2       ]     [day3       ]     [day4          ]
+          //                                               [page1                     ]
+          //                                                                          |---jump-fwd-4-messages--->|
+          //                                               [page2                     ]
+          //   `,
+          //   startUrl: '/r/room1/date/2022/01/04',
           //   dayAndMessageStructure: [3, 3, 3, 3],
           //   // The page limit is 4 but each page will show 5 messages because we
           //   // fetch one extra to determine overflow.
           //   archiveMessageLimit: 4,
           //   startUrlDate: '2022/01/04',
           //   page1: {
+          //     url: '/r/room1/date/2022/01/04',
+          //     action: 'next',
           //     urlDate: '2022/01/04',
           //     events: [
           //       // Some of day3
@@ -994,9 +1019,11 @@ describe('matrix-public-archive', () => {
           //       'day4.event1',
           //       'day4.event2',
           //     ],
-          //     action: 'next',
           //   },
           //   page2: {
+          //     // TODO: This page probably doesn't need a continue event
+          //     url: '/r/room1/date/2022/01/05?continue=TODO',
+          //     action: null,
           //     // If we can't find any more messages to paginate to, we just progress the
           //     // date forward by a day so we can display the empty view for that day.
           //     urlDate: '2022/01/05',
@@ -1011,7 +1038,6 @@ describe('matrix-public-archive', () => {
           //       'day4.event1',
           //       'day4.event2',
           //     ],
-          //     action: null,
           //   },
           // },
           {
@@ -1026,19 +1052,25 @@ describe('matrix-public-archive', () => {
             // less than a day of gap between event6 and event9 and we fallback from
             // nearest day to hour boundary.
             //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
-            //             [1st page         ]
-            //                               |-jump-fwd-3-msg->|
-            //                         [2nd page         ]
             testName:
               'can jump forward to the next activity even when it exactly goes to the end of the next day',
+            roomDayMessageStructureString: `
+              [room1                                                               ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]
+                          [page1            ]
+                                            |-jump-fwd-3-msg->|
+                                      [page2            ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02',
             dayAndMessageStructure: [3, 3, 3, 3],
             // The page limit is 3 but each page will show 4 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 3,
             startUrlDate: '2022/01/02',
             page1: {
+              url: '/r/room1/date/2022/01/02',
+              action: 'next',
               urlDate: '2022/01/02',
               events: [
                 // Some of day1
@@ -1048,9 +1080,10 @@ describe('matrix-public-archive', () => {
                 'day2.event1',
                 'day2.event2',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03T02:00?continue=event7',
+              action: null,
               // We expect the URL to look like `T02:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
@@ -1065,7 +1098,6 @@ describe('matrix-public-archive', () => {
                 'day3.event0',
                 'day3.event1',
               ],
-              action: null,
             },
           },
           {
@@ -1076,18 +1108,23 @@ describe('matrix-public-archive', () => {
             //
             // Even though there is overlap between
             // the pages, our scroll continues from the event where the 1st page starts.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
-            // [day1       ]     [day2       ]     [day3       ]     [day4          ]
-            //                         [1st page               ]
-            //       [2nd page               ]
             testName: 'can jump backward to the previous activity',
+            roomDayMessageStructureString: `
+              [room1                                                               ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]
+                                      [page1                  ]
+                    [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/03',
             dayAndMessageStructure: [3, 3, 3, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/03',
             page1: {
+              url: '/r/room1/date/2022/01/03',
+              action: 'previous',
               urlDate: '2022/01/03',
               events: [
                 // Some of day2
@@ -1098,9 +1135,10 @@ describe('matrix-public-archive', () => {
                 'day3.event1',
                 'day3.event2',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/02?continue=event6',
+              action: null,
               urlDate: '2022/01/02',
               // Continuing from the first event of day2 since we already saw the rest
               // of day2 in the first page
@@ -1114,7 +1152,6 @@ describe('matrix-public-archive', () => {
                 'day2.event1',
                 'day2.event2',
               ],
-              action: null,
             },
           },
           {
@@ -1122,20 +1159,25 @@ describe('matrix-public-archive', () => {
             // messages, then back-track to the first date boundary which is the nearest
             // day backwards from event20. We use the nearest day because there is more
             // than a day of gap between event12 and event20.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
-            // [day1       ]     [day2       ]     [day3       ]     [day4          ]     [day5   ]     [day6   ]     [day7    ]    [day8          ]
-            //                   [1st page                                          ]
-            //                                                                      |------------------jump-fwd-8-msg---------------------->|
-            //                                                       [2nd page                                                 ]
             testName:
               'can jump forward over many quiet days without losing any messages in the gap',
+            roomDayMessageStructureString: `
+              [room1                                                                                                                              ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
+              [day1       ]     [day2       ]     [day3       ]     [day4          ]     [day5   ]     [day6   ]     [day7    ]    [day8          ]
+                                [page1                                             ]
+                                                                                  |------------------jump-fwd-8-msg---------------------->|
+                                                                    [page2                                                    ]
+            `,
+            startUrl: '/r/room1/date/2022/01/04',
             dayAndMessageStructure: [3, 3, 3, 3, 2, 2, 2, 3],
             // The page limit is 8 but each page will show 9 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 8,
             startUrlDate: '2022/01/04',
             page1: {
+              url: '/r/room1/date/2022/01/04',
+              action: 'next',
               urlDate: '2022/01/04',
               events: [
                 // All of day2
@@ -1151,9 +1193,10 @@ describe('matrix-public-archive', () => {
                 'day4.event1',
                 'day4.event2',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/07?continue=event13',
+              action: null,
               urlDate: '2022/01/07',
               // Continuing from the first event of day5
               continueAtEvent: 'day5.event0',
@@ -1172,7 +1215,6 @@ describe('matrix-public-archive', () => {
                 'day7.event0',
                 'day7.event1',
               ],
-              action: null,
             },
           },
           {
@@ -1180,18 +1222,23 @@ describe('matrix-public-archive', () => {
             // rangeStart), we look backwards for the closest event. Because we find
             // event12 as the closest, which is from the a different day from event21
             // (page1 rangeEnd), we can just display the day where event12 resides.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
-            // [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5   ]    [day6   ]     [day7          ]     [day8          ]     [day9          ]
-            //                                                                            [1st page                                                ]
-            //                   [2nd page                                          ]
             testName: 'can jump backward to the previous activity with many small quiet days',
+            roomDayMessageStructureString: `
+              [room1                                                                                                                              ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16 <-- 17 <-- 18 <-- 19 <-- 20 <-- 21
+              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5   ]    [day6   ]     [day7          ]     [day8          ]     [day9          ]
+                                                                                         [page1                                                   ]
+                                [page2                                             ]
+            `,
+            startUrl: '/r/room1/date/2022/01/09',
             dayAndMessageStructure: [2, 2, 2, 2, 2, 2, 3, 3, 3],
             // The page limit is 8 but each page will show 9 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 8,
             startUrlDate: '2022/01/09',
             page1: {
+              url: '/r/room1/date/2022/01/09',
+              action: 'previous',
               urlDate: '2022/01/09',
               events: [
                 // All of day7
@@ -1207,9 +1254,9 @@ describe('matrix-public-archive', () => {
                 'day9.event1',
                 'day9.event2',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/06?continue=event12',
               urlDate: '2022/01/06',
               // Continuing from the last event of day6
               continueAtEvent: 'day6.event1',
@@ -1240,19 +1287,24 @@ describe('matrix-public-archive', () => {
             // the nearest hour which starts us from event9, and then we display 5
             // messages because we fetch one more than `archiveMessageLimit` to
             // determine overflow.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15
-            // [day1       ]     [day2       ]     [day3                            ]     [day4          ]
-            //       [1st page               ]
-            //                               |--jump-fwd-4-messages-->|
-            //                         [2nd page               ]
             testName: 'can jump forward to the next activity and land in too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                                    ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15
+              [day1       ]     [day2       ]     [day3                            ]     [day4          ]
+                    [page1                  ]
+                                            |--jump-fwd-4-messages-->|
+                                      [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02',
             dayAndMessageStructure: [3, 3, 6, 3],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02',
             page1: {
+              url: '/r/room1/date/2022/01/02',
+              action: 'next',
               urlDate: '2022/01/02',
               events: [
                 // Some of day 1
@@ -1263,9 +1315,10 @@ describe('matrix-public-archive', () => {
                 'day2.event1',
                 'day2.event2',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03T03:00?continue=event7',
+              action: null,
               // We expect the URL to look like `T03:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
@@ -1281,7 +1334,6 @@ describe('matrix-public-archive', () => {
                 'day3.event1',
                 'day3.event2',
               ],
-              action: null,
             },
           },
           {
@@ -1292,18 +1344,23 @@ describe('matrix-public-archive', () => {
             // rangeStart), we look backwards for the closest event. Because we find
             // event9 as the closest, which is from the a different day from event14
             // (page1 rangeEnd), we can just display the day where event9 resides.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1       ]     [day2                         ]     [day3          ]     [day4   ]
-            //                                                       [1st page                    ]
-            //                         [2nd page               ]
             testName: 'can jump backward to the previous activity and land in too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1       ]     [day2                         ]     [day3          ]     [day4   ]
+                                                                    [page1                       ]
+                                      [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/04',
             dayAndMessageStructure: [3, 6, 3, 2],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/04',
             page1: {
+              url: '/r/room1/date/2022/01/04',
+              action: 'previous',
               urlDate: '2022/01/04',
               events: [
                 // All of day 3
@@ -1314,9 +1371,10 @@ describe('matrix-public-archive', () => {
                 'day4.event0',
                 'day4.event1',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/02?continue=event9',
+              action: null,
               urlDate: '2022/01/02',
               // Continuing from the last event of day2
               continueAtEvent: 'day2.event5',
@@ -1328,7 +1386,6 @@ describe('matrix-public-archive', () => {
                 'day2.event4',
                 'day2.event5',
               ],
-              action: null,
             },
           },
           {
@@ -1336,20 +1393,25 @@ describe('matrix-public-archive', () => {
             // back-track to the nearest hour which starts off at event11 and render the
             // page with 5 messages because we fetch one more than `archiveMessageLimit`
             // to determine overflow.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                         ]     [day3                              ]
-            //                   [1st page               ]
-            //                                           |---jump-fwd-4-messages--->|
-            //                                     [2nd page                 ]
             testName:
               'can jump forward from one day with too many messages into the next day with too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                         ]     [day3                              ]
+                                [page1                  ]
+                                                        |---jump-fwd-4-messages--->|
+                                                  [page2                    ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02',
             dayAndMessageStructure: [2, 6, 6],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02',
             page1: {
+              url: '/r/room1/date/2022/01/02',
+              action: 'next',
               urlDate: '2022/01/02',
               events: [
                 // Some of day 2
@@ -1359,9 +1421,10 @@ describe('matrix-public-archive', () => {
                 'day2.event4',
                 'day2.event5',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03T03:00?continue=event9',
+              action: null,
               urlDate: '2022/01/03T03:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -1374,7 +1437,6 @@ describe('matrix-public-archive', () => {
                 'day3.event1',
                 'day3.event2',
               ],
-              action: null,
             },
           },
           {
@@ -1383,19 +1445,24 @@ describe('matrix-public-archive', () => {
             // event9 as the closest, which is from the same day as event14 (page1
             // rangeEnd), we round up to the nearest hour so that the URL encompasses it
             // when looking backwards.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                         ]     [day3                              ]
-            //                                                       [1st page                    ]
-            //                         [2nd page               ]
             testName:
               'can jump backward from one day with too many messages into the previous day with too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                         ]     [day3                              ]
+                                                                    [page1                       ]
+                                      [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/03',
             dayAndMessageStructure: [2, 6, 6],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/03',
             page1: {
+              url: '/r/room1/date/2022/01/03',
+              action: 'previous',
               urlDate: '2022/01/03',
               events: [
                 // Some of day 3
@@ -1405,9 +1472,10 @@ describe('matrix-public-archive', () => {
                 'day3.event4',
                 'day3.event5',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03T01:00?continue=event9',
+              action: null,
               urlDate: '2022/01/03T01:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -1420,7 +1488,6 @@ describe('matrix-public-archive', () => {
                 // Some of day 3
                 'day3.event0',
               ],
-              action: null,
             },
           },
           {
@@ -1428,20 +1495,25 @@ describe('matrix-public-archive', () => {
             // back-track to the nearest hour which starts off at event11 and render the
             // page with 5 messages because we fetch one more than `archiveMessageLimit`
             // to determine overflow.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                                                                  ]
-            //                   [1st page               ]
-            //                                           |---jump-fwd-4-messages--->|
-            //                                     [2nd page                 ]
             testName:
               'can jump forward from one day with too many messages into the same day with too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                                                                  ]
+                                [page1                  ]
+                                                        |---jump-fwd-4-messages--->|
+                                                  [page2                    ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02T6:00',
             dayAndMessageStructure: [2, 12],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02T6:00',
             page1: {
+              url: '/r/room1/date/2022/01/02T6:00',
+              action: 'next',
               urlDate: '2022/01/02T6:00',
               events: [
                 // Some of day 2
@@ -1451,9 +1523,10 @@ describe('matrix-public-archive', () => {
                 'day2.event4',
                 'day2.event5',
               ],
-              action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/02T09:00?continue=event9',
+              action: null,
               urlDate: '2022/01/02T09:00',
               // Continuing from the first new event on the page
               continueAtEvent: 'day2.event6',
@@ -1465,7 +1538,6 @@ describe('matrix-public-archive', () => {
                 'day2.event7',
                 'day2.event8',
               ],
-              action: null,
             },
           },
           {
@@ -1474,19 +1546,24 @@ describe('matrix-public-archive', () => {
             // event9 as the closest, which is from the same day as event14 (page1
             // rangeEnd), we round up to the nearest hour so that the URL encompasses it
             // when looking backwards.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                                                                  ]
-            //                                                 [1st page                   ]
-            //                   [2nd page               ]
             testName:
               'can jump backward from one day with too many messages into the same day with too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                                                                  ]
+                                                              [page1                      ]
+                                [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02T11:00',
             dayAndMessageStructure: [2, 12],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02T11:00',
             page1: {
+              url: '/r/room1/date/2022/01/02T11:00',
+              action: 'previous',
               urlDate: '2022/01/02T11:00',
               events: [
                 // Some of day 2
@@ -1496,9 +1573,10 @@ describe('matrix-public-archive', () => {
                 'day2.event9',
                 'day2.event10',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/02T06:00?continue=event8',
+              action: null,
               urlDate: '2022/01/02T06:00',
               // Continuing from the first new event on the page
               continueAtEvent: 'day2.event5',
@@ -1510,7 +1588,6 @@ describe('matrix-public-archive', () => {
                 'day2.event4',
                 'day2.event5',
               ],
-              action: null,
             },
           },
           {
@@ -1518,20 +1595,24 @@ describe('matrix-public-archive', () => {
             // back-track to the nearest hour which starts off at event11 and render the
             // page with 5 messages because we fetch one more than `archiveMessageLimit`
             // to determine overflow.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                               ]     [day3                        ]
-            //                   [1st page               ]
-            //                                           |---jump-fwd-4-messages--->|
-            //                                     [2nd page                 ]
             testName:
               'can jump forward from the middle of one day with too many messages into the next day with too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                               ]     [day3                        ]
+                                [page1                  ]
+                                                        |---jump-fwd-4-messages--->|
+                                                  [page2                    ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02T06:00',
             dayAndMessageStructure: [2, 7, 5],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/02T06:00',
             page1: {
+              url: '/r/room1/date/2022/01/02T06:00',
               urlDate: '2022/01/02T06:00',
               events: [
                 // Some of day 2
@@ -1544,6 +1625,8 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03T02:00?continue=event9',
+              action: null,
               urlDate: '2022/01/03T02:00',
               // Continuing from the unseen event in day2
               continueAtEvent: 'day2.event6',
@@ -1556,7 +1639,6 @@ describe('matrix-public-archive', () => {
                 'day3.event0',
                 'day3.event1',
               ],
-              action: null,
             },
           },
           {
@@ -1565,19 +1647,24 @@ describe('matrix-public-archive', () => {
             // event9 as the closest, which is from the same day as event14 (page1
             // rangeEnd), we round up to the nearest hour so that the URL encompasses it
             // when looking backwards.
-            //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                   ]     [day3                                    ]
-            //                                                 [1st page                   ]
-            //                   [2nd page               ]
             testName:
               'can jump backward from the middle of one day with too many messages into the previous day with too many messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                   ]     [day3                                    ]
+                                                              [page1                      ]
+                                [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/03T06:00',
             dayAndMessageStructure: [2, 5, 7],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/03T06:00',
             page1: {
+              url: '/r/room1/date/2022/01/03T06:00',
+              action: 'previous',
               urlDate: '2022/01/03T06:00',
               events: [
                 // Some of day 3
@@ -1587,9 +1674,10 @@ describe('matrix-public-archive', () => {
                 'day3.event4',
                 'day3.event5',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/03T01:00?continue=event8',
+              action: null,
               urlDate: '2022/01/03T01:00',
               // Continuing from the first event of day3
               continueAtEvent: 'day3.event0',
@@ -1602,7 +1690,6 @@ describe('matrix-public-archive', () => {
                 // Some of day 3
                 'day3.event0',
               ],
-              action: null,
             },
           },
           {
@@ -1611,18 +1698,24 @@ describe('matrix-public-archive', () => {
             // event7 as the closest, which is from a different day than event12 (page1
             // rangeEnd), we can just display the day where event7 resides.
             //
-            // 1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-            // [day1 ]     [day2                   ]     [day3                                    ]
-            //                                           [1st page                  ]
-            //             [2nd page               ]
             testName:
               'can jump backward from the start of one day with too many messages into the previous day with exactly the limit',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                   ]     [day3                                    ]
+                                                        [page1                     ]
+                          [page2                  ]
+            `,
+            startUrl: '/r/room1/date/2022/01/03T05:00',
             dayAndMessageStructure: [2, 5, 7],
             // The page limit is 4 but each page will show 5 messages because we
             // fetch one extra to determine overflow.
             archiveMessageLimit: 4,
             startUrlDate: '2022/01/03T05:00',
             page1: {
+              url: '/r/room1/date/2022/01/03T05:00',
+              action: 'previous',
               urlDate: '2022/01/03T05:00',
               events: [
                 // Some of day 3
@@ -1632,9 +1725,10 @@ describe('matrix-public-archive', () => {
                 'day3.event3',
                 'day3.event4',
               ],
-              action: 'previous',
             },
             page2: {
+              url: '/r/room1/date/2022/01/02?continue=event7',
+              action: null,
               urlDate: '2022/01/02',
               continueAtEvent: 'day2.event4',
               events: [
@@ -1645,7 +1739,6 @@ describe('matrix-public-archive', () => {
                 'day2.event3',
                 'day2.event4',
               ],
-              action: null,
             },
           },
         ];
