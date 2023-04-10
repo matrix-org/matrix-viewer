@@ -22,6 +22,7 @@ const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
+  VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
@@ -56,10 +57,6 @@ const router = express.Router({
   mergeParams: true,
 });
 
-const VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP = {
-  r: '#',
-  roomid: '!',
-};
 const validSigilList = Object.values(VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP);
 const sigilRe = new RegExp(`^(${validSigilList.join('|')})`);
 
@@ -159,6 +156,29 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
+function parseViaServersFromReq(req) {
+  const rawViaServers = [].concat(req.query.via || []);
+  if (rawViaServers.length === 0) {
+    return new Set();
+  }
+
+  const viaServerList = rawViaServers.map((viaServer) => {
+    // Sanity check to ensure that the via servers are strings (valid enough looking
+    // host names)
+    if (typeof viaServer !== 'string') {
+      throw new StatusError(
+        400,
+        `?via server must be a string, got ${viaServer} (${typeof viaServer})`
+      );
+    }
+
+    return viaServer;
+  });
+
+  // We use a `Set` to ensure that we don't have duplicate servers in the list
+  return new Set(viaServerList);
+}
+
 router.use(redirectToCorrectArchiveUrlIfBadSigil);
 
 router.get(
@@ -173,7 +193,11 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(
+      matrixAccessToken,
+      roomIdOrAlias,
+      parseViaServersFromReq(req)
+    );
 
     // Find the closest day to the current time with messages
     const { originServerTs } = await timestampToEvent({
@@ -192,7 +216,7 @@ router.get(
         // We can avoid passing along the `via` query parameter because we already
         // joined the room above (see `ensureRoomJoined`).
         //
-        //viaServers: req.query.via,
+        //viaServers: parseViaServersFromReq(req),
       })
     );
   })
@@ -245,7 +269,11 @@ router.get(
 
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(
+      matrixAccessToken,
+      roomIdOrAlias,
+      parseViaServersFromReq(req)
+    );
 
     let eventIdForClosestEvent;
     let tsForClosestEvent;
@@ -536,7 +564,11 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(
+      matrixAccessToken,
+      roomIdOrAlias,
+      parseViaServersFromReq(req)
+    );
 
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
@@ -587,6 +619,7 @@ router.get(
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
 
+    // XXX: The `renderHydrogenVmRenderScriptToPageHtml` API surface is pretty awkward
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {

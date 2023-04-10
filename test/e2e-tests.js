@@ -25,6 +25,7 @@ const {
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
+  upgradeTestRoom,
   getCanonicalAlias,
   joinRoom,
   sendEvent,
@@ -757,6 +758,318 @@ describe('matrix-public-archive', () => {
       });
 
       describe('Jump forwards and backwards', () => {
+        function runJumpTestCase(testCase) {
+          // eslint-disable-next-line max-statements, complexity
+          it(testCase.testName, async () => {
+            // Setup
+            // --------------------------------------
+            // --------------------------------------
+            const eventMap = new Map();
+            const fancyIdentifierToEventIdMap = new Map();
+            const eventIdToFancyIdentifierMap = new Map();
+
+            function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
+              // eslint-disable-next-line max-nested-callbacks
+              return fancyEventIdentifiers.map((fancyId) => {
+                const eventId = fancyIdentifierToEventIdMap.get(fancyId);
+                if (!eventId) {
+                  throw new Error(
+                    `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
+                      Object.fromEntries(fancyIdentifierToEventIdMap.entries()),
+                      null,
+                      2
+                    )}`
+                  );
+                }
+                const ts = eventMap.get(eventId)?.originServerTs;
+                const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
+                return `${eventId} (${fancyId}) - ${tsDebugString}`;
+              });
+            }
+
+            function convertEventIdsToDebugEventIds(eventIds) {
+              // eslint-disable-next-line max-nested-callbacks
+              return eventIds.map((eventId) => {
+                const fancyEventId = eventIdToFancyIdentifierMap.get(eventId);
+                if (!fancyEventId) {
+                  throw new Error(
+                    `Unable to find ${eventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
+                      Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
+                      null,
+                      2
+                    )}`
+                  );
+                }
+                const ts = eventMap.get(eventId)?.originServerTs;
+                const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
+                return `${eventId} (${fancyEventId}) - ${tsDebugString}`;
+              });
+            }
+
+            const client = await getTestClientForHs(testMatrixServerUrl1);
+
+            const { rooms, archiveMessageLimit, pages } = parseRoomDayMessageStructure(
+              testCase.roomDayMessageStructureString
+            );
+            const fancyIdentifierToRoomIdMap = new Map();
+            const roomIdToFancyIdentifierMap = new Map();
+            let previousRoomId;
+            for (const [roomIndex, room] of rooms.entries()) {
+              let roomId;
+              if (previousRoomId) {
+                roomId = await upgradeTestRoom({
+                  client,
+                  previousRoomId,
+                  //useMsc3946DynamicPredecessor: TODO: Enable this when we have a way to configure it
+                });
+              } else {
+                roomId = await createTestRoom(client);
+              }
+              const fancyRoomId = `#room${roomIndex + 1}`;
+              fancyIdentifierToRoomIdMap.set(fancyRoomId, roomId);
+              roomIdToFancyIdentifierMap.set(roomId, fancyRoomId);
+
+              // Join the archive user to the room before we create the test messages to
+              // avoid problems jumping to the latest activity since we can't control the
+              // timestamp of the membership event.
+              const archiveAppServiceUserClient = await getTestClientForAs();
+              await joinRoom({
+                client: archiveAppServiceUserClient,
+                roomId: roomId,
+              });
+
+              // Just spread things out a bit so the event times are more obvious
+              // and stand out from each other while debugging and so we just have
+              // to deal with hour time slicing
+              const eventSendTimeIncrement = ONE_HOUR_IN_MS;
+
+              for (const eventMeta of room.events) {
+                const archiveDate = new Date(Date.UTC(2022, 0, eventMeta.dayNumber, 0, 0, 0, 1));
+                const originServerTs =
+                  archiveDate.getTime() + eventMeta.eventIndexInDay * eventSendTimeIncrement;
+                const content = {
+                  msgtype: 'm.text',
+                  body: `event${eventMeta.eventNumber} - day${eventMeta.dayNumber}.${eventMeta.eventIndexInDay}`,
+                };
+                const eventId = await sendMessage({
+                  client,
+                  roomId,
+                  content,
+                  // Technically, we don't have to set the timestamp to be unique or sequential but
+                  // it still seems like a good idea to make the tests more clear.
+                  timestamp: originServerTs,
+                });
+                eventMap.set(eventId, {
+                  roomId,
+                  originServerTs,
+                  content,
+                });
+                const fancyEventId = `$event${eventMeta.eventNumber}`;
+                fancyIdentifierToEventIdMap.set(fancyEventId, eventId);
+                eventIdToFancyIdentifierMap.set(eventId, fancyEventId);
+              }
+
+              previousRoomId = roomId;
+            }
+
+            // Now Test
+            // --------------------------------------
+            // --------------------------------------
+
+            // Make sure the archive is configured as the test expects
+            config.set('archiveMessageLimit', archiveMessageLimit);
+
+            // eslint-disable-next-line max-nested-callbacks
+            const pagesKeyList = Object.keys(testCase).filter((key) => {
+              const isPageKey = key.startsWith('page');
+              if (isPageKey) {
+                assert.match(key, /page\d+/);
+                return true;
+              }
+
+              return false;
+            });
+            assert(
+              pagesKeyList.length > 0,
+              'You must have at least one `pageX` of expectations in your jump test case'
+            );
+            // Make sure the page are in order
+            // eslint-disable-next-line max-nested-callbacks
+            pagesKeyList.reduce((prevPageCount, currentPageKey) => {
+              const pageNumber = parseInt(currentPageKey.match(/\d+$/)[0], 10);
+              assert(
+                prevPageCount + 1 === pageNumber,
+                `Page numbers must be sorted in each test case but found ` +
+                  `${pageNumber} after ${prevPageCount} - pagesList=${pagesKeyList}`
+              );
+              return pageNumber;
+            }, 0);
+
+            // Get the URL for the first page to fetch
+            //
+            // Set the `archiveUrl` for debugging if the test fails here
+            const { roomIdOrAlias: startRoomFancyKey, urlDateTime: startUrlDateTime } =
+              parseArchiveUrlForRoom(urlJoin('https://example.com', testCase.startUrl));
+            const startRoomIdOrAlias = fancyIdentifierToRoomIdMap.get(startRoomFancyKey);
+            assert(
+              startRoomIdOrAlias,
+              `Could not find room ID for ${startRoomFancyKey} in our list of known rooms ${JSON.stringify(
+                Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
+              )}`
+            );
+            archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
+              startRoomIdOrAlias
+            )}/date/${startUrlDateTime}`;
+
+            // Loop through all of the pages of the test and ensure expectations
+            let alreadyEncounteredLastPage = false;
+            for (const pageKey of pagesKeyList) {
+              try {
+                if (alreadyEncounteredLastPage) {
+                  assert.fail(
+                    'We should not see any more pages after we already saw a page without an action ' +
+                      `which signals the end of expecations. Encountered ${pageKey} in ${pagesKeyList} ` +
+                      'after we already thought we were done'
+                  );
+                }
+
+                const pageTestMeta = testCase[pageKey];
+                const {
+                  roomIdOrAlias: expectedRoomFancyId,
+                  //urlDateTime: expectedUrlDateTime,
+                  continueAtEvent: expectedContinueAtEvent,
+                } = parseArchiveUrlForRoom(urlJoin('https://example.com', pageTestMeta.url));
+                const expectedRoomId = fancyIdentifierToRoomIdMap.get(expectedRoomFancyId);
+                assert(
+                  expectedRoomId,
+                  `Could not find room ID for ${expectedRoomFancyId} in our list of known rooms ${JSON.stringify(
+                    Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
+                  )}`
+                );
+
+                // Fetch the given page.
+                const { data: archivePageHtml, res: pageRes } = await fetchEndpointAsText(
+                  archiveUrl
+                );
+                const pageDom = parseHTML(archivePageHtml);
+                const {
+                  roomIdOrAliasUrlPart: actualRoomIdOrAliasUrlPart,
+                  roomIdOrAlias: actualRoomId,
+                  //urlDateTime: actualUrlDateTime,
+                  continueAtEvent: actualContinueAtEventId,
+                } = parseArchiveUrlForRoom(pageRes.url);
+                const actualRoomFancyId = roomIdToFancyIdentifierMap.get(actualRoomId);
+                assert(
+                  actualRoomFancyId,
+                  `Could not find room ID for ${actualRoomId} in our list of known rooms ${JSON.stringify(
+                    Object.fromEntries(roomIdToFancyIdentifierMap.entries())
+                  )}`
+                );
+                let actualContinueAtEventFancyId;
+                if (actualContinueAtEventId) {
+                  actualContinueAtEventFancyId =
+                    eventIdToFancyIdentifierMap.get(actualContinueAtEventId);
+                  assert(
+                    actualContinueAtEventFancyId,
+                    `Could not find event ID for ${actualContinueAtEventId} in our list of known events ${JSON.stringify(
+                      Object.fromEntries(eventIdToFancyIdentifierMap.entries())
+                    )}`
+                  );
+                }
+
+                // Replace messy room ID's and event ID's that change with every test
+                // run with their fancy ID's which correlate with the test meta so it's
+                // easier to reason about things when the assertion fails.
+                let actualUrlWithFancyIdentifies = pageRes.url
+                  .replace(
+                    `/roomid/${actualRoomIdOrAliasUrlPart}`,
+                    // Slice to remove the sigil
+                    `/r/${actualRoomFancyId.slice(1)}`
+                  )
+                  .replace(actualContinueAtEventId, actualContinueAtEventFancyId);
+                // Assert the correct room and time precision in the URL
+                assert.match(
+                  actualUrlWithFancyIdentifies,
+                  new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`)
+                );
+
+                // If provided, assert that it's a smooth continuation to more messages.
+                // First by checking where the scroll is going to start from
+                if (expectedContinueAtEvent) {
+                  const [expectedContinuationDebugEventId] =
+                    convertFancyIdentifierListToDebugEventIds([expectedContinueAtEvent]);
+                  const urlObj = new URL(pageRes.url, basePath);
+                  const qs = new URLSearchParams(urlObj.search);
+                  const continuationEventId = qs.get('at');
+                  if (!continuationEventId) {
+                    throw new Error(
+                      `Expected ?at=$xxx query parameter to be defined in the URL=${pageRes.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
+                    );
+                  }
+                  const [continationDebugEventId] = convertEventIdsToDebugEventIds([
+                    continuationEventId,
+                  ]);
+                  assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
+                }
+
+                const eventIdsOnPage = [...pageDom.document.querySelectorAll(`[data-event-id]`)]
+                  // eslint-disable-next-line max-nested-callbacks
+                  .map((eventEl) => {
+                    return eventEl.getAttribute('data-event-id');
+                  });
+
+                const pageNumber = pageKey.replace('page', '');
+                const page = pages[pageNumber - 1];
+                const expectedEventsOnPage = page.events;
+                const expectedFancyIdsOnPage = expectedEventsOnPage.map(
+                  // eslint-disable-next-line max-nested-callbacks
+                  (event) => `$event${event.eventNumber}`
+                );
+
+                // Assert that the page contains all expected events
+                assert.deepEqual(
+                  convertEventIdsToDebugEventIds(eventIdsOnPage),
+                  convertFancyIdentifierListToDebugEventIds(expectedFancyIdsOnPage),
+                  `Events on ${pageKey} should be as expected`
+                );
+
+                // Follow the next activity link. Aka, fetch messages for the 2nd page
+                let actionLinkSelector;
+                if (pageTestMeta.action === 'next') {
+                  actionLinkSelector = '[data-testid="jump-to-next-activity-link"]';
+                } else if (pageTestMeta.action === 'previous') {
+                  actionLinkSelector = '[data-testid="jump-to-previous-activity-link"]';
+                } else if (pageTestMeta.action === null) {
+                  // No more pages to test ✅, move on
+                  alreadyEncounteredLastPage = true;
+                  continue;
+                } else {
+                  throw new Error(
+                    `Unexpected value for ${pageKey}.action=${pageTestMeta.action} that we don't know what to do with`
+                  );
+                }
+                const jumpToActivityLinkEl = pageDom.document.querySelector(actionLinkSelector);
+                const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
+                // Move to the next iteration of the loop
+                //
+                // Set this for debugging if the test fails here
+                archiveUrl = jumpToActivityLinkHref;
+              } catch (err) {
+                const errorWithContext = new RethrownError(
+                  `Encountered error while asserting ${pageKey}: ${err.message}`,
+                  err
+                );
+                // Copy these over so mocha generates a nice diff for us
+                if (err instanceof assert.AssertionError) {
+                  errorWithContext.actual = err.actual;
+                  errorWithContext.expected = err.expected;
+                }
+                throw errorWithContext;
+              }
+            }
+          });
+        }
+
         const jumpTestCases = [
           {
             // In order to jump from the 1st page to the 2nd, we first jump forward 4
@@ -1225,7 +1538,6 @@ describe('matrix-public-archive', () => {
             // rangeStart), we look backwards for the closest event. Because we find
             // event7 as the closest, which is from a different day than event12 (page1
             // rangeEnd), we can just display the day where event7 resides.
-            //
             testName:
               'can jump backward from the start of one day with too many messages into the previous day with exactly the limit',
             roomDayMessageStructureString: `
@@ -1247,304 +1559,92 @@ describe('matrix-public-archive', () => {
           },
         ];
 
+        const jumpBackwardPredecessorTestCases = [
+          {
+            testName: 'can jump backward from one room to the predecessor room',
+            roomDayMessageStructureString: `
+              [room1                              ]     [room2                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                   ]     [day3                                    ]
+                                                        [page1                     ]
+                          [page2                  ]
+            `,
+            startUrl: '/r/room2/date/2022/01/03T05:00',
+            page1: {
+              url: '/r/room2/date/2022/01/03T05:00',
+              action: 'previous',
+            },
+            page2: {
+              url: '/r/room1/date/2022/01/02',
+              action: null,
+            },
+          },
+          {
+            testName: `will paginate to the oldest messages in the room (doesn't skip the last few) before jumping backward to the predecessor room`,
+            roomDayMessageStructureString: `
+              [room1                              ]     [room2                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                   ]     [day3                                    ]
+                                                                    [page1                       ]
+                                                        [page2]
+                          [page3                  ]
+            `,
+            startUrl: '/r/room2/date/2022/01/03T05:00',
+            page1: {
+              url: '/r/room2/date/2022/01/03T05:00',
+              action: 'previous',
+            },
+            page2: {
+              url: '/r/room2/date/2022/01/03',
+              action: 'previous',
+            },
+            page3: {
+              url: '/r/room1/date/2022/01/02',
+              action: null,
+            },
+          },
+        ];
+
+        const jumpForwardTombstoneTestCases = [
+          {
+            testName: 'can jump forward from one room to the replacement room',
+            roomDayMessageStructureString: `
+              [room1                              ]     [room2                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                   ]     [day3                                    ]
+                          [page1                  ]
+                                                  |--jump-fwd-4-messages--->|
+                                                        [page2       ]
+            `,
+            startUrl: '/r/room1/date/2022/01/02',
+            page1: {
+              url: '/r/room1/date/2022/01/02',
+              action: 'next',
+            },
+            page2: {
+              url: '/r/room2/date/2022/01/03T04:00',
+              action: null,
+            },
+          },
+        ];
+
         jumpTestCases.forEach((testCase) => {
-          // eslint-disable-next-line max-statements, complexity
-          it(testCase.testName, async () => {
-            // Setup
-            // --------------------------------------
-            // --------------------------------------
-            const eventMap = new Map();
-            const fancyIdentifierToEventIdMap = new Map();
-            const eventIdToFancyIdentifierMap = new Map();
+          runJumpTestCase(testCase);
+        });
 
-            function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
-              // eslint-disable-next-line max-nested-callbacks
-              return fancyEventIdentifiers.map((fancyId) => {
-                const eventId = fancyIdentifierToEventIdMap.get(fancyId);
-                if (!eventId) {
-                  throw new Error(
-                    `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
-                      Object.fromEntries(fancyIdentifierToEventIdMap.entries()),
-                      null,
-                      2
-                    )}`
-                  );
-                }
-                const ts = eventMap.get(eventId)?.originServerTs;
-                const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
-                return `${eventId} (${fancyId}) - ${tsDebugString}`;
-              });
-            }
-
-            function convertEventIdsToDebugEventIds(eventIds) {
-              // eslint-disable-next-line max-nested-callbacks
-              return eventIds.map((eventId) => {
-                const fancyEventId = eventIdToFancyIdentifierMap.get(eventId);
-                if (!fancyEventId) {
-                  throw new Error(
-                    `Unable to find ${eventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
-                      Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
-                      null,
-                      2
-                    )}`
-                  );
-                }
-                const ts = eventMap.get(eventId)?.originServerTs;
-                const tsDebugString = ts && `${new Date(ts).toISOString()} (${ts})`;
-                return `${eventId} (${fancyEventId}) - ${tsDebugString}`;
-              });
-            }
-
-            const client = await getTestClientForHs(testMatrixServerUrl1);
-
-            const { rooms, archiveMessageLimit, pages } = parseRoomDayMessageStructure(
-              testCase.roomDayMessageStructureString
-            );
-            const fancyIdentifierToRoomIdMap = new Map();
-            const roomIdToFancyIdentifierMap = new Map();
-            for (const [roomIndex, room] of rooms.entries()) {
-              // TODO: upgradeRoom to link one room to another
-              const roomId = await createTestRoom(client);
-              const fancyRoomId = `#room${roomIndex + 1}`;
-              fancyIdentifierToRoomIdMap.set(fancyRoomId, roomId);
-              roomIdToFancyIdentifierMap.set(roomId, fancyRoomId);
-
-              // Join the archive user to the room before we create the test messages to
-              // avoid problems jumping to the latest activity since we can't control the
-              // timestamp of the membership event.
-              const archiveAppServiceUserClient = await getTestClientForAs();
-              await joinRoom({
-                client: archiveAppServiceUserClient,
-                roomId: roomId,
-              });
-
-              // Just spread things out a bit so the event times are more obvious
-              // and stand out from each other while debugging and so we just have
-              // to deal with hour time slicing
-              const eventSendTimeIncrement = ONE_HOUR_IN_MS;
-
-              for (const eventMeta of room.events) {
-                const archiveDate = new Date(Date.UTC(2022, 0, eventMeta.dayNumber, 0, 0, 0, 1));
-                const originServerTs =
-                  archiveDate.getTime() + eventMeta.eventIndexInDay * eventSendTimeIncrement;
-                const content = {
-                  msgtype: 'm.text',
-                  body: `event${eventMeta.eventNumber} - day${eventMeta.dayNumber}.${eventMeta.eventIndexInDay}`,
-                };
-                const eventId = await sendMessage({
-                  client,
-                  roomId,
-                  content,
-                  // Technically, we don't have to set the timestamp to be unique or sequential but
-                  // it still seems like a good idea to make the tests more clear.
-                  timestamp: originServerTs,
-                });
-                eventMap.set(eventId, {
-                  roomId,
-                  originServerTs,
-                  content,
-                });
-                const fancyEventId = `$event${eventMeta.eventNumber}`;
-                fancyIdentifierToEventIdMap.set(fancyEventId, eventId);
-                eventIdToFancyIdentifierMap.set(eventId, fancyEventId);
-              }
-            }
-
-            // Now Test
-            // --------------------------------------
-            // --------------------------------------
-
-            // Make sure the archive is configured as the test expects
-            config.set('archiveMessageLimit', archiveMessageLimit);
-
+        describe('with room upgrades', () => {
+          describe('jump backward into predecessor rooms', () => {
             // eslint-disable-next-line max-nested-callbacks
-            const pagesKeyList = Object.keys(testCase).filter((key) => {
-              const isPageKey = key.startsWith('page');
-              if (isPageKey) {
-                assert.match(key, /page\d+/);
-                return true;
-              }
-
-              return false;
+            jumpBackwardPredecessorTestCases.forEach((testCase) => {
+              runJumpTestCase(testCase);
             });
-            assert(
-              pagesKeyList.length > 0,
-              'You must have at least one `pageX` of expectations in your jump test case'
-            );
-            // Make sure the page are in order
+          });
+
+          describe('jump forward from tombstone to replacement rooms', () => {
             // eslint-disable-next-line max-nested-callbacks
-            pagesKeyList.reduce((prevPageCount, currentPageKey) => {
-              const pageNumber = parseInt(currentPageKey.match(/\d+$/)[0], 10);
-              assert(
-                prevPageCount + 1 === pageNumber,
-                `Page numbers must be sorted in each test case but found ` +
-                  `${pageNumber} after ${prevPageCount} - pagesList=${pagesKeyList}`
-              );
-              return pageNumber;
-            }, 0);
-
-            // Get the URL for the first page to fetch
-            //
-            // Set the `archiveUrl` for debugging if the test fails here
-            const { roomIdOrAlias: startRoomFancyKey, urlDateTime: startUrlDateTime } =
-              parseArchiveUrlForRoom(urlJoin('https://example.com', testCase.startUrl));
-            const startRoomIdOrAlias = fancyIdentifierToRoomIdMap.get(startRoomFancyKey);
-            assert(
-              startRoomIdOrAlias,
-              `Could not find room ID for ${startRoomFancyKey} in our list of known rooms ${JSON.stringify(
-                Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
-              )}`
-            );
-            archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
-              startRoomIdOrAlias
-            )}/date/${startUrlDateTime}`;
-
-            // Loop through all of the pages of the test and ensure expectations
-            let alreadyEncounteredLastPage = false;
-            for (const pageKey of pagesKeyList) {
-              try {
-                if (alreadyEncounteredLastPage) {
-                  assert.fail(
-                    'We should not see any more pages after we already saw a page without an action ' +
-                      `which signals the end of expecations. Encountered ${pageKey} in ${pagesKeyList} ` +
-                      'after we already thought we were done'
-                  );
-                }
-
-                const pageTestMeta = testCase[pageKey];
-                const {
-                  roomIdOrAlias: expectedRoomFancyId,
-                  //urlDateTime: expectedUrlDateTime,
-                  continueAtEvent: expectedContinueAtEvent,
-                } = parseArchiveUrlForRoom(urlJoin('https://example.com', pageTestMeta.url));
-                const expectedRoomId = fancyIdentifierToRoomIdMap.get(expectedRoomFancyId);
-                assert(
-                  expectedRoomId,
-                  `Could not find room ID for ${expectedRoomFancyId} in our list of known rooms ${JSON.stringify(
-                    Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
-                  )}`
-                );
-
-                // Fetch the given page.
-                const { data: archivePageHtml, res: pageRes } = await fetchEndpointAsText(
-                  archiveUrl
-                );
-                const pageDom = parseHTML(archivePageHtml);
-                const {
-                  roomIdOrAliasUrlPart: actualRoomIdOrAliasUrlPart,
-                  roomIdOrAlias: actualRoomId,
-                  //urlDateTime: actualUrlDateTime,
-                  continueAtEvent: actualContinueAtEventId,
-                } = parseArchiveUrlForRoom(pageRes.url);
-                const actualRoomFancyId = roomIdToFancyIdentifierMap.get(actualRoomId);
-                assert(
-                  actualRoomFancyId,
-                  `Could not find room ID for ${actualRoomId} in our list of known rooms ${JSON.stringify(
-                    Object.fromEntries(roomIdToFancyIdentifierMap.entries())
-                  )}`
-                );
-                let actualContinueAtEventFancyId;
-                if (actualContinueAtEventId) {
-                  actualContinueAtEventFancyId =
-                    eventIdToFancyIdentifierMap.get(actualContinueAtEventId);
-                  assert(
-                    actualContinueAtEventFancyId,
-                    `Could not find event ID for ${actualContinueAtEventId} in our list of known events ${JSON.stringify(
-                      Object.fromEntries(eventIdToFancyIdentifierMap.entries())
-                    )}`
-                  );
-                }
-
-                // Replace messy room ID's and event ID's that change with every test
-                // run with their fancy ID's which correlate with the test meta so it's
-                // easier to reason about things when the assertion fails.
-                let actualUrlWithFancyIdentifies = pageRes.url
-                  .replace(
-                    `/roomid/${actualRoomIdOrAliasUrlPart}`,
-                    // Slice to remove the sigil
-                    `/r/${actualRoomFancyId.slice(1)}`
-                  )
-                  .replace(actualContinueAtEventId, actualContinueAtEventFancyId);
-                // Assert the correct room and time precision in the URL
-                assert.match(
-                  actualUrlWithFancyIdentifies,
-                  new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`)
-                );
-
-                // If provided, assert that it's a smooth continuation to more messages.
-                // First by checking where the scroll is going to start from
-                if (expectedContinueAtEvent) {
-                  const [expectedContinuationDebugEventId] =
-                    convertFancyIdentifierListToDebugEventIds([expectedContinueAtEvent]);
-                  const urlObj = new URL(pageRes.url, basePath);
-                  const qs = new URLSearchParams(urlObj.search);
-                  const continuationEventId = qs.get('at');
-                  if (!continuationEventId) {
-                    throw new Error(
-                      `Expected ?at=$xxx query parameter to be defined in the URL=${pageRes.url} but it was ${continuationEventId}. We expect it to match ${expectedContinuationDebugEventId}`
-                    );
-                  }
-                  const [continationDebugEventId] = convertEventIdsToDebugEventIds([
-                    continuationEventId,
-                  ]);
-                  assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
-                }
-
-                const eventIdsOnPage = [...pageDom.document.querySelectorAll(`[data-event-id]`)]
-                  // eslint-disable-next-line max-nested-callbacks
-                  .map((eventEl) => {
-                    return eventEl.getAttribute('data-event-id');
-                  });
-
-                const pageNumber = pageKey.replace('page', '');
-                const page = pages[pageNumber - 1];
-                const expectedEventsOnPage = page.events;
-                const expectedFancyIdsOnPage = expectedEventsOnPage.map(
-                  // eslint-disable-next-line max-nested-callbacks
-                  (event) => `$event${event.eventNumber}`
-                );
-
-                // Assert that the page contains all expected events
-                assert.deepEqual(
-                  convertEventIdsToDebugEventIds(eventIdsOnPage),
-                  convertFancyIdentifierListToDebugEventIds(expectedFancyIdsOnPage),
-                  `Events on ${pageKey} should be as expected`
-                );
-
-                // Follow the next activity link. Aka, fetch messages for the 2nd page
-                let actionLinkSelector;
-                if (pageTestMeta.action === 'next') {
-                  actionLinkSelector = '[data-testid="jump-to-next-activity-link"]';
-                } else if (pageTestMeta.action === 'previous') {
-                  actionLinkSelector = '[data-testid="jump-to-previous-activity-link"]';
-                } else if (pageTestMeta.action === null) {
-                  // No more pages to test ✅, move on
-                  alreadyEncounteredLastPage = true;
-                  continue;
-                } else {
-                  throw new Error(
-                    `Unexpected value for ${pageKey}.action=${pageTestMeta.action} that we don't know what to do with`
-                  );
-                }
-                const jumpToActivityLinkEl = pageDom.document.querySelector(actionLinkSelector);
-                const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
-                // Move to the next iteration of the loop
-                //
-                // Set this for debugging if the test fails here
-                archiveUrl = jumpToActivityLinkHref;
-              } catch (err) {
-                const errorWithContext = new RethrownError(
-                  `Encountered error while asserting ${pageKey}: ${err.message}`,
-                  err
-                );
-                // Copy these over so mocha generates a nice diff for us
-                if (err instanceof assert.AssertionError) {
-                  errorWithContext.actual = err.actual;
-                  errorWithContext.expected = err.expected;
-                }
-                throw errorWithContext;
-              }
-            }
+            jumpForwardTombstoneTestCases.forEach((testCase) => {
+              runJumpTestCase(testCase);
+            });
           });
         });
 

@@ -3,6 +3,7 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 const { fetchEndpointAsJson, fetchEndpoint } = require('../../server/lib/fetch-endpoint');
+const getServerNameFromMatrixRoomIdOrAlias = require('../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias');
 
 const config = require('../../server/lib/config');
 const matrixAccessToken = config.get('matrixAccessToken');
@@ -85,88 +86,6 @@ async function getTestClientForHs(testMatrixServerUrl) {
   };
 }
 
-// Create a public room to test in
-async function createTestRoom(client, overrideCreateOptions = {}) {
-  let qs = new URLSearchParams();
-  if (client.applicationServiceUserIdOverride) {
-    qs.append('user_id', client.applicationServiceUserIdOverride);
-  }
-
-  const roomName = overrideCreateOptions.name || 'the hangout spot';
-  const roomAlias = slugify(roomName + getTxnId());
-
-  const { data: createRoomResponse } = await fetchEndpointAsJson(
-    urlJoin(client.homeserverUrl, `/_matrix/client/v3/createRoom?${qs.toString()}`),
-    {
-      method: 'POST',
-      body: {
-        preset: 'public_chat',
-        name: roomName,
-        room_alias_name: roomAlias,
-        initial_state: [
-          {
-            type: 'm.room.history_visibility',
-            state_key: '',
-            content: {
-              history_visibility: 'world_readable',
-            },
-          },
-        ],
-        visibility: 'public',
-        ...overrideCreateOptions,
-      },
-      accessToken: client.accessToken,
-    }
-  );
-
-  const roomId = createRoomResponse['room_id'];
-  assert(roomId);
-  return roomId;
-}
-
-async function getCanonicalAlias({ client, roomId }) {
-  const { data: stateCanonicalAliasRes } = await fetchEndpointAsJson(
-    urlJoin(
-      client.homeserverUrl,
-      `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/m.room.canonical_alias`
-    ),
-    {
-      accessToken: client.accessToken,
-    }
-  );
-
-  const canonicalAlias = stateCanonicalAliasRes.alias;
-  assert(canonicalAlias, `getCanonicalAlias() did not return canonicalAlias as expected`);
-
-  return canonicalAlias;
-}
-
-async function joinRoom({ client, roomId, viaServers }) {
-  let qs = new URLSearchParams();
-  if (viaServers) {
-    [].concat(viaServers).forEach((viaServer) => {
-      qs.append('server_name', viaServer);
-    });
-  }
-
-  if (client.applicationServiceUserIdOverride) {
-    qs.append('user_id', client.applicationServiceUserIdOverride);
-  }
-
-  const joinRoomUrl = urlJoin(
-    client.homeserverUrl,
-    `/_matrix/client/v3/join/${encodeURIComponent(roomId)}?${qs.toString()}`
-  );
-  const { data: joinRoomResponse } = await fetchEndpointAsJson(joinRoomUrl, {
-    method: 'POST',
-    accessToken: client.accessToken,
-  });
-
-  const joinedRoomId = joinRoomResponse['room_id'];
-  assert(joinedRoomId);
-  return joinedRoomId;
-}
-
 async function sendEvent({ client, roomId, eventType, stateKey, content, timestamp }) {
   assert(client);
   assert(roomId);
@@ -213,6 +132,134 @@ async function sendEvent({ client, roomId, eventType, stateKey, content, timesta
   const eventId = sendResponse['event_id'];
   assert(eventId);
   return eventId;
+}
+
+const WORLD_READABLE_STATE_EVENT = {
+  type: 'm.room.history_visibility',
+  state_key: '',
+  content: {
+    history_visibility: 'world_readable',
+  },
+};
+
+// Create a public room to test in
+async function createTestRoom(client, overrideCreateOptions = {}) {
+  let qs = new URLSearchParams();
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
+  }
+
+  const roomName = overrideCreateOptions.name || 'the hangout spot';
+  const roomAlias = slugify(roomName + getTxnId());
+
+  const { data: createRoomResponse } = await fetchEndpointAsJson(
+    urlJoin(client.homeserverUrl, `/_matrix/client/v3/createRoom?${qs.toString()}`),
+    {
+      method: 'POST',
+      body: {
+        preset: 'public_chat',
+        name: roomName,
+        room_alias_name: roomAlias,
+        initial_state: [WORLD_READABLE_STATE_EVENT],
+        visibility: 'public',
+        ...overrideCreateOptions,
+      },
+      accessToken: client.accessToken,
+    }
+  );
+
+  const roomId = createRoomResponse['room_id'];
+  assert(roomId);
+  return roomId;
+}
+
+async function upgradeTestRoom({
+  client,
+  oldRoomId,
+  useMsc3946DynamicPredecessor = false,
+  overrideCreateOptions = {},
+}) {
+  assert(client);
+  assert(oldRoomId);
+
+  const createOptions = {
+    ...overrideCreateOptions,
+  };
+  // Setup the pointer from the new room to the old room
+  if (useMsc3946DynamicPredecessor) {
+    createOptions.initial_state = [
+      WORLD_READABLE_STATE_EVENT,
+      {
+        type: 'org.matrix.msc3946.room_predecessor',
+        state_key: '',
+        content: {
+          predecessor_room_id: oldRoomId,
+          via_servers: [getServerNameFromMatrixRoomIdOrAlias(oldRoomId)],
+        },
+      },
+    ];
+  } else {
+    createOptions.creation_content = {
+      predecessor: oldRoomId,
+    };
+  }
+
+  const newRoomid = await createTestRoom(client, createOptions);
+
+  // Now send the tombstone event pointing from the old room to the new room
+  await sendEvent({
+    client,
+    oldRoomId,
+    eventType: 'm.room.tombstone',
+    content: {
+      replacement_room: newRoomid,
+    },
+  });
+
+  return newRoomid;
+}
+
+async function getCanonicalAlias({ client, roomId }) {
+  const { data: stateCanonicalAliasRes } = await fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/m.room.canonical_alias`
+    ),
+    {
+      accessToken: client.accessToken,
+    }
+  );
+
+  const canonicalAlias = stateCanonicalAliasRes.alias;
+  assert(canonicalAlias, `getCanonicalAlias() did not return canonicalAlias as expected`);
+
+  return canonicalAlias;
+}
+
+async function joinRoom({ client, roomId, viaServers }) {
+  let qs = new URLSearchParams();
+  if (viaServers) {
+    [].concat(viaServers).forEach((viaServer) => {
+      qs.append('server_name', viaServer);
+    });
+  }
+
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
+  }
+
+  const joinRoomUrl = urlJoin(
+    client.homeserverUrl,
+    `/_matrix/client/v3/join/${encodeURIComponent(roomId)}?${qs.toString()}`
+  );
+  const { data: joinRoomResponse } = await fetchEndpointAsJson(joinRoomUrl, {
+    method: 'POST',
+    accessToken: client.accessToken,
+  });
+
+  const joinedRoomId = joinRoomResponse['room_id'];
+  assert(joinedRoomId);
+  return joinedRoomId;
 }
 
 async function sendMessage({ client, roomId, content, timestamp }) {
@@ -345,6 +392,7 @@ module.exports = {
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
+  upgradeTestRoom,
   getCanonicalAlias,
   joinRoom,
   sendEvent,
