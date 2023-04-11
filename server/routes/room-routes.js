@@ -11,6 +11,7 @@ const timeoutMiddleware = require('./timeout-middleware');
 const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 const { HTTPResponseError } = require('../lib/fetch-endpoint');
+const parseViaServersFromUserInput = require('../lib/parse-via-servers-from-user-input');
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
@@ -173,7 +174,11 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(
+      matrixAccessToken,
+      roomIdOrAlias,
+      parseViaServersFromUserInput(req.query.via)
+    );
 
     // Find the closest day to the current time with messages
     const { originServerTs } = await timestampToEvent({
@@ -192,7 +197,7 @@ router.get(
         // We can avoid passing along the `via` query parameter because we already
         // joined the room above (see `ensureRoomJoined`).
         //
-        //viaServers: req.query.via,
+        //viaServers: parseViaServersFromUserInput(req.query.via),
       })
     );
   })
@@ -245,7 +250,11 @@ router.get(
 
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(
+      matrixAccessToken,
+      roomIdOrAlias,
+      parseViaServersFromUserInput(req.query.via)
+    );
 
     let eventIdForClosestEvent;
     let tsForClosestEvent;
@@ -536,7 +545,11 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, req.query.via);
+    const roomId = await ensureRoomJoined(
+      matrixAccessToken,
+      roomIdOrAlias,
+      parseViaServersFromUserInput(req.query.via)
+    );
 
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
