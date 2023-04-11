@@ -11,6 +11,7 @@ const timeoutMiddleware = require('./timeout-middleware');
 const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 const { HTTPResponseError } = require('../lib/fetch-endpoint');
+const parseViaServersFromUserInput = require('../lib/parse-via-servers-from-user-input');
 const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
@@ -156,29 +157,6 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
-function parseViaServersFromReq(req) {
-  const rawViaServers = [].concat(req.query.via || []);
-  if (rawViaServers.length === 0) {
-    return new Set();
-  }
-
-  const viaServerList = rawViaServers.map((viaServer) => {
-    // Sanity check to ensure that the via servers are strings (valid enough looking
-    // host names)
-    if (typeof viaServer !== 'string') {
-      throw new StatusError(
-        400,
-        `?via server must be a string, got ${viaServer} (${typeof viaServer})`
-      );
-    }
-
-    return viaServer;
-  });
-
-  // We use a `Set` to ensure that we don't have duplicate servers in the list
-  return new Set(viaServerList);
-}
-
 router.use(redirectToCorrectArchiveUrlIfBadSigil);
 
 router.get(
@@ -196,7 +174,7 @@ router.get(
     const roomId = await ensureRoomJoined(
       matrixAccessToken,
       roomIdOrAlias,
-      parseViaServersFromReq(req)
+      parseViaServersFromUserInput(req.query.via)
     );
 
     // Find the closest day to the current time with messages
@@ -216,7 +194,7 @@ router.get(
         // We can avoid passing along the `via` query parameter because we already
         // joined the room above (see `ensureRoomJoined`).
         //
-        //viaServers: parseViaServersFromReq(req),
+        //viaServers: parseViaServersFromUserInput(req.query.via),
       })
     );
   })
@@ -272,7 +250,7 @@ router.get(
     const roomId = await ensureRoomJoined(
       matrixAccessToken,
       roomIdOrAlias,
-      parseViaServersFromReq(req)
+      parseViaServersFromUserInput(req.query.via)
     );
 
     let eventIdForClosestEvent;
@@ -551,23 +529,12 @@ router.get(
       precisionFromUrl = TIME_PRECISION_VALUES.minutes;
     }
 
-    // Just 404 if anyone is trying to view the future, no need to waste resources on that
-    const nowTs = Date.now();
-    if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
-      throw new StatusError(
-        404,
-        `You can't view the history of a room on a future day (${new Date(
-          toTimestamp
-        ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
-      );
-    }
-
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
     const roomId = await ensureRoomJoined(
       matrixAccessToken,
       roomIdOrAlias,
-      parseViaServersFromReq(req)
+      parseViaServersFromUserInput(req.query.via)
     );
 
     // Do these in parallel to avoid the extra time in sequential round-trips
@@ -603,6 +570,68 @@ router.get(
       throw new StatusError(
         403,
         `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData?.historyVisibility} m.room.join_rules=${roomData?.joinRule}`
+      );
+    }
+
+    // Check if we need to navigate to the predecessor room
+    if (
+      roomData?.predecessorRoomId &&
+      // Since we're looking backwards from the given day, if we don't see any events,
+      // then we can assume that it's before the start of the room (it's the only way we
+      // would see no events).
+      events.length === 0
+    ) {
+      const roomCreationTs = roomData?.roomCreationTs;
+      if (!roomCreationTs) {
+        throw new StatusError(
+          500,
+          'Unable to fetch room creation event to determine time when room was created'
+        );
+      }
+
+      // Jump to the predecessor room and continue at the last event of the room
+      res.redirect(
+        matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData?.predecessorRoomId, {
+          viaServers: Array.from(roomData?.predecessorViaServers || []),
+          dir: DIRECTION.backward,
+          currentRangeStartTs: roomCreationTs,
+          currentRangeEndTs: toTimestamp,
+        })
+      );
+    }
+
+    const nowTs = Date.now();
+
+    // We only care to navigate to the successor room if we're trying to view something
+    // past when the successor was set (it's an indicator that we need to go to the new
+    // room from this time forward).
+    const isNavigatedPastSuccessor = toTimestamp > roomData?.successorSetTs;
+    // But if we're viewing the day when the successor was set, we want to allow viewing
+    // the room up until the successor was set.
+    const newestEvent = events[events.length - 1];
+    const isNewestEventFromSameDay =
+      newestEvent &&
+      newestEvent?.origin_server_ts &&
+      areTimestampsFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
+    // Check if we need to navigate to the successor room
+    if (roomData?.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
+      // Jump to the successor room and continue at the first event of the room
+      res.redirect(
+        matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData?.successorRoomId, {
+          dir: DIRECTION.forward,
+          currentRangeStartTs: 0,
+          currentRangeEndTs: 0,
+        })
+      );
+    }
+    // If no successor, just 404 if anyone is trying to view the future, no need to
+    // waste resources on that
+    else if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
+      throw new StatusError(
+        404,
+        `You can't view the history of a room on a future day (${new Date(
+          toTimestamp
+        ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
       );
     }
 

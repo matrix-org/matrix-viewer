@@ -134,7 +134,7 @@ describe('matrix-public-archive', () => {
           true,
           `Expected ${event.event_id} (${event.type}:  "${
             event.content.body
-          }") to be in room on hs2=${JSON.stringify(room2EventIds)}`
+          }") to be in room on hs2=${JSON.stringify(room2EventIds, null, 2)}`
         );
       });
     });
@@ -819,7 +819,7 @@ describe('matrix-public-archive', () => {
               if (previousRoomId) {
                 roomId = await upgradeTestRoom({
                   client,
-                  previousRoomId,
+                  oldRoomId: previousRoomId,
                   //useMsc3946DynamicPredecessor: TODO: Enable this when we have a way to configure it
                 });
               } else {
@@ -914,7 +914,9 @@ describe('matrix-public-archive', () => {
             assert(
               startRoomIdOrAlias,
               `Could not find room ID for ${startRoomFancyKey} in our list of known rooms ${JSON.stringify(
-                Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
+                Object.fromEntries(fancyIdentifierToRoomIdMap.entries()),
+                null,
+                2
               )}`
             );
             archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
@@ -943,7 +945,9 @@ describe('matrix-public-archive', () => {
                 assert(
                   expectedRoomId,
                   `Could not find room ID for ${expectedRoomFancyId} in our list of known rooms ${JSON.stringify(
-                    Object.fromEntries(fancyIdentifierToRoomIdMap.entries())
+                    Object.fromEntries(fancyIdentifierToRoomIdMap.entries()),
+                    null,
+                    2
                   )}`
                 );
 
@@ -962,7 +966,9 @@ describe('matrix-public-archive', () => {
                 assert(
                   actualRoomFancyId,
                   `Could not find room ID for ${actualRoomId} in our list of known rooms ${JSON.stringify(
-                    Object.fromEntries(roomIdToFancyIdentifierMap.entries())
+                    Object.fromEntries(roomIdToFancyIdentifierMap.entries()),
+                    null,
+                    2
                   )}`
                 );
                 let actualContinueAtEventFancyId;
@@ -972,7 +978,9 @@ describe('matrix-public-archive', () => {
                   assert(
                     actualContinueAtEventFancyId,
                     `Could not find event ID for ${actualContinueAtEventId} in our list of known events ${JSON.stringify(
-                      Object.fromEntries(eventIdToFancyIdentifierMap.entries())
+                      Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
+                      null,
+                      2
                     )}`
                   );
                 }

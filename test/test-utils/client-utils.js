@@ -107,7 +107,7 @@ async function sendEvent({ client, roomId, eventType, stateKey, content, timesta
   }
 
   let url;
-  if (stateKey) {
+  if (typeof stateKey === 'string') {
     url = urlJoin(
       client.homeserverUrl,
       `/_matrix/client/v3/rooms/${encodeURIComponent(
@@ -209,8 +209,9 @@ async function upgradeTestRoom({
   // Now send the tombstone event pointing from the old room to the new room
   await sendEvent({
     client,
-    oldRoomId,
+    roomId: oldRoomId,
     eventType: 'm.room.tombstone',
+    stateKey: '',
     content: {
       replacement_room: newRoomid,
     },

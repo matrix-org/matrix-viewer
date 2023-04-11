@@ -58,6 +58,7 @@ class URLCreator {
 
   archiveUrlForRoom(roomIdOrAlias, { viaServers = [] } = {}) {
     assert(roomIdOrAlias);
+    assert(Array.isArray(viaServers));
     let qs = new URLSearchParams();
     [].concat(viaServers).forEach((viaServer) => {
       qs.append('via', viaServer);
@@ -75,6 +76,7 @@ class URLCreator {
   ) {
     assert(roomIdOrAlias);
     assert(date);
+    assert(Array.isArray(viaServers));
     // `preferredPrecision` is optional but if they gave a value, make sure it's something expected
     if (preferredPrecision) {
       assert(
@@ -117,16 +119,23 @@ class URLCreator {
     )}${qsToUrlPiece(qs)}`;
   }
 
-  archiveJumpUrlForRoom(roomIdOrAlias, { dir, currentRangeStartTs, currentRangeEndTs }) {
+  archiveJumpUrlForRoom(
+    roomIdOrAlias,
+    { dir, currentRangeStartTs, currentRangeEndTs, viaServers = [] }
+  ) {
     assert(roomIdOrAlias);
     assert(dir);
-    assert(currentRangeStartTs);
-    assert(currentRangeEndTs);
+    assert(typeof currentRangeStartTs === 'number');
+    assert(typeof currentRangeEndTs === 'number');
+    assert(Array.isArray(viaServers));
 
     let qs = new URLSearchParams();
     qs.append('dir', dir);
     qs.append('currentRangeStartTs', currentRangeStartTs);
     qs.append('currentRangeEndTs', currentRangeEndTs);
+    [].concat(viaServers).forEach((viaServer) => {
+      qs.append('via', viaServer);
+    });
 
     const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
 
