@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 
+// See https://spec.matrix.org/v1.5/appendices/#server-name
 function getServerNameFromMatrixRoomIdOrAlias(roomIdOrAlias) {
   assert(roomIdOrAlias);
 

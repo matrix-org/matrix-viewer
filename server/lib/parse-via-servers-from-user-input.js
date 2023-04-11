@@ -3,7 +3,8 @@
 const StatusError = require('../lib/status-error');
 
 function parseViaServersFromUserInput(rawViaServers) {
-  // `rawViaServers` could be an array or a single string. Turn it into an array no matter what
+  // `rawViaServers` could be an array, a single string, or undefined. Turn it into an
+  // array no matter what
   const rawViaServerList = [].concat(rawViaServers || []);
   if (rawViaServerList.length === 0) {
     return new Set();
