@@ -307,6 +307,28 @@ async function createMessagesInRoom({
   return { eventIds, eventMap };
 }
 
+async function getMessagesInRoom({ client, roomId, limit }) {
+  assert(client);
+  assert(roomId);
+  assert(limit);
+
+  let qs = new URLSearchParams();
+  qs.append('limit', limit);
+
+  const { data } = await fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?${qs.toString()}`
+    ),
+    {
+      method: 'GET',
+      accessToken: client.accessToken,
+    }
+  );
+
+  return data.chunk;
+}
+
 async function updateProfile({ client, displayName, avatarUrl }) {
   let qs = new URLSearchParams();
   if (client.applicationServiceUserIdOverride) {
@@ -399,6 +421,7 @@ module.exports = {
   sendEvent,
   sendMessage,
   createMessagesInRoom,
+  getMessagesInRoom,
   updateProfile,
   uploadContent,
 };

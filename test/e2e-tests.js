@@ -9,6 +9,7 @@ const urlJoin = require('url-join');
 const escapeStringRegexp = require('escape-string-regexp');
 const { parseHTML } = require('linkedom');
 const { readFile } = require('fs').promises;
+const chalk = require('chalk');
 
 const RethrownError = require('../server/lib/rethrown-error');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
@@ -31,6 +32,7 @@ const {
   sendEvent,
   sendMessage,
   createMessagesInRoom,
+  getMessagesInRoom,
   updateProfile,
   uploadContent,
 } = require('./test-utils/client-utils');
@@ -774,7 +776,7 @@ describe('matrix-public-archive', () => {
                 const eventId = fancyIdentifierToEventIdMap.get(fancyId);
                 if (!eventId) {
                   throw new Error(
-                    `Unable to find ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
+                    `Could not find fancy ID ${fancyId} in the fancyIdentifierToEventMap=${JSON.stringify(
                       Object.fromEntries(fancyIdentifierToEventIdMap.entries()),
                       null,
                       2
@@ -793,7 +795,7 @@ describe('matrix-public-archive', () => {
                 const fancyEventId = eventIdToFancyIdentifierMap.get(eventId);
                 if (!fancyEventId) {
                   throw new Error(
-                    `Unable to find ${eventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
+                    `Could not find event ID for ${eventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
                       Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
                       null,
                       2
@@ -870,6 +872,50 @@ describe('matrix-public-archive', () => {
               }
 
               previousRoomId = roomId;
+            }
+
+            // Assemble a list of events to to reference and assist with debugging when
+            // some assertion fails
+            const fancyRoomIdToDebugEventsInRoom = new Map();
+            for (const [fancyRoomId, roomId] of fancyIdentifierToRoomIdMap.entries()) {
+              const archiveAppServiceUserClient = await getTestClientForAs();
+              const eventsInRoom = await getMessagesInRoom({
+                client: archiveAppServiceUserClient,
+                roomId: roomId,
+                // This is arbitrarily larger than any amount of messages we would ever
+                // send in the tests
+                limit: 1000,
+              });
+              const eventDebugStrings = eventsInRoom.map((event) => {
+                let relevantContentString = '';
+                if (event.type === 'm.room.message' && event.content.msgtype === 'm.text') {
+                  relevantContentString = ` "${event.content.body}"`;
+                }
+
+                return `${event.type}${event.state_key ? ` (${event.state_key})` : ''}: ${
+                  event.event_id
+                }${relevantContentString} - ${new Date(event.origin_server_ts).toISOString()}`;
+              });
+
+              fancyRoomIdToDebugEventsInRoom.set(fancyRoomId, eventDebugStrings);
+            }
+
+            // String used to log out all possible events in the room
+            function getDebugStringForEventsInRoomsAndLookForEventId(eventIdToLookFor) {
+              return `For reference, here are all of the events in the room: ${JSON.stringify(
+                Object.fromEntries(fancyRoomIdToDebugEventsInRoom.entries()),
+                null,
+                2
+              )
+                .split(/\r?\n/)
+                .map((line) => {
+                  if (line.includes(eventIdToLookFor)) {
+                    return chalk.yellow(line);
+                  }
+
+                  return line;
+                })
+                .join('\n')}`;
             }
 
             // Now Test
@@ -977,11 +1023,11 @@ describe('matrix-public-archive', () => {
                     eventIdToFancyIdentifierMap.get(actualContinueAtEventId);
                   assert(
                     actualContinueAtEventFancyId,
-                    `Could not find event ID for ${actualContinueAtEventId} in our list of known events ${JSON.stringify(
+                    `Could not find event ID for ${actualContinueAtEventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
                       Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
                       null,
                       2
-                    )}`
+                    )}\n${getDebugStringForEventsInRoomsAndLookForEventId(actualContinueAtEventId)}`
                   );
                 }
 
@@ -1064,7 +1110,7 @@ describe('matrix-public-archive', () => {
                 archiveUrl = jumpToActivityLinkHref;
               } catch (err) {
                 const errorWithContext = new RethrownError(
-                  `Encountered error while asserting ${pageKey}: ${err.message}`,
+                  `Encountered error while asserting ${pageKey}: (see original error below)`,
                   err
                 );
                 // Copy these over so mocha generates a nice diff for us

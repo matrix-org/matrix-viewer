@@ -262,6 +262,7 @@ router.get(
       // updated value between each e2e test
       const archiveMessageLimit = config.get('archiveMessageLimit');
 
+      console.log(`jumping from ${new Date(ts).toISOString()} (${ts}) in direction ${dir}`);
       // Find the closest event to the given timestamp
       ({ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent } =
         await timestampToEvent({
