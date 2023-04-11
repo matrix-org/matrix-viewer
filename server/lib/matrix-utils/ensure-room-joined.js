@@ -4,15 +4,29 @@ const assert = require('assert');
 const urlJoin = require('url-join');
 
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
+const getServerNameFromMatrixRoomIdOrAlias = require('./get-server-name-from-matrix-room-id-or-alias');
 
 const config = require('../config');
 const StatusError = require('../status-error');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
-async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = []) {
+async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = new Set()) {
+  // We use a `Set` to ensure that we don't have duplicate servers in the list
+  assert(viaServers instanceof Set);
+
+  // Let's do our best for the user to join the room. Since room ID's are
+  // unroutable on their own and won't be found if the server doesn't already
+  // know about the room, we'll try to join the room via the server name that
+  // we derived from the room ID or alias.
+  const viaServersWithAssumptions = new Set(viaServers);
+  const derivedServerName = getServerNameFromMatrixRoomIdOrAlias(roomIdOrAlias);
+  if (derivedServerName) {
+    viaServersWithAssumptions.add(derivedServerName);
+  }
+
   let qs = new URLSearchParams();
-  [].concat(viaServers).forEach((viaServer) => {
+  [].concat(viaServersWithAssumptions).forEach((viaServer) => {
     qs.append('server_name', viaServer);
   });
 
