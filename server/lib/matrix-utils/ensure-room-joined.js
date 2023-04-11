@@ -26,7 +26,7 @@ async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = new Set
   }
 
   let qs = new URLSearchParams();
-  [].concat(viaServersWithAssumptions).forEach((viaServer) => {
+  Array.from(viaServersWithAssumptions).forEach((viaServer) => {
     qs.append('server_name', viaServer);
   });
 
