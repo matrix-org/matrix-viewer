@@ -4,6 +4,9 @@ const assert = require('assert');
 
 // See https://spec.matrix.org/v1.5/appendices/#server-name
 function getServerNameFromMatrixRoomIdOrAlias(roomIdOrAlias) {
+  // `roomIdOrAlias` looks like `!foo:matrix.org` or `#foo:matrix.org` or even something
+  // as crazy as `!foo:[1234:5678::abcd]:1234` where `[1234:5678::abcd]:1234` is the
+  // server name part we're trying to parse out (see tests for more examples)
   assert(roomIdOrAlias);
 
   const pieces = roomIdOrAlias.split(':');
