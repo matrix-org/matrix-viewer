@@ -595,6 +595,9 @@ router.get(
         matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData?.predecessorRoomId, {
           viaServers: Array.from(roomData?.predecessorViaServers || []),
           dir: DIRECTION.backward,
+          // XXX: Should we start from the tombstone event in the predecessor room that
+          // points to this room if it exists? (this would require another lookup that
+          // we might want to avoid)
           currentRangeStartTs: roomCreationTs,
           currentRangeEndTs: toTimestamp,
         })
