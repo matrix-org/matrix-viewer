@@ -777,6 +777,27 @@ describe('matrix-public-archive', () => {
             const eventMap = new Map();
             const fancyIdentifierToEventIdMap = new Map();
             const eventIdToFancyIdentifierMap = new Map();
+            const fancyIdentifierToRoomIdMap = new Map();
+            const roomIdToFancyIdentifierMap = new Map();
+            const fancyRoomIdToDebugEventsInRoom = new Map();
+
+            // String used to log out all possible events in the room
+            function getDebugStringForEventsInRoomsAndLookForEventId(eventIdToLookFor) {
+              return `For reference, here are all of the events in the rooms: ${JSON.stringify(
+                Object.fromEntries(fancyRoomIdToDebugEventsInRoom.entries()),
+                null,
+                2
+              )
+                .split(/\r?\n/)
+                .map((line) => {
+                  if (line.includes(eventIdToLookFor)) {
+                    return chalk.yellow(line);
+                  }
+
+                  return line;
+                })
+                .join('\n')}`;
+            }
 
             function convertFancyIdentifierListToDebugEventIds(fancyEventIdentifiers) {
               // eslint-disable-next-line max-nested-callbacks
@@ -807,7 +828,7 @@ describe('matrix-public-archive', () => {
                       Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
                       null,
                       2
-                    )}`
+                    )}\n${getDebugStringForEventsInRoomsAndLookForEventId(eventId)}`
                   );
                 }
                 const ts = eventMap.get(eventId)?.originServerTs;
@@ -816,13 +837,67 @@ describe('matrix-public-archive', () => {
               });
             }
 
+            function convertUrlBetween(inputUrl, roomMap, eventMap) {
+              const {
+                roomIdOrAliasUrlPart: inputRoomIdOrAliasUrlPart,
+                roomIdOrAlias: inputRoomIdOrAlias,
+                //urlDateTime: actualUrlDateTime,
+                continueAtEvent: inputContinueAtEventId,
+              } = parseArchiveUrlForRoom(inputUrl);
+
+              let outputContinueAtEventId;
+              if (inputContinueAtEventId) {
+                outputContinueAtEventId = eventMap.get(inputContinueAtEventId);
+                assert(
+                  outputContinueAtEventId,
+                  `Could not find event ID for ${inputContinueAtEventId} in the map=${JSON.stringify(
+                    Object.fromEntries(eventMap.entries()),
+                    null,
+                    2
+                  )}\n${getDebugStringForEventsInRoomsAndLookForEventId(inputContinueAtEventId)}`
+                );
+              }
+
+              const outputRoomIdOrAlias = roomMap.get(inputRoomIdOrAlias);
+              assert(
+                outputRoomIdOrAlias,
+                `Could not find room ID for ${inputRoomIdOrAlias} in our map ${JSON.stringify(
+                  Object.fromEntries(roomMap.entries()),
+                  null,
+                  2
+                )}`
+              );
+
+              return inputUrl
+                .replace(
+                  `/roomid/${inputRoomIdOrAliasUrlPart}`,
+                  // Slice to remove the sigil
+                  `/roomid/${outputRoomIdOrAlias.slice(1)}`
+                )
+                .replace(inputContinueAtEventId, outputContinueAtEventId);
+            }
+
+            function convertUrlWithFancyIdsToActualUrl(urlWithFancyIds) {
+              return convertUrlBetween(
+                urlWithFancyIds,
+                fancyIdentifierToRoomIdMap,
+                fancyIdentifierToEventIdMap
+              );
+            }
+
+            function convertActualUrlToUrlWithFancyIds(urlWithFancyIds) {
+              return convertUrlBetween(
+                urlWithFancyIds,
+                roomIdToFancyIdentifierMap,
+                eventIdToFancyIdentifierMap
+              );
+            }
+
             const client = await getTestClientForHs(testMatrixServerUrl1);
 
             const { rooms, pages } = parseRoomDayMessageStructure(
               testCase.roomDayMessageStructureString
             );
-            const fancyIdentifierToRoomIdMap = new Map();
-            const roomIdToFancyIdentifierMap = new Map();
             let previousRoomId;
             let lastEventTsUsedInPreviousRoom;
             for (const [roomIndex, room] of rooms.entries()) {
@@ -841,7 +916,7 @@ describe('matrix-public-archive', () => {
                 // supports it, see https://github.com/matrix-org/synapse/issues/15346
                 roomId = await createTestRoom(client);
               }
-              const fancyRoomId = `#room${roomIndex + 1}`;
+              const fancyRoomId = `!room${roomIndex + 1}`;
               fancyIdentifierToRoomIdMap.set(fancyRoomId, roomId);
               roomIdToFancyIdentifierMap.set(roomId, fancyRoomId);
 
@@ -876,6 +951,7 @@ describe('matrix-public-archive', () => {
                   timestamp: originServerTs,
                 });
                 eventMap.set(eventId, {
+                  type: 'm.room.message',
                   roomId,
                   originServerTs,
                   content,
@@ -891,7 +967,6 @@ describe('matrix-public-archive', () => {
 
             // Assemble a list of events to to reference and assist with debugging when
             // some assertion fails
-            const fancyRoomIdToDebugEventsInRoom = new Map();
             for (const [fancyRoomId, roomId] of fancyIdentifierToRoomIdMap.entries()) {
               const archiveAppServiceUserClient = await getTestClientForAs();
               const eventsInRoom = await getMessagesInRoom({
@@ -913,24 +988,6 @@ describe('matrix-public-archive', () => {
               });
 
               fancyRoomIdToDebugEventsInRoom.set(fancyRoomId, eventDebugStrings);
-            }
-
-            // String used to log out all possible events in the room
-            function getDebugStringForEventsInRoomsAndLookForEventId(eventIdToLookFor) {
-              return `For reference, here are all of the events in the room: ${JSON.stringify(
-                Object.fromEntries(fancyRoomIdToDebugEventsInRoom.entries()),
-                null,
-                2
-              )
-                .split(/\r?\n/)
-                .map((line) => {
-                  if (line.includes(eventIdToLookFor)) {
-                    return chalk.yellow(line);
-                  }
-
-                  return line;
-                })
-                .join('\n')}`;
             }
 
             // Now Test
@@ -1018,46 +1075,9 @@ describe('matrix-public-archive', () => {
                   archiveUrl
                 );
                 const pageDom = parseHTML(archivePageHtml);
-                const {
-                  roomIdOrAliasUrlPart: actualRoomIdOrAliasUrlPart,
-                  roomIdOrAlias: actualRoomId,
-                  //urlDateTime: actualUrlDateTime,
-                  continueAtEvent: actualContinueAtEventId,
-                } = parseArchiveUrlForRoom(pageRes.url);
-                const actualRoomFancyId = roomIdToFancyIdentifierMap.get(actualRoomId);
-                assert(
-                  actualRoomFancyId,
-                  `Could not find room ID for ${actualRoomId} in our list of known rooms ${JSON.stringify(
-                    Object.fromEntries(roomIdToFancyIdentifierMap.entries()),
-                    null,
-                    2
-                  )}`
-                );
-                let actualContinueAtEventFancyId;
-                if (actualContinueAtEventId) {
-                  actualContinueAtEventFancyId =
-                    eventIdToFancyIdentifierMap.get(actualContinueAtEventId);
-                  assert(
-                    actualContinueAtEventFancyId,
-                    `Could not find event ID for ${actualContinueAtEventId} in the eventIdToFancyIdentifierMap=${JSON.stringify(
-                      Object.fromEntries(eventIdToFancyIdentifierMap.entries()),
-                      null,
-                      2
-                    )}\n${getDebugStringForEventsInRoomsAndLookForEventId(actualContinueAtEventId)}`
-                  );
-                }
 
-                // Replace messy room ID's and event ID's that change with every test
-                // run with their fancy ID's which correlate with the test meta so it's
-                // easier to reason about things when the assertion fails.
-                let actualUrlWithFancyIdentifies = pageRes.url
-                  .replace(
-                    `/roomid/${actualRoomIdOrAliasUrlPart}`,
-                    // Slice to remove the sigil
-                    `/r/${actualRoomFancyId.slice(1)}`
-                  )
-                  .replace(actualContinueAtEventId, actualContinueAtEventFancyId);
                 // Assert the correct room and time precision in the URL
+                const actualUrlWithFancyIdentifies = convertActualUrlToUrlWithFancyIds(pageRes.url);
                 assert.match(
                   actualUrlWithFancyIdentifies,
                   new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`)
@@ -1088,6 +1108,21 @@ describe('matrix-public-archive', () => {
                     return eventEl.getAttribute('data-event-id');
                   });
 
+                // We only care about messages for now (no easy way to specify the
+                // primordial room creation or member events)
+                const eventIdsOnPageWeCareAboutToAssert = eventIdsOnPage.filter((eventId) => {
+                  const event = eventMap.get(eventId);
+                  if (!event) {
+                    return false;
+                  }
+
+                  assert(
+                    event?.type,
+                    `Event should have a type: ${JSON.stringify(event, null, 2)}}`
+                  );
+                  return event?.type === 'm.room.message';
+                });
+
                 const pageNumber = pageKey.replace('page', '');
                 const page = pages[pageNumber - 1];
                 const expectedEventsOnPage = page.events;
@@ -1098,17 +1133,22 @@ describe('matrix-public-archive', () => {
 
                 // Assert that the page contains all expected events
                 assert.deepEqual(
-                  convertEventIdsToDebugEventIds(eventIdsOnPage),
+                  convertEventIdsToDebugEventIds(eventIdsOnPageWeCareAboutToAssert),
                   convertFancyIdentifierListToDebugEventIds(expectedFancyIdsOnPage),
                   `Events on ${pageKey} should be as expected`
                 );
 
                 // Follow the next activity link. Aka, fetch messages for the 2nd page
                 let actionLinkSelector;
+                let nextPageLink;
                 if (pageTestMeta.action === 'next') {
                   actionLinkSelector = '[data-testid="jump-to-next-activity-link"]';
                 } else if (pageTestMeta.action === 'previous') {
                   actionLinkSelector = '[data-testid="jump-to-previous-activity-link"]';
+                } else if (pageTestMeta.action?.startsWith('navigate:')) {
+                  const navigateUrlWithFancyIds = pageTestMeta.action.replace('navigate:', '');
+                  const fullNavigateUrlWithFancyIds = urlJoin(basePath, navigateUrlWithFancyIds);
+                  nextPageLink = convertUrlWithFancyIdsToActualUrl(fullNavigateUrlWithFancyIds);
                 } else if (pageTestMeta.action === null) {
                   // No more pages to test ✅, move on
                   alreadyEncounteredLastPage = true;
@@ -1118,12 +1158,17 @@ describe('matrix-public-archive', () => {
                     `Unexpected value for ${pageKey}.action=${pageTestMeta.action} that we don't know what to do with`
                   );
                 }
-                const jumpToActivityLinkEl = pageDom.document.querySelector(actionLinkSelector);
-                const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
+
+                if (actionLinkSelector) {
+                  const jumpToActivityLinkEl = pageDom.document.querySelector(actionLinkSelector);
+                  const jumpToActivityLinkHref = jumpToActivityLinkEl.getAttribute('href');
+                  nextPageLink = jumpToActivityLinkHref;
+                }
+
                 // Move to the next iteration of the loop
                 //
                 // Set this for debugging if the test fails here
-                archiveUrl = jumpToActivityLinkHref;
+                archiveUrl = nextPageLink;
               } catch (err) {
                 const errorWithContext = new RethrownError(
                   `Encountered error while asserting ${pageKey}: (see original error below)`,
@@ -1163,13 +1208,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02',
+            startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03?at=$event7',
+              url: '/roomid/room1/date/2022/01/03?at=$event7',
               action: null,
             },
           },
@@ -1195,13 +1240,13 @@ describe('matrix-public-archive', () => {
                                 [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02',
+            startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03?at=$event7',
+              url: '/roomid/room1/date/2022/01/03?at=$event7',
               action: null,
             },
           },
@@ -1221,13 +1266,13 @@ describe('matrix-public-archive', () => {
                                                         [page2                     ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/04T01:00',
+            startUrl: '/roomid/room1/date/2022/01/04T01:00',
             page1: {
-              url: '/r/room1/date/2022/01/04T01:00',
+              url: '/roomid/room1/date/2022/01/04T01:00',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/04?at=$event11',
+              url: '/roomid/room1/date/2022/01/04?at=$event11',
               action: null,
             },
           },
@@ -1247,13 +1292,13 @@ describe('matrix-public-archive', () => {
                                                         [page2                     ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/03',
+            startUrl: '/roomid/room1/date/2022/01/03',
             page1: {
-              url: '/r/room1/date/2022/01/03',
+              url: '/roomid/room1/date/2022/01/03',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/04?at=$event10',
+              url: '/roomid/room1/date/2022/01/04?at=$event10',
               action: null,
             },
           },
@@ -1279,9 +1324,9 @@ describe('matrix-public-archive', () => {
           //                                               [page2                     ]
           //   `,
           //   archiveMessageLimit: 4,
-          //   startUrl: '/r/room1/date/2022/01/04',
+          //   startUrl: '/roomid/room1/date/2022/01/04',
           //   page1: {
-          //     url: '/r/room1/date/2022/01/04',
+          //     url: '/roomid/room1/date/2022/01/04',
           //     action: 'next',
           //   },
           //   page2: {
@@ -1289,7 +1334,7 @@ describe('matrix-public-archive', () => {
           //     // date forward by a day so we can display the empty view for that day.
           //     //
           //     // TODO: This page probably doesn't need a `?at=` continue event
-          //     url: '/r/room1/date/2022/01/05?at=TODO',
+          //     url: '/roomid/room1/date/2022/01/05?at=TODO',
           //     action: null,
           //   },
           // },
@@ -1316,16 +1361,16 @@ describe('matrix-public-archive', () => {
                                       [page2            ]
             `,
             archiveMessageLimit: 3,
-            startUrl: '/r/room1/date/2022/01/02',
+            startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: 'next',
             },
             page2: {
               // We expect the URL to look like `T02:00` because we're rendering part way
               // through day3 and while we could get away with just hour precision, the
               // default precision has hours and minutes.
-              url: '/r/room1/date/2022/01/03T02:00?at=$event7',
+              url: '/roomid/room1/date/2022/01/03T02:00?at=$event7',
               action: null,
             },
           },
@@ -1346,15 +1391,15 @@ describe('matrix-public-archive', () => {
                     [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/03',
+            startUrl: '/roomid/room1/date/2022/01/03',
             page1: {
-              url: '/r/room1/date/2022/01/03',
+              url: '/roomid/room1/date/2022/01/03',
               action: 'previous',
             },
             page2: {
               // Continuing from the first event of day2 since we already saw the rest
               // of day2 in the first page
-              url: '/r/room1/date/2022/01/02?at=$event4',
+              url: '/roomid/room1/date/2022/01/02?at=$event4',
               action: null,
             },
           },
@@ -1374,13 +1419,13 @@ describe('matrix-public-archive', () => {
                                                                     [page2                                                   ]
             `,
             archiveMessageLimit: 8,
-            startUrl: '/r/room1/date/2022/01/04',
+            startUrl: '/roomid/room1/date/2022/01/04',
             page1: {
-              url: '/r/room1/date/2022/01/04',
+              url: '/roomid/room1/date/2022/01/04',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/07?at=$event13',
+              url: '/roomid/room1/date/2022/01/07?at=$event13',
               action: null,
             },
           },
@@ -1398,13 +1443,13 @@ describe('matrix-public-archive', () => {
                                 [page2                                             ]
             `,
             archiveMessageLimit: 8,
-            startUrl: '/r/room1/date/2022/01/09',
+            startUrl: '/roomid/room1/date/2022/01/09',
             page1: {
-              url: '/r/room1/date/2022/01/09',
+              url: '/roomid/room1/date/2022/01/09',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/06?at=$event12',
+              url: '/roomid/room1/date/2022/01/06?at=$event12',
               action: null,
             },
           },
@@ -1426,13 +1471,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02',
+            startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T03:00?at=$event7',
+              url: '/roomid/room1/date/2022/01/03T03:00?at=$event7',
               action: null,
             },
           },
@@ -1453,13 +1498,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/04',
+            startUrl: '/roomid/room1/date/2022/01/04',
             page1: {
-              url: '/r/room1/date/2022/01/04',
+              url: '/roomid/room1/date/2022/01/04',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/02?at=$event9',
+              url: '/roomid/room1/date/2022/01/02?at=$event9',
               action: null,
             },
           },
@@ -1479,13 +1524,13 @@ describe('matrix-public-archive', () => {
                                                   [page2                    ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02',
+            startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T03:00?at=$event9',
+              url: '/roomid/room1/date/2022/01/03T03:00?at=$event9',
               action: null,
             },
           },
@@ -1505,13 +1550,13 @@ describe('matrix-public-archive', () => {
                                       [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/03',
+            startUrl: '/roomid/room1/date/2022/01/03',
             page1: {
-              url: '/r/room1/date/2022/01/03',
+              url: '/roomid/room1/date/2022/01/03',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T01:00?at=$event9',
+              url: '/roomid/room1/date/2022/01/03T01:00?at=$event9',
               action: null,
             },
           },
@@ -1531,13 +1576,13 @@ describe('matrix-public-archive', () => {
                                                   [page2                    ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02T6:00',
+            startUrl: '/roomid/room1/date/2022/01/02T6:00',
             page1: {
-              url: '/r/room1/date/2022/01/02T6:00',
+              url: '/roomid/room1/date/2022/01/02T6:00',
               action: 'next',
             },
             page2: {
-              url: '/r/room1/date/2022/01/02T09:00?at=$event9',
+              url: '/roomid/room1/date/2022/01/02T09:00?at=$event9',
               action: null,
             },
           },
@@ -1557,13 +1602,13 @@ describe('matrix-public-archive', () => {
                                 [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02T11:00',
+            startUrl: '/roomid/room1/date/2022/01/02T11:00',
             page1: {
-              url: '/r/room1/date/2022/01/02T11:00',
+              url: '/roomid/room1/date/2022/01/02T11:00',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/02T06:00?at=$event8',
+              url: '/roomid/room1/date/2022/01/02T06:00?at=$event8',
               action: null,
             },
           },
@@ -1583,14 +1628,14 @@ describe('matrix-public-archive', () => {
                                                   [page2                    ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02T06:00',
+            startUrl: '/roomid/room1/date/2022/01/02T06:00',
             page1: {
-              url: '/r/room1/date/2022/01/02T06:00',
+              url: '/roomid/room1/date/2022/01/02T06:00',
               action: 'next',
             },
             page2: {
               // Continuing from the unseen event in day2
-              url: '/r/room1/date/2022/01/03T02:00?at=$event9',
+              url: '/roomid/room1/date/2022/01/03T02:00?at=$event9',
               action: null,
             },
           },
@@ -1610,13 +1655,13 @@ describe('matrix-public-archive', () => {
                                 [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/03T06:00',
+            startUrl: '/roomid/room1/date/2022/01/03T06:00',
             page1: {
-              url: '/r/room1/date/2022/01/03T06:00',
+              url: '/roomid/room1/date/2022/01/03T06:00',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/03T01:00?at=$event8',
+              url: '/roomid/room1/date/2022/01/03T01:00?at=$event8',
               action: null,
             },
           },
@@ -1635,13 +1680,13 @@ describe('matrix-public-archive', () => {
                           [page2                  ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/03T05:00',
+            startUrl: '/roomid/room1/date/2022/01/03T05:00',
             page1: {
-              url: '/r/room1/date/2022/01/03T05:00',
+              url: '/roomid/room1/date/2022/01/03T05:00',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/02?at=$event7',
+              url: '/roomid/room1/date/2022/01/02?at=$event7',
               action: null,
             },
           },
@@ -1649,8 +1694,8 @@ describe('matrix-public-archive', () => {
 
         const jumpBackwardPredecessorTestCases = [
           {
-            // Page2 doesn't only shows 4 messages ($event4-7) because it also has the
-            // tombstone event which is hidden
+            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5 because it
+            // also has the tombstone event which is hidden
             testName: 'can jump backward from one room to the predecessor room',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
@@ -1660,38 +1705,64 @@ describe('matrix-public-archive', () => {
                                 [page2            ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room2/date/2022/01/03T05:00',
+            startUrl: '/roomid/room2/date/2022/01/03T05:00',
             page1: {
-              url: '/r/room2/date/2022/01/03T05:00',
+              url: '/roomid/room2/date/2022/01/03T05:00',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/02T05:00?at=$event7',
+              url: '/roomid/room1/date/2022/01/02T05:00?at=$event7',
               action: null,
             },
           },
+          // {
+          //   // This doesn't work well because of the primordial create room events which
+          //   // we can't control the timestamp of or assert properly in this diagram. If
+          //   // we ever get timestamp massaging on the `/createRoom` endpoint (see
+          //   // https://github.com/matrix-org/synapse/issues/15346), we could make this
+          //   // work by increasing the `archiveMessageLimit` to something that would
+          //   // encompass all of the primordial events along with the last few messages.
+          //   testName: `will paginate to the oldest messages in the room (doesn't skip the last few) before jumping backward to the predecessor room`,
+          //   roomDayMessageStructureString: `
+          //     [room1                              ]     [room2                                   ]
+          //     1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+          //     [day1 ]     [day2                   ]     [day3                                    ]
+          //                                                           [page1                       ]
+          //                                               [page2]
+          //                 [page3                  ]
+          //   `,
+          //   archiveMessageLimit: 4,
+          //   startUrl: '/roomid/room2/date/2022/01/03',
+          //   page1: {
+          //     url: '/roomid/room2/date/2022/01/03',
+          //     action: 'previous',
+          //   },
+          //   page2: {
+          //     url: '/roomid/room2/date/2022/01/03T02:00?at=$event9',
+          //     action: 'previous',
+          //   },
+          //   page3: {
+          //     url: '/roomid/room1/date/2022/01/02',
+          //     action: null,
+          //   },
+          // },
           {
-            testName: `will paginate to the oldest messages in the room (doesn't skip the last few) before jumping backward to the predecessor room`,
+            testName: 'jumping back before room was created will go down the predecessor chain',
             roomDayMessageStructureString: `
-              [room1                              ]     [room2                                   ]
-              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-              [day1 ]     [day2                   ]     [day3                                    ]
-                                                                    [page1                       ]
-                                                        [page2]
-                          [page3                  ]
+              [room1            ]     [room2            ]     [room3               ]     [room4                ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
+              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5  ]     [day6   ]     [day7   ]     [day8   ]
+                                                                                         [page1                ]
+              [page2            ]
             `,
-            archiveMessageLimit: 4,
-            startUrl: '/r/room2/date/2022/01/03T05:00',
+            archiveMessageLimit: 3,
+            startUrl: '/roomid/room4/date/2022/01/08',
             page1: {
-              url: '/r/room2/date/2022/01/03T05:00',
-              action: 'previous',
+              url: '/roomid/room4/date/2022/01/08',
+              action: 'navigate:/roomid/room4/date/2022/01/02',
             },
             page2: {
-              url: '/r/room2/date/2022/01/03',
-              action: 'previous',
-            },
-            page3: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: null,
             },
           },
@@ -1709,13 +1780,13 @@ describe('matrix-public-archive', () => {
                                                         [page2       ]
             `,
             archiveMessageLimit: 4,
-            startUrl: '/r/room1/date/2022/01/02',
+            startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/02',
               action: 'next',
             },
             page2: {
-              url: '/r/room2/date/2022/01/03T04:00',
+              url: '/roomid/room2/date/2022/01/03T04:00',
               action: null,
             },
           },
