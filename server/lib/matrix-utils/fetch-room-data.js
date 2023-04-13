@@ -50,21 +50,18 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     }),
   ]);
 
-  const predessorFetchPromiseBundle = Promise.allSettled([
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
-      accessToken: matrixAccessToken,
-    }),
-    fetchEndpointAsJson(
-      getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
-      {
-        accessToken: matrixAccessToken,
-      }
-    ),
-  ]);
-
   const predecessorInfoPromise = (async () => {
-    const [stateCreateResDataOutcome, statePredecessorResDataOutcome] =
-      await predessorFetchPromiseBundle;
+    const [stateCreateResDataOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
+      fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
+        accessToken: matrixAccessToken,
+      }),
+      fetchEndpointAsJson(
+        getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
+        {
+          accessToken: matrixAccessToken,
+        }
+      ),
+    ]);
 
     let predecessorRoomId;
     let predecessorViaServers;
@@ -90,13 +87,9 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     };
   })();
 
-  // TODO: This is pretty ugly/messy. Refactor this and maybe a different pattern for this type of thing.
-  let _predecessorRoomTombstoneSetTs;
-  const getPredecessorRoomTombstoneSetTs = async () => {
-    if (_predecessorRoomTombstoneSetTs) {
-      return _predecessorRoomTombstoneSetTs;
-    }
-
+  // TODO: This is pretty ugly/messy. Refactor this and maybe use a different pattern
+  // for this type of thing.
+  const _getPredecessorRoomTombstoneSetTs = async () => {
     const { predecessorRoomId, predecessorViaServers } = await predecessorInfoPromise;
 
     if (predecessorRoomId) {
@@ -123,16 +116,24 @@ async function fetchRoomData(matrixAccessToken, roomId) {
       // Make sure the the room that the predecessor specifies as the replacement room
       // is the same as what the current room is. This is a good signal that the rooms
       // are a true continuation of each other and the room admins agree.
-      if (predecessorSuccessorRoomId !== roomId) {
-        return null;
+      if (predecessorSuccessorRoomId === roomId) {
+        return predecessorSuccessorSetTs;
       }
 
-      _predecessorRoomTombstoneSetTs = predecessorSuccessorSetTs;
-
-      return _predecessorRoomTombstoneSetTs;
+      return null;
     }
 
     return null;
+  };
+
+  // Memoize this function so we only ever do the extra work once
+  let _predecessorRoomTombstoneSetTsResult;
+  const getPredecessorRoomTombstoneSetTs = async () => {
+    if (_predecessorRoomTombstoneSetTsResult === undefined) {
+      _predecessorRoomTombstoneSetTsResult = _getPredecessorRoomTombstoneSetTs();
+    }
+
+    return _predecessorRoomTombstoneSetTsResult;
   };
 
   const [
