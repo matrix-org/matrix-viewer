@@ -1715,6 +1715,28 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          {
+            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5 because it
+            // also has the tombstone event which is hidden
+            testName: 'can jump backward from one room to the predecessor room (same day)',
+            roomDayMessageStructureString: `
+              [room1                              ]     [room2                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                                                                  ]
+                                                        [page1                     ]
+                                [page2            ]
+            `,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room2/date/2022/01/02T10:00',
+            page1: {
+              url: '/roomid/room2/date/2022/01/02T10:00',
+              action: 'previous',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/02T05:00?at=$event7',
+              action: null,
+            },
+          },
           // {
           //   // This doesn't work well because of the primordial create room events which
           //   // we can't control the timestamp of or assert properly in this diagram. If

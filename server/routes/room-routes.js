@@ -620,17 +620,18 @@ router.get(
             `In other words, there shouldn't be a reason why we can't fetch the \`m.room.create\`` +
             `event for this room unless the server is just broken. You can try refreshing to try again.`
         );
-      } else {
-        // Jump to the predecessor room
-        res.redirect(
-          matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData.predecessorRoomId, {
-            viaServers: Array.from(roomData.predecessorViaServers || []),
-            dir: DIRECTION.backward,
-            currentRangeStartTs: continueAtTsInPredecessorRoom,
-            currentRangeEndTs: toTimestamp,
-          })
-        );
       }
+
+      // Jump to the predecessor room
+      res.redirect(
+        matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData.predecessorRoomId, {
+          viaServers: Array.from(roomData.predecessorViaServers || []),
+          dir: DIRECTION.backward,
+          currentRangeStartTs: continueAtTsInPredecessorRoom,
+          currentRangeEndTs: toTimestamp,
+        })
+      );
+      return;
     }
 
     const nowTs = Date.now();
@@ -656,6 +657,7 @@ router.get(
           currentRangeEndTs: 0,
         })
       );
+      return;
     }
     // If no successor, just 404 if anyone is trying to view the future, no need to
     // waste resources on that
