@@ -12,7 +12,11 @@ const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-arc
 
 const { HTTPResponseError } = require('../lib/fetch-endpoint');
 const parseViaServersFromUserInput = require('../lib/parse-via-servers-from-user-input');
-const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
+const {
+  fetchRoomData,
+  fetchPredecessorInfo,
+  fetchSuccessorInfo,
+} = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
 const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
@@ -228,6 +232,11 @@ router.get(
       '?dir query parameter must be [f|b]'
     );
 
+    // We have to wait for the room join to happen first before we can use the jump to
+    // date endpoint (or any other Matrix endpoint)
+    const viaServers = parseViaServersFromUserInput(req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, viaServers);
+
     let ts;
     if (dir === DIRECTION.backward) {
       // We `- 1` so we don't jump to the same event because the endpoint is inclusive.
@@ -242,16 +251,8 @@ router.get(
       // the same timestamp
       ts = currentRangeEndTs + 1;
     } else {
-      throw new Error(`Unable to handle unknown dir=${dir} in /jump`);
+      throw new StatusError(400, `Unable to handle unknown dir=${dir} in /jump`);
     }
-
-    // We have to wait for the room join to happen first before we can use the jump to
-    // date endpoint
-    const roomId = await ensureRoomJoined(
-      matrixAccessToken,
-      roomIdOrAlias,
-      parseViaServersFromUserInput(req.query.via)
-    );
 
     let eventIdForClosestEvent;
     let tsForClosestEvent;
@@ -356,7 +357,7 @@ router.get(
       // `/messages?dir=f` backfills, we won't have this problem anymore because any
       // messages backfilled in the forwards direction would be picked up the same going
       // backwards.
-      if (dir === DIRECTION.forward) {
+      else if (dir === DIRECTION.forward) {
         // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
         // then start the scroll from the top of the page so they can continue.
         //
@@ -458,10 +459,84 @@ router.get(
       }
     } catch (err) {
       const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
+      // A 404 error just means there is no more messages to paginate in that room and
+      // we should try to go to the predecessor/successor room appropriately.
+      if (is404Error) {
+        if (dir === DIRECTION.backward) {
+          const { roomCreationTs, predecessorRoomId, predecessorViaServers } =
+            await fetchPredecessorInfo(matrixAccessToken, roomId);
+
+          // We have to join the predecessor room before we can fetch the successor info
+          // (this could be our first time seeing the room)
+          await ensureRoomJoined(matrixAccessToken, predecessorRoomId, viaServers);
+          const {
+            successorRoomId: successorRoomIdForPredecessor,
+            successorSetTs: successorSetTsForPredecessor,
+          } = await fetchSuccessorInfo(matrixAccessToken, predecessorRoomId);
+
+          // Try to continue from the tombstone event in the predecessor room because
+          // that is the signal that the room admins gave to indicate the end of the
+          // room in favor of the other regardless of further activity that may have
+          // occured in the room.
+          //
+          // Make sure the the room that the predecessor specifies as the replacement
+          // room is the same as what the current room is. This is a good signal that
+          // the rooms are a true continuation of each other and the room admins agree.
+          let continueAtTsInPredecessorRoom;
+          if (successorRoomIdForPredecessor === roomId) {
+            continueAtTsInPredecessorRoom = successorSetTsForPredecessor;
+          }
+          // Fallback to the room creation event time if we can't find the predecessor
+          // room tombstone which will work just fine and as expected for normal room
+          // upgrade scenarios.
+          else {
+            continueAtTsInPredecessorRoom = roomCreationTs;
+          }
+
+          if (
+            continueAtTsInPredecessorRoom === null ||
+            continueAtTsInPredecessorRoom === undefined
+          ) {
+            throw new StatusError(
+              500,
+              `You navigated past the end of the room and it has a predecessor set (${predecessorRoomId}) ` +
+                `but we were unable to find a suitable place to jump to and continue from. ` +
+                `We could just redirect you to that predecessor room but we decided to throw an error ` +
+                `instead because we should be able to fallback to the room creation time in any case. ` +
+                `In other words, there shouldn't be a reason why we can't fetch the \`m.room.create\`` +
+                `event for this room unless the server is just broken right now. You can try refreshing to try again.`
+            );
+          }
+
+          // Jump to the predecessor room at the appropriate timestamp to continue from
+          res.redirect(
+            matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(predecessorRoomId, {
+              viaServers: Array.from(predecessorViaServers || []),
+              dir: DIRECTION.backward,
+              currentRangeStartTs: continueAtTsInPredecessorRoom,
+              currentRangeEndTs: currentRangeEndTs,
+            })
+          );
+          return;
+        } else if (dir === DIRECTION.forward) {
+          const { successorRoomId } = await fetchSuccessorInfo(matrixAccessToken, roomId);
+          if (successorRoomId) {
+            // Jump to the successor room and continue at the first event of the room
+            res.redirect(
+              matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(successorRoomId, {
+                dir: DIRECTION.forward,
+                currentRangeStartTs: 0,
+                currentRangeEndTs: 0,
+              })
+            );
+            return;
+          }
+        }
+      }
       // Only throw if it's something other than a 404 error. 404 errors are fine, they
       // just mean there is no more messages to paginate in that room and we were
       // already viewing the latest in the room.
-      if (!is404Error) {
+      else {
         throw err;
       }
     }

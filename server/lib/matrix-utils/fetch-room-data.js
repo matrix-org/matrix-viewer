@@ -89,8 +89,8 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     stateAvatarResDataOutcome,
     stateHistoryVisibilityResDataOutcome,
     stateJoinRulesResDataOutcome,
-    { roomCreationTs, predecessorRoomId, predecessorViaServers },
-    { successorRoomId, successorSetTs },
+    predecessorInfoOutcome,
+    successorInfoOutcome,
   ] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.name'), {
       accessToken: matrixAccessToken,
@@ -144,6 +144,18 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     joinRule = data?.content?.join_rule;
   }
 
+  let roomCreationTs;
+  let predecessorRoomId;
+  let predecessorViaServers;
+  if (predecessorInfoOutcome.reason === undefined) {
+    ({ roomCreationTs, predecessorRoomId, predecessorViaServers } = predecessorInfoOutcome.value);
+  }
+  let successorRoomId;
+  let successorSetTs;
+  if (successorInfoOutcome.reason === undefined) {
+    ({ successorRoomId, successorSetTs } = successorInfoOutcome.value);
+  }
+
   return {
     id: roomId,
     name,
@@ -159,4 +171,8 @@ async function fetchRoomData(matrixAccessToken, roomId) {
   };
 }
 
-module.exports = traceFunction(fetchRoomData);
+module.exports = {
+  fetchRoomData: traceFunction(fetchRoomData),
+  fetchPredecessorInfo: traceFunction(fetchPredecessorInfo),
+  fetchSuccessorInfo: traceFunction(fetchSuccessorInfo),
+};

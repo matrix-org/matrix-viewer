@@ -1694,7 +1694,7 @@ describe('matrix-public-archive', () => {
 
         const jumpBackwardPredecessorTestCases = [
           {
-            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5
+            // Page2 only shows 4 messages ($event4-7) instead of 5
             // (`archiveMessageLimit` + 1) because it also has the tombstone event which
             // is hidden
             testName: 'can jump backward from one room to the predecessor room',
@@ -1712,12 +1712,12 @@ describe('matrix-public-archive', () => {
               action: 'previous',
             },
             page2: {
-              url: '/roomid/room1/date/2022/01/02T05:00?at=$event7',
+              url: '/roomid/room1/date/2022/01/02?at=$event7',
               action: null,
             },
           },
           {
-            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5
+            // Page2 only shows 4 messages ($event4-7) instead of 5
             // (`archiveMessageLimit` + 1) because it also has the tombstone event which
             // is hidden
             testName: 'can jump backward from one room to the predecessor room (same day)',
@@ -1797,12 +1797,15 @@ describe('matrix-public-archive', () => {
 
         const jumpForwardTombstoneTestCases = [
           {
+            // Page1 only shows 4 messages ($event4-7) instead of 5
+            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // is hidden
             testName: 'can jump forward from one room to the replacement room',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
               [day1 ]     [day2                   ]     [day3                                    ]
-                          [page1                  ]
+                                [page1            ]
                                                   |--jump-fwd-4-messages--->|
                                                         [page2       ]
             `,
