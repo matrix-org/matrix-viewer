@@ -4,7 +4,6 @@ const assert = require('assert');
 
 const urlJoin = require('url-join');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
-const ensureRoomJoined = require('./ensure-room-joined');
 const parseViaServersFromUserInput = require('../parse-via-servers-from-user-input');
 const { traceFunction } = require('../../tracing/trace-utilities');
 
@@ -21,12 +20,78 @@ function getStateEndpointForRoomIdAndEventType(roomId, eventType) {
   );
 }
 
+async function fetchPredecessorInfo(matrixAccessToken, roomId) {
+  const [stateCreateResDataOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
+    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
+      accessToken: matrixAccessToken,
+    }),
+    fetchEndpointAsJson(
+      getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
+      {
+        accessToken: matrixAccessToken,
+      }
+    ),
+  ]);
+
+  let predecessorRoomId;
+  let predecessorViaServers;
+  if (statePredecessorResDataOutcome.reason === undefined) {
+    const { data } = statePredecessorResDataOutcome.value;
+    predecessorRoomId = data?.content?.predecessor_room_id;
+    predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
+  } else if (stateCreateResDataOutcome.reason === undefined) {
+    const { data } = stateCreateResDataOutcome.value;
+    predecessorRoomId = data?.content?.predecessor?.room_id;
+  }
+
+  let roomCreationTs;
+  if (stateCreateResDataOutcome.reason === undefined) {
+    const { data } = stateCreateResDataOutcome.value;
+    roomCreationTs = data?.origin_server_ts;
+  }
+
+  return {
+    roomCreationTs,
+    predecessorRoomId,
+    predecessorViaServers,
+  };
+}
+
+async function fetchSuccessorInfo(matrixAccessToken, roomId) {
+  const [stateTombstoneResDataOutcome] = await Promise.allSettled([
+    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.tombstone'), {
+      accessToken: matrixAccessToken,
+    }),
+  ]);
+
+  let successorRoomId;
+  let successorSetTs;
+  if (stateTombstoneResDataOutcome.reason === undefined) {
+    const { data } = stateTombstoneResDataOutcome.value;
+    successorRoomId = data?.content?.replacement_room;
+    successorSetTs = data?.origin_server_ts;
+  }
+
+  return {
+    successorRoomId,
+    successorSetTs,
+  };
+}
+
 // eslint-disable-next-line max-statements
 async function fetchRoomData(matrixAccessToken, roomId) {
   assert(matrixAccessToken);
   assert(roomId);
 
-  const mainFetchPromiseBundle = Promise.allSettled([
+  const [
+    stateNameResDataOutcome,
+    stateCanonicalAliasResDataOutcome,
+    stateAvatarResDataOutcome,
+    stateHistoryVisibilityResDataOutcome,
+    stateJoinRulesResDataOutcome,
+    { roomCreationTs, predecessorRoomId, predecessorViaServers },
+    { successorRoomId, successorSetTs },
+  ] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.name'), {
       accessToken: matrixAccessToken,
     }),
@@ -45,105 +110,9 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.join_rules'), {
       accessToken: matrixAccessToken,
     }),
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.tombstone'), {
-      accessToken: matrixAccessToken,
-    }),
+    fetchPredecessorInfo(matrixAccessToken, roomId),
+    fetchSuccessorInfo(matrixAccessToken, roomId),
   ]);
-
-  const predecessorInfoPromise = (async () => {
-    const [stateCreateResDataOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
-      fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
-        accessToken: matrixAccessToken,
-      }),
-      fetchEndpointAsJson(
-        getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
-        {
-          accessToken: matrixAccessToken,
-        }
-      ),
-    ]);
-
-    let predecessorRoomId;
-    let predecessorViaServers;
-    if (statePredecessorResDataOutcome.reason === undefined) {
-      const { data } = statePredecessorResDataOutcome.value;
-      predecessorRoomId = data?.content?.predecessor_room_id;
-      predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
-    } else if (stateCreateResDataOutcome.reason === undefined) {
-      const { data } = stateCreateResDataOutcome.value;
-      predecessorRoomId = data?.content?.predecessor?.room_id;
-    }
-
-    let roomCreationTs;
-    if (stateCreateResDataOutcome.reason === undefined) {
-      const { data } = stateCreateResDataOutcome.value;
-      roomCreationTs = data?.origin_server_ts;
-    }
-
-    return {
-      roomCreationTs,
-      predecessorRoomId,
-      predecessorViaServers,
-    };
-  })();
-
-  // TODO: This is pretty ugly/messy. Refactor this and maybe use a different pattern
-  // for this type of thing.
-  const _getPredecessorRoomTombstoneSetTs = async () => {
-    const { predecessorRoomId, predecessorViaServers } = await predecessorInfoPromise;
-
-    if (predecessorRoomId) {
-      await ensureRoomJoined(matrixAccessToken, predecessorRoomId, predecessorViaServers);
-
-      // Fetch the tombstone from the predessor room
-      const [predecessorStateTombstoneResDataOutcome] = await Promise.allSettled([
-        fetchEndpointAsJson(
-          getStateEndpointForRoomIdAndEventType(predecessorRoomId, 'm.room.tombstone'),
-          {
-            accessToken: matrixAccessToken,
-          }
-        ),
-      ]);
-
-      let predecessorSuccessorRoomId;
-      let predecessorSuccessorSetTs;
-      if (predecessorStateTombstoneResDataOutcome.reason === undefined) {
-        const { data } = predecessorStateTombstoneResDataOutcome.value;
-        predecessorSuccessorRoomId = data?.content?.replacement_room;
-        predecessorSuccessorSetTs = data?.origin_server_ts;
-      }
-
-      // Make sure the the room that the predecessor specifies as the replacement room
-      // is the same as what the current room is. This is a good signal that the rooms
-      // are a true continuation of each other and the room admins agree.
-      if (predecessorSuccessorRoomId === roomId) {
-        return predecessorSuccessorSetTs;
-      }
-
-      return null;
-    }
-
-    return null;
-  };
-
-  // Memoize this function so we only ever do the extra work once
-  let _predecessorRoomTombstoneSetTsResult;
-  const getPredecessorRoomTombstoneSetTs = async () => {
-    if (_predecessorRoomTombstoneSetTsResult === undefined) {
-      _predecessorRoomTombstoneSetTsResult = _getPredecessorRoomTombstoneSetTs();
-    }
-
-    return _predecessorRoomTombstoneSetTsResult;
-  };
-
-  const [
-    stateNameResDataOutcome,
-    stateCanonicalAliasResDataOutcome,
-    stateAvatarResDataOutcome,
-    stateHistoryVisibilityResDataOutcome,
-    stateJoinRulesResDataOutcome,
-    stateTombstoneResDataOutcome,
-  ] = await mainFetchPromiseBundle;
 
   let name;
   if (stateNameResDataOutcome.reason === undefined) {
@@ -175,16 +144,6 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     joinRule = data?.content?.join_rule;
   }
 
-  const { roomCreationTs, predecessorRoomId, predecessorViaServers } = await predecessorInfoPromise;
-
-  let successorRoomId;
-  let successorSetTs;
-  if (stateTombstoneResDataOutcome.reason === undefined) {
-    const { data } = stateTombstoneResDataOutcome.value;
-    successorRoomId = data?.content?.replacement_room;
-    successorSetTs = data?.origin_server_ts;
-  }
-
   return {
     id: roomId,
     name,
@@ -195,7 +154,6 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     roomCreationTs,
     predecessorRoomId,
     predecessorViaServers,
-    getPredecessorRoomTombstoneSetTs,
     successorRoomId,
     successorSetTs,
   };
