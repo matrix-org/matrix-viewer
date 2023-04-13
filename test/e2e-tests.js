@@ -150,7 +150,7 @@ describe('matrix-public-archive', () => {
     const archiveDate = new Date(Date.UTC(2022, 0, 15));
     let archiveUrl;
     let numMessagesSent = 0;
-    afterEach(() => {
+    afterEach(function () {
       if (interactive) {
         // eslint-disable-next-line no-console
         console.log('Interactive URL for test', archiveUrl);
@@ -162,8 +162,16 @@ describe('matrix-public-archive', () => {
       // changes in the UI).
       numMessagesSent = 0;
 
-      // Reset any custom modifications made for a particular test
-      config.reset();
+      // Reset any custom modifications made for a particular test.
+      //
+      // We don't reset when interactive and there is a failure because we want to be
+      // able to preview the interactive URL with the same config as seen in the test
+      // and because we also set `--bail` when running `npm run test-e2e-interactive`,
+      // the tests stop running after the first failure so it doesn't leak state between
+      // tests.
+      if (!interactive && this.currentTest.state !== 'passed') {
+        config.reset();
+      }
     });
 
     // Sends a message and makes sure that a timestamp was provided
@@ -810,21 +818,27 @@ describe('matrix-public-archive', () => {
 
             const client = await getTestClientForHs(testMatrixServerUrl1);
 
-            const { rooms, archiveMessageLimit, pages } = parseRoomDayMessageStructure(
+            const { rooms, pages } = parseRoomDayMessageStructure(
               testCase.roomDayMessageStructureString
             );
             const fancyIdentifierToRoomIdMap = new Map();
             const roomIdToFancyIdentifierMap = new Map();
             let previousRoomId;
+            let lastEventTsUsedInPreviousRoom;
             for (const [roomIndex, room] of rooms.entries()) {
               let roomId;
               if (previousRoomId) {
                 roomId = await upgradeTestRoom({
                   client,
                   oldRoomId: previousRoomId,
-                  //useMsc3946DynamicPredecessor: TODO: Enable this when we have a way to configure it
+                  //useMsc3946DynamicPredecessor: TODO: Enable this when we have a way to configure it.
+                  // We `+ 1` just to space out the tombstone from the last event so
+                  // things are sequential `/timestamp_to_event` doesn't get confused.
+                  timestamp: lastEventTsUsedInPreviousRoom + 1,
                 });
               } else {
+                // TODO: Pass `timestamp` to `createTestRoom()` when it supports it, see
+                // https://github.com/matrix-org/synapse/issues/15346
                 roomId = await createTestRoom(client);
               }
               const fancyRoomId = `#room${roomIndex + 1}`;
@@ -869,6 +883,7 @@ describe('matrix-public-archive', () => {
                 const fancyEventId = `$event${eventMeta.eventNumber}`;
                 fancyIdentifierToEventIdMap.set(fancyEventId, eventId);
                 eventIdToFancyIdentifierMap.set(eventId, fancyEventId);
+                lastEventTsUsedInPreviousRoom = originServerTs;
               }
 
               previousRoomId = roomId;
@@ -923,7 +938,8 @@ describe('matrix-public-archive', () => {
             // --------------------------------------
 
             // Make sure the archive is configured as the test expects
-            config.set('archiveMessageLimit', archiveMessageLimit);
+            assert(testCase.archiveMessageLimit);
+            config.set('archiveMessageLimit', testCase.archiveMessageLimit);
 
             // eslint-disable-next-line max-nested-callbacks
             const pagesKeyList = Object.keys(testCase).filter((key) => {
@@ -1146,6 +1162,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                       [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
@@ -1177,6 +1194,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                 [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
@@ -1202,6 +1220,7 @@ describe('matrix-public-archive', () => {
                                                                      |--jump-fwd-4-messages-->|
                                                         [page2                     ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/04T01:00',
             page1: {
               url: '/r/room1/date/2022/01/04T01:00',
@@ -1227,6 +1246,7 @@ describe('matrix-public-archive', () => {
                                                               |---jump-fwd-4-messages--->|
                                                         [page2                     ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/03',
             page1: {
               url: '/r/room1/date/2022/01/03',
@@ -1258,6 +1278,7 @@ describe('matrix-public-archive', () => {
           //                                                                          |---jump-fwd-4-messages--->|
           //                                               [page2                     ]
           //   `,
+          //   archiveMessageLimit: 4,
           //   startUrl: '/r/room1/date/2022/01/04',
           //   page1: {
           //     url: '/r/room1/date/2022/01/04',
@@ -1294,6 +1315,7 @@ describe('matrix-public-archive', () => {
                                             |-jump-fwd-3-msg->|
                                       [page2            ]
             `,
+            archiveMessageLimit: 3,
             startUrl: '/r/room1/date/2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
@@ -1323,6 +1345,7 @@ describe('matrix-public-archive', () => {
                                       [page1                  ]
                     [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/03',
             page1: {
               url: '/r/room1/date/2022/01/03',
@@ -1350,6 +1373,7 @@ describe('matrix-public-archive', () => {
                                                                                    |------------------jump-fwd-8-msg---------------------->|
                                                                     [page2                                                   ]
             `,
+            archiveMessageLimit: 8,
             startUrl: '/r/room1/date/2022/01/04',
             page1: {
               url: '/r/room1/date/2022/01/04',
@@ -1373,6 +1397,7 @@ describe('matrix-public-archive', () => {
                                                                                          [page1                                                   ]
                                 [page2                                             ]
             `,
+            archiveMessageLimit: 8,
             startUrl: '/r/room1/date/2022/01/09',
             page1: {
               url: '/r/room1/date/2022/01/09',
@@ -1400,6 +1425,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                       [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
@@ -1426,6 +1452,7 @@ describe('matrix-public-archive', () => {
                                                                     [page1                       ]
                                       [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/04',
             page1: {
               url: '/r/room1/date/2022/01/04',
@@ -1451,6 +1478,7 @@ describe('matrix-public-archive', () => {
                                                         |---jump-fwd-4-messages--->|
                                                   [page2                    ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',
@@ -1476,6 +1504,7 @@ describe('matrix-public-archive', () => {
                                                                     [page1                       ]
                                       [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/03',
             page1: {
               url: '/r/room1/date/2022/01/03',
@@ -1501,6 +1530,7 @@ describe('matrix-public-archive', () => {
                                                         |---jump-fwd-4-messages--->|
                                                   [page2                    ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02T6:00',
             page1: {
               url: '/r/room1/date/2022/01/02T6:00',
@@ -1526,6 +1556,7 @@ describe('matrix-public-archive', () => {
                                                               [page1                      ]
                                 [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02T11:00',
             page1: {
               url: '/r/room1/date/2022/01/02T11:00',
@@ -1551,6 +1582,7 @@ describe('matrix-public-archive', () => {
                                                         |---jump-fwd-4-messages--->|
                                                   [page2                    ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02T06:00',
             page1: {
               url: '/r/room1/date/2022/01/02T06:00',
@@ -1577,6 +1609,7 @@ describe('matrix-public-archive', () => {
                                                               [page1                      ]
                                 [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/03T06:00',
             page1: {
               url: '/r/room1/date/2022/01/03T06:00',
@@ -1601,6 +1634,7 @@ describe('matrix-public-archive', () => {
                                                         [page1                     ]
                           [page2                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/03T05:00',
             page1: {
               url: '/r/room1/date/2022/01/03T05:00',
@@ -1615,21 +1649,24 @@ describe('matrix-public-archive', () => {
 
         const jumpBackwardPredecessorTestCases = [
           {
+            // Page2 doesn't only shows 4 messages ($event4-7) because it also has the
+            // tombstone event which is hidden
             testName: 'can jump backward from one room to the predecessor room',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
               [day1 ]     [day2                   ]     [day3                                    ]
                                                         [page1                     ]
-                          [page2                  ]
+                                [page2            ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room2/date/2022/01/03T05:00',
             page1: {
               url: '/r/room2/date/2022/01/03T05:00',
               action: 'previous',
             },
             page2: {
-              url: '/r/room1/date/2022/01/02',
+              url: '/r/room1/date/2022/01/02T05:00?at=$event7',
               action: null,
             },
           },
@@ -1643,6 +1680,7 @@ describe('matrix-public-archive', () => {
                                                         [page2]
                           [page3                  ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room2/date/2022/01/03T05:00',
             page1: {
               url: '/r/room2/date/2022/01/03T05:00',
@@ -1670,6 +1708,7 @@ describe('matrix-public-archive', () => {
                                                   |--jump-fwd-4-messages--->|
                                                         [page2       ]
             `,
+            archiveMessageLimit: 4,
             startUrl: '/r/room1/date/2022/01/02',
             page1: {
               url: '/r/room1/date/2022/01/02',

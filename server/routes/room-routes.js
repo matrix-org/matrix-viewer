@@ -564,44 +564,69 @@ router.get(
 
     // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
     const allowedToViewRoom =
-      roomData?.historyVisibility === 'world_readable' ||
-      (roomData?.historyVisibility === 'shared' && roomData?.joinRule === 'public');
+      roomData.historyVisibility === 'world_readable' ||
+      (roomData.historyVisibility === 'shared' && roomData.joinRule === 'public');
 
     if (!allowedToViewRoom) {
       throw new StatusError(
         403,
-        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData?.historyVisibility} m.room.join_rules=${roomData?.joinRule}`
+        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility} m.room.join_rules=${roomData.joinRule}`
       );
     }
 
-    // Check if we need to navigate to the predecessor room
-    if (
-      roomData?.predecessorRoomId &&
-      // Since we're looking backwards from the given day, if we don't see any events,
-      // then we can assume that it's before the start of the room (it's the only way we
-      // would see no events).
-      events.length === 0
-    ) {
-      const roomCreationTs = roomData?.roomCreationTs;
-      if (!roomCreationTs) {
+    // Since we're looking backwards from the given day, if we don't see any events,
+    // then we can assume that it's before the start of the room (it's the only way we
+    // would see no events).
+    const hasNavigatedBeforeStartOfRoom = events.length === 0;
+    // Check if we need to navigate backward to the predecessor room
+    if (hasNavigatedBeforeStartOfRoom && roomData.predecessorRoomId) {
+      const PREDECESSOR_ROOM_TOMBSTONE_FETCH_TIMEOUT_MS = 8 * ONE_SECOND_IN_MS;
+      const predecessorRoomTombstoneSetTs = await Promise.race([
+        // Try to continue from the tombstone event in the predecessor room because that
+        // is the signal that the room admins gave to indicate the end of the room in
+        // favor of the other regardless of further activity that may have occured in
+        // the room.
+        roomData.getPredecessorRoomTombstoneSetTs(),
+        // If it takes too long to get the predecessor room tombstone, then abort and
+        // will fallback to something else
+        new Promise((resolve) => {
+          setTimeout(resolve, PREDECESSOR_ROOM_TOMBSTONE_FETCH_TIMEOUT_MS);
+        }),
+      ]);
+
+      // Fallback to the room creation event time if we can't find the predecessor room
+      // tombstone which will work just fine and as expected for normal room upgrade
+      // scenarios.
+      const continueAtTsInPredecessorRoom =
+        predecessorRoomTombstoneSetTs ?? roomData.roomCreationTs;
+
+      console.log(
+        'continueAtTsInPredecessorRoom',
+        new Date(continueAtTsInPredecessorRoom).toISOString(),
+        continueAtTsInPredecessorRoom
+      );
+
+      if (continueAtTsInPredecessorRoom === null || continueAtTsInPredecessorRoom === undefined) {
         throw new StatusError(
           500,
-          'Unable to fetch room creation event to determine time when room was created'
+          `You navigated past the end of the room and it has a predecessor set ` +
+            `(${roomData.predecessorRoomId}) but we were unable to find a suitable place to jump to. ` +
+            `We could just redirect you to that predecessor room but we decided to throw an error ` +
+            `instead because we should be able to fallback to the room creation time in any case. ` +
+            `In other words, there shouldn't be a reason why we can't fetch the \`m.room.create\`` +
+            `event unless the server is just broken. You can try refreshing to try again.`
+        );
+      } else {
+        // Jump to the predecessor room
+        res.redirect(
+          matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData.predecessorRoomId, {
+            viaServers: Array.from(roomData.predecessorViaServers || []),
+            dir: DIRECTION.backward,
+            currentRangeStartTs: continueAtTsInPredecessorRoom,
+            currentRangeEndTs: toTimestamp,
+          })
         );
       }
-
-      // Jump to the predecessor room and continue at the last event of the room
-      res.redirect(
-        matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData?.predecessorRoomId, {
-          viaServers: Array.from(roomData?.predecessorViaServers || []),
-          dir: DIRECTION.backward,
-          // XXX: Should we start from the tombstone event in the predecessor room that
-          // points to this room if it exists? (this would require another lookup that
-          // we might want to avoid)
-          currentRangeStartTs: roomCreationTs,
-          currentRangeEndTs: toTimestamp,
-        })
-      );
     }
 
     const nowTs = Date.now();
@@ -609,7 +634,7 @@ router.get(
     // We only care to navigate to the successor room if we're trying to view something
     // past when the successor was set (it's an indicator that we need to go to the new
     // room from this time forward).
-    const isNavigatedPastSuccessor = toTimestamp > roomData?.successorSetTs;
+    const isNavigatedPastSuccessor = toTimestamp > roomData.successorSetTs;
     // But if we're viewing the day when the successor was set, we want to allow viewing
     // the room up until the successor was set.
     const newestEvent = events[events.length - 1];
@@ -617,11 +642,11 @@ router.get(
       newestEvent &&
       newestEvent?.origin_server_ts &&
       areTimestampsFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
-    // Check if we need to navigate to the successor room
-    if (roomData?.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
+    // Check if we need to navigate forward to the successor room
+    if (roomData.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
       // Jump to the successor room and continue at the first event of the room
       res.redirect(
-        matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData?.successorRoomId, {
+        matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomData.successorRoomId, {
           dir: DIRECTION.forward,
           currentRangeStartTs: 0,
           currentRangeEndTs: 0,

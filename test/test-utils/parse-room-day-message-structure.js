@@ -191,19 +191,9 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
       events,
     };
   });
-  // Ensure that each page has the same number of events on it
-  const numEventsOnEachPage = pages.map((page) => page.events.length);
-  // The page limit is X but each page will display X + 1 messages because we fetch one
-  // extra to determine overflow.
-  const archiveMessageLimit = numEventsOnEachPage[0] - 1;
-  assert(
-    numEventsOnEachPage.every((numEvents) => numEvents === archiveMessageLimit + 1),
-    `Expected all pages to have the same number of events (archiveMessageLimit + 1) where archiveMessageLimit=${archiveMessageLimit} but found ${numEventsOnEachPage}`
-  );
 
   return {
     rooms,
-    archiveMessageLimit,
     pages,
   };
 }

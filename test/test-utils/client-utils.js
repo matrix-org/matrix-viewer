@@ -178,6 +178,7 @@ async function upgradeTestRoom({
   oldRoomId,
   useMsc3946DynamicPredecessor = false,
   overrideCreateOptions = {},
+  timestamp,
 }) {
   assert(client);
   assert(oldRoomId);
@@ -204,6 +205,8 @@ async function upgradeTestRoom({
     };
   }
 
+  // TODO: Pass `timestamp` to `createTestRoom()` when it supports it, see
+  // https://github.com/matrix-org/synapse/issues/15346
   const newRoomid = await createTestRoom(client, createOptions);
 
   // Now send the tombstone event pointing from the old room to the new room
@@ -215,6 +218,7 @@ async function upgradeTestRoom({
     content: {
       replacement_room: newRoomid,
     },
+    timestamp,
   });
 
   return newRoomid;
