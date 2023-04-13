@@ -532,6 +532,10 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
+    //
+    // XXX: It would be better if we just tried fetching first and assume that we are
+    // already joined and only join after we see a 403 Forbidden error (we should do
+    // this for all places we `ensureRoomJoined`)
     const roomId = await ensureRoomJoined(
       matrixAccessToken,
       roomIdOrAlias,
