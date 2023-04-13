@@ -1694,8 +1694,9 @@ describe('matrix-public-archive', () => {
 
         const jumpBackwardPredecessorTestCases = [
           {
-            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5 because it
-            // also has the tombstone event which is hidden
+            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5
+            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // is hidden
             testName: 'can jump backward from one room to the predecessor room',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
@@ -1716,8 +1717,9 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5 because it
-            // also has the tombstone event which is hidden
+            // Page2 doesn't only shows 4 messages ($event4-7) instead of 5
+            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // is hidden
             testName: 'can jump backward from one room to the predecessor room (same day)',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
@@ -1769,13 +1771,16 @@ describe('matrix-public-archive', () => {
           //   },
           // },
           {
+            // Page2 doesn't only shows 3 messages ($event2-4) instead of 4
+            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // is hidden
             testName: 'jumping back before room was created will go down the predecessor chain',
             roomDayMessageStructureString: `
               [room1            ]     [room2            ]     [room3               ]     [room4                ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
               [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5  ]     [day6   ]     [day7   ]     [day8   ]
                                                                                          [page1                ]
-              [page2            ]
+                    [page2      ]
             `,
             archiveMessageLimit: 3,
             startUrl: '/roomid/room4/date/2022/01/08',
