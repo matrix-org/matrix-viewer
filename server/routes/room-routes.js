@@ -509,6 +509,7 @@ router.get(
   timeoutMiddleware,
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
+    const nowTs = Date.now();
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     // We pull this fresh from the config for each request to ensure we have an
@@ -528,6 +529,17 @@ router.get(
       precisionFromUrl = TIME_PRECISION_VALUES.seconds;
     } else if (timeDefined) {
       precisionFromUrl = TIME_PRECISION_VALUES.minutes;
+    }
+
+    // Just 404 if anyone is trying to view the future, no need to waste resources on
+    // that
+    if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
+      throw new StatusError(
+        404,
+        `You can't view the history of a room on a future day (${new Date(
+          toTimestamp
+        ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
+      );
     }
 
     // We have to wait for the room join to happen first before we can fetch
@@ -596,8 +608,6 @@ router.get(
       return;
     }
 
-    const nowTs = Date.now();
-
     // We only care to navigate to the successor room if we're trying to view something
     // past when the successor was set (it's an indicator that we need to go to the new
     // room from this time forward).
@@ -624,16 +634,6 @@ router.get(
         )
       );
       return;
-    }
-    // If no successor, just 404 if anyone is trying to view the future, no need to
-    // waste resources on that
-    else if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
-      throw new StatusError(
-        404,
-        `You can't view the history of a room on a future day (${new Date(
-          toTimestamp
-        ).toISOString()} > ${new Date(nowTs).toISOString()}). Go back`
-      );
     }
 
     // Default to no indexing (safe default)
