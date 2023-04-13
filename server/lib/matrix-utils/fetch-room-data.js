@@ -74,7 +74,7 @@ async function fetchRoomData(matrixAccessToken, roomId) {
       predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
     } else if (stateCreateResDataOutcome.reason === undefined) {
       const { data } = stateCreateResDataOutcome.value;
-      predecessorRoomId = data?.content?.predecessor;
+      predecessorRoomId = data?.content?.predecessor?.room_id;
     }
 
     let roomCreationTs;

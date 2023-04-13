@@ -201,12 +201,16 @@ async function upgradeTestRoom({
     ];
   } else {
     createOptions.creation_content = {
-      predecessor: oldRoomId,
+      predecessor: {
+        room_id: oldRoomId,
+        // The event ID of the last known event in the old room (supposedly required).
+        //event_id: TODO,
+      },
     };
   }
 
-  // TODO: Pass `timestamp` to `createTestRoom()` when it supports it, see
-  // https://github.com/matrix-org/synapse/issues/15346
+  // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it supports it,
+  // see https://github.com/matrix-org/synapse/issues/15346
   const newRoomid = await createTestRoom(client, createOptions);
 
   // Now send the tombstone event pointing from the old room to the new room

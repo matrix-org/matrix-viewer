@@ -837,8 +837,8 @@ describe('matrix-public-archive', () => {
                   timestamp: lastEventTsUsedInPreviousRoom + 1,
                 });
               } else {
-                // TODO: Pass `timestamp` to `createTestRoom()` when it supports it, see
-                // https://github.com/matrix-org/synapse/issues/15346
+                // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it
+                // supports it, see https://github.com/matrix-org/synapse/issues/15346
                 roomId = await createTestRoom(client);
               }
               const fancyRoomId = `#room${roomIndex + 1}`;

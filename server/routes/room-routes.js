@@ -609,12 +609,12 @@ router.get(
       if (continueAtTsInPredecessorRoom === null || continueAtTsInPredecessorRoom === undefined) {
         throw new StatusError(
           500,
-          `You navigated past the end of the room and it has a predecessor set ` +
-            `(${roomData.predecessorRoomId}) but we were unable to find a suitable place to jump to. ` +
+          `You navigated past the end of the room and it has a predecessor set (${roomData.predecessorRoomId}) ` +
+            `but we were unable to find a suitable place to jump to and continue from. ` +
             `We could just redirect you to that predecessor room but we decided to throw an error ` +
             `instead because we should be able to fallback to the room creation time in any case. ` +
             `In other words, there shouldn't be a reason why we can't fetch the \`m.room.create\`` +
-            `event unless the server is just broken. You can try refreshing to try again.`
+            `event for this room unless the server is just broken. You can try refreshing to try again.`
         );
       } else {
         // Jump to the predecessor room
