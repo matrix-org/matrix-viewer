@@ -790,7 +790,7 @@ describe('matrix-public-archive', () => {
               )
                 .split(/\r?\n/)
                 .map((line) => {
-                  if (line.includes(eventIdToLookFor)) {
+                  if (eventIdToLookFor && line.includes(eventIdToLookFor)) {
                     return chalk.yellow(line);
                   }
 
@@ -913,7 +913,7 @@ describe('matrix-public-archive', () => {
                 });
               } else {
                 // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it
-                // supports it, see https://github.com/matrix-org/synapse/issues/15346
+                // supports it, see https://github.com/matrix-org/matrix-public-archive/issues/169
                 roomId = await createTestRoom(client);
               }
               const fancyRoomId = `!room${roomIndex + 1}`;
@@ -989,6 +989,11 @@ describe('matrix-public-archive', () => {
 
               fancyRoomIdToDebugEventsInRoom.set(fancyRoomId, eventDebugStrings);
             }
+
+            console.log(
+              'getDebugStringForEventsInRoomsAndLookForEventId()\n',
+              getDebugStringForEventsInRoomsAndLookForEventId()
+            );
 
             // Now Test
             // --------------------------------------
@@ -1076,11 +1081,24 @@ describe('matrix-public-archive', () => {
                 );
                 const pageDom = parseHTML(archivePageHtml);
 
+                const eventIdsOnPage = [...pageDom.document.querySelectorAll(`[data-event-id]`)]
+                  // eslint-disable-next-line max-nested-callbacks
+                  .map((eventEl) => {
+                    return eventEl.getAttribute('data-event-id');
+                  });
+
                 // Assert the correct room and time precision in the URL
                 const actualUrlWithFancyIdentifies = convertActualUrlToUrlWithFancyIds(pageRes.url);
                 assert.match(
                   actualUrlWithFancyIdentifies,
-                  new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`)
+                  new RegExp(`${escapeStringRegexp(pageTestMeta.url)}$`),
+                  `The actual URL (${actualUrlWithFancyIdentifies}) for the page did not match the expected URL (${
+                    pageTestMeta.url
+                  }).\nFor reference, here are the events on the page: ${JSON.stringify(
+                    eventIdsOnPage,
+                    null,
+                    2
+                  )}\n${getDebugStringForEventsInRoomsAndLookForEventId()}`
                 );
 
                 // If provided, assert that it's a smooth continuation to more messages.
@@ -1102,14 +1120,8 @@ describe('matrix-public-archive', () => {
                   assert.strictEqual(continationDebugEventId, expectedContinuationDebugEventId);
                 }
 
-                const eventIdsOnPage = [...pageDom.document.querySelectorAll(`[data-event-id]`)]
-                  // eslint-disable-next-line max-nested-callbacks
-                  .map((eventEl) => {
-                    return eventEl.getAttribute('data-event-id');
-                  });
-
                 // We only care about messages for now (no easy way to specify the
-                // primordial room creation or member events)
+                // primordial room creation or member events in the test expectations)
                 const eventIdsOnPageWeCareAboutToAssert = eventIdsOnPage.filter((eventId) => {
                   const event = eventMap.get(eventId);
                   if (!event) {
@@ -1306,7 +1318,7 @@ describe('matrix-public-archive', () => {
           // creation events which are created in now time vs the timestamp massaging we
           // do for the message fixtures. We can uncomment this once Synapse supports
           // timestamp massaging for `/createRoom`, see
-          // https://github.com/matrix-org/synapse/issues/15346
+          // https://github.com/matrix-org/matrix-public-archive/issues/169
           //
           // {
           //   // In order to jump from the 1st page to the 2nd, we first "jump" forward 4
@@ -1478,6 +1490,37 @@ describe('matrix-public-archive', () => {
             },
             page2: {
               url: '/roomid/room1/date/2022/01/03T03:00?at=$event7',
+              action: null,
+            },
+          },
+          {
+            // Test to make sure we can jump forwards from the 1st page to the 2nd page
+            // when there is a multiple-day gap between the end of the first page to the
+            // next messages.
+            //
+            // We jump forward 4 messages (`archiveMessageLimit`), then back-track to
+            // the nearest hour because even though there is more than a day gap in the
+            // jump, there aren't any mesages in between from another day. Because, we
+            // back-tracked to the nearest hour, this starts us from event9, and then we
+            // display 5 messages because we fetch one more than `archiveMessageLimit`
+            // to determine overflow.
+            testName: 'can jump forward to the next activity when there is a multiple day gap',
+            roomDayMessageStructureString: `
+              [room1                                                               ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 
+              [day1                         ]     [day5                            ]
+                    [page1                  ]
+                                            |--jump-fwd-4-messages-->|
+                                      [page2                  ]
+            `,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/05T03:00?at=$event7',
               action: null,
             },
           },
@@ -1697,7 +1740,7 @@ describe('matrix-public-archive', () => {
             // Page2 only shows 4 messages ($event4-7) instead of 5
             // (`archiveMessageLimit` + 1) because it also has the tombstone event which
             // is hidden
-            testName: 'can jump backward from one room to the predecessor room',
+            testName: 'can jump backward from one room to the predecessor room (different day)',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
@@ -1739,13 +1782,38 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          {
+            // Page2 doesn't only shows 3 messages ($event2-4) instead of 4
+            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // is hidden
+            testName: 'jumping back before room was created will go down the predecessor chain',
+            roomDayMessageStructureString: `
+              [room1            ]     [room2            ]     [room3               ]     [room4                ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
+              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5  ]     [day6   ]     [day7   ]     [day8   ]
+                                                                                         [page1                ]
+                    [page2      ]
+            `,
+            archiveMessageLimit: 3,
+            startUrl: '/roomid/room4/date/2022/01/08',
+            page1: {
+              url: '/roomid/room4/date/2022/01/08',
+              action: 'navigate:/roomid/room4/date/2022/01/02',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/02',
+              action: null,
+            },
+          },
+          // This doesn't work well because of the primordial create room events which
+          // we can't control the timestamp of or assert properly in this diagram. If we
+          // ever get timestamp massaging on the `/createRoom` endpoint (see
+          // https://github.com/matrix-org/matrix-public-archive/issues/169), we could
+          // make this work by increasing the `archiveMessageLimit` to something that
+          // would encompass all of the primordial events along with the last few
+          // messages.
+          //
           // {
-          //   // This doesn't work well because of the primordial create room events which
-          //   // we can't control the timestamp of or assert properly in this diagram. If
-          //   // we ever get timestamp massaging on the `/createRoom` endpoint (see
-          //   // https://github.com/matrix-org/synapse/issues/15346), we could make this
-          //   // work by increasing the `archiveMessageLimit` to something that would
-          //   // encompass all of the primordial events along with the last few messages.
           //   testName: `will paginate to the oldest messages in the room (doesn't skip the last few) before jumping backward to the predecessor room`,
           //   roomDayMessageStructureString: `
           //     [room1                              ]     [room2                                   ]
@@ -1770,53 +1838,28 @@ describe('matrix-public-archive', () => {
           //     action: null,
           //   },
           // },
-          {
-            // Page2 doesn't only shows 3 messages ($event2-4) instead of 4
-            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
-            // is hidden
-            testName: 'jumping back before room was created will go down the predecessor chain',
-            roomDayMessageStructureString: `
-              [room1            ]     [room2            ]     [room3               ]     [room4                ]
-              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
-              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5  ]     [day6   ]     [day7   ]     [day8   ]
-                                                                                         [page1                ]
-                    [page2      ]
-            `,
-            archiveMessageLimit: 3,
-            startUrl: '/roomid/room4/date/2022/01/08',
-            page1: {
-              url: '/roomid/room4/date/2022/01/08',
-              action: 'navigate:/roomid/room4/date/2022/01/02',
-            },
-            page2: {
-              url: '/roomid/room1/date/2022/01/02',
-              action: null,
-            },
-          },
         ];
 
-        const jumpForwardTombstoneTestCases = [
+        const jumpForwardSuccessorTestCases = [
           {
-            // Page1 only shows 4 messages ($event4-7) instead of 5
-            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
-            // is hidden
-            testName: 'can jump forward from one room to the replacement room',
+            // TODO: Explain intracies of the pages
+            testName: 'can jump forward from one room to the successor room (different day)',
             roomDayMessageStructureString: `
-              [room1                              ]     [room2                                   ]
+              [room1]     [room2                                                                 ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
-              [day1 ]     [day2                   ]     [day3                                    ]
-                                [page1            ]
-                                                  |--jump-fwd-4-messages--->|
-                                                        [page2       ]
+              [day1 ]     [day2                                                                  ]
+              [page1]
+                    |--jump-fwd-10-messages~~>
+                          [page2]
             `,
-            archiveMessageLimit: 4,
-            startUrl: '/roomid/room1/date/2022/01/02',
+            archiveMessageLimit: 10,
+            startUrl: '/roomid/room1/date/2022/01/01T02:00',
             page1: {
-              url: '/roomid/room1/date/2022/01/02',
+              url: '/roomid/room1/date/2022/01/01T02:00',
               action: 'next',
             },
             page2: {
-              url: '/roomid/room2/date/2022/01/03T04:00',
+              url: '/roomid/room2/date/2022/01/02T04:00?at=$event3',
               action: null,
             },
           },
@@ -1834,9 +1877,9 @@ describe('matrix-public-archive', () => {
             });
           });
 
-          describe('jump forward from tombstone to replacement rooms', () => {
+          describe('jump forward from tombstone to replacement/successor rooms', () => {
             // eslint-disable-next-line max-nested-callbacks
-            jumpForwardTombstoneTestCases.forEach((testCase) => {
+            jumpForwardSuccessorTestCases.forEach((testCase) => {
               runJumpTestCase(testCase);
             });
           });

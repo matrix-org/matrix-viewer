@@ -210,7 +210,7 @@ async function upgradeTestRoom({
   }
 
   // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it supports it,
-  // see https://github.com/matrix-org/synapse/issues/15346
+  // see https://github.com/matrix-org/matrix-public-archive/issues/169
   const newRoomid = await createTestRoom(client, createOptions);
 
   // Now send the tombstone event pointing from the old room to the new room

@@ -20,11 +20,44 @@ function getStateEndpointForRoomIdAndEventType(roomId, eventType) {
   );
 }
 
-async function fetchPredecessorInfo(matrixAccessToken, roomId) {
-  const [stateCreateResDataOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
+// TODO: Remove this when we have MSC3999 (see usage)
+const removeMe_fetchRoomCreateEventId = traceFunction(async function (matrixAccessToken, roomId) {
+  const { data } = await fetchEndpointAsJson(
+    urlJoin(
+      matrixServerUrl,
+      `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/messages?dir=f&limit1`
+    ),
+    {
+      accessToken: matrixAccessToken,
+    }
+  );
+
+  const roomCreateEventId = data?.chunk?.[0]?.event_id;
+
+  return roomCreateEventId;
+});
+
+const fetchRoomCreationInfo = traceFunction(async function (matrixAccessToken, roomId) {
+  const [stateCreateResDataOutcome] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
       accessToken: matrixAccessToken,
     }),
+  ]);
+
+  let roomCreationTs;
+  let predecessorRoomId;
+  if (stateCreateResDataOutcome.reason === undefined) {
+    const { data } = stateCreateResDataOutcome.value;
+    roomCreationTs = data?.origin_server_ts;
+    predecessorRoomId = data?.content?.predecessor?.room_id;
+  }
+
+  return { eventId, roomCreationTs, predecessorRoomId };
+});
+
+const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, roomId) {
+  const [roomCreationInfoOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
+    fetchRoomCreationInfo(matrixAccessToken, roomId),
     fetchEndpointAsJson(
       getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
       {
@@ -35,29 +68,27 @@ async function fetchPredecessorInfo(matrixAccessToken, roomId) {
 
   let predecessorRoomId;
   let predecessorViaServers;
+  // Prefer the dynamic predecessor from the dedicated state event
   if (statePredecessorResDataOutcome.reason === undefined) {
     const { data } = statePredecessorResDataOutcome.value;
     predecessorRoomId = data?.content?.predecessor_room_id;
     predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
-  } else if (stateCreateResDataOutcome.reason === undefined) {
-    const { data } = stateCreateResDataOutcome.value;
-    predecessorRoomId = data?.content?.predecessor?.room_id;
+  }
+  // Then fallback to the predecessor defined by the room creation event
+  else if (roomCreationInfoOutcome.predecessorRoomId) {
+    predecessorRoomId = roomCreationInfoOutcome.predecessorRoomId;
   }
 
-  let roomCreationTs;
-  if (stateCreateResDataOutcome.reason === undefined) {
-    const { data } = stateCreateResDataOutcome.value;
-    roomCreationTs = data?.origin_server_ts;
-  }
+  const { roomCreationTs } = roomCreationInfoOutcome;
 
   return {
     roomCreationTs,
     predecessorRoomId,
     predecessorViaServers,
   };
-}
+});
 
-async function fetchSuccessorInfo(matrixAccessToken, roomId) {
+const fetchSuccessorInfo = traceFunction(async function (matrixAccessToken, roomId) {
   const [stateTombstoneResDataOutcome] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.tombstone'), {
       accessToken: matrixAccessToken,
@@ -76,10 +107,10 @@ async function fetchSuccessorInfo(matrixAccessToken, roomId) {
     successorRoomId,
     successorSetTs,
   };
-}
+});
 
 // eslint-disable-next-line max-statements
-async function fetchRoomData(matrixAccessToken, roomId) {
+const fetchRoomData = traceFunction(async function (matrixAccessToken, roomId) {
   assert(matrixAccessToken);
   assert(roomId);
 
@@ -169,10 +200,12 @@ async function fetchRoomData(matrixAccessToken, roomId) {
     successorRoomId,
     successorSetTs,
   };
-}
+});
 
 module.exports = {
-  fetchRoomData: traceFunction(fetchRoomData),
-  fetchPredecessorInfo: traceFunction(fetchPredecessorInfo),
-  fetchSuccessorInfo: traceFunction(fetchSuccessorInfo),
+  fetchRoomData,
+  fetchRoomCreationInfo,
+  fetchPredecessorInfo,
+  fetchSuccessorInfo,
+  removeMe_fetchRoomCreateEventId,
 };

@@ -121,18 +121,34 @@ class URLCreator {
 
   archiveJumpUrlForRoom(
     roomIdOrAlias,
-    { dir, currentRangeStartTs, currentRangeEndTs, viaServers = [] }
+    {
+      dir,
+      currentRangeStartTs,
+      currentRangeEndTs,
+      timelineStartEventId,
+      timelineEndEventId,
+      viaServers = [],
+    }
   ) {
     assert(roomIdOrAlias);
     assert(dir);
     assert(typeof currentRangeStartTs === 'number');
     assert(typeof currentRangeEndTs === 'number');
     assert(Array.isArray(viaServers));
+    // `timelineStartEventId` and `timelineEndEventId` are optional because the
+    // timeline could be showing 0 events or we could be jumping with no knowledge of
+    // what was shown before.
 
     let qs = new URLSearchParams();
     qs.append('dir', dir);
     qs.append('currentRangeStartTs', currentRangeStartTs);
     qs.append('currentRangeEndTs', currentRangeEndTs);
+    if (timelineStartEventId) {
+      qs.append('timelineStartEventId', timelineStartEventId);
+    }
+    if (timelineEndEventId) {
+      qs.append('timelineEndEventId', timelineEndEventId);
+    }
     [].concat(viaServers).forEach((viaServer) => {
       qs.append('via', viaServer);
     });

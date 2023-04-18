@@ -363,6 +363,9 @@ class ArchiveRoomViewModel extends ViewModel {
     // to paginate from
     const jumpRangeEndTimestamp = this._dayTimestampTo;
 
+    const timelineStartEventId = events[0]?.event_id;
+    const timelineEndEventId = events[events.length - 1]?.event_id;
+
     // Check whether the given day represented in the URL has any events on the page
     // from that day. We only need to check the last event which would be closest to
     // `_dayTimestampTo` anyway.
@@ -394,6 +397,8 @@ class ArchiveRoomViewModel extends ViewModel {
           canonicalAlias: this._room.canonicalAlias,
           jumpRangeStartTimestamp,
           jumpRangeEndTimestamp,
+          timelineStartEventId,
+          timelineEndEventId,
           // This is a bit cheating but I don't know how else to pass this kind of
           // info to the Tile viewmodel
           basePath: this._basePath,
@@ -417,6 +422,8 @@ class ArchiveRoomViewModel extends ViewModel {
         dayTimestamp: this._dayTimestampTo,
         jumpRangeStartTimestamp,
         jumpRangeEndTimestamp,
+        timelineStartEventId,
+        timelineEndEventId,
         // This is a bit cheating but I don't know how else to pass this kind of
         // info to the Tile viewmodel
         basePath: this._basePath,
