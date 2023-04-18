@@ -454,12 +454,45 @@ router.get(
 
         const lastMessage = messageResData.chunk[messageResData.chunk.length - 1];
         const tsOfLastMessage = lastMessage.origin_server_ts;
-        const dateOfLastMessage = new Date(tsOfLastMessage);
         console.log(
           'tsOfLastMessage',
           new Date(tsOfLastMessage).toISOString(),
           tsOfLastMessage,
           lastMessage.event_id
+        );
+
+        let msGapFromJumpPointToLastMessage;
+        // If someone is jumping from `0`, let's assume this is their first time
+        // navigating in the room and are just trying to get to the first messages in
+        // the room. Instead of using `0` which give us `moreThanDayGap=true` every time
+        // (unless someone sent messages in 1970 :P), and round us down to the nearest
+        // day before any of the messages in the room start, let's just use the start of
+        // the timeline as the start which will show us a page of content on the first
+        // try. For the backwards direction, we could have a similar check but with
+        // `currentRangeStartTs === Infinity` check but it's not necessary since we
+        // don't have to do any back-tracking extra work.
+        if (currentRangeEndTs === 0) {
+          msGapFromJumpPointToLastMessage = tsOfLastMessage - tsOfFirstMessage;
+        }
+        // Otherwise do the normal calculation: where we jumped to - where we jumped from
+        else {
+          msGapFromJumpPointToLastMessage = tsOfLastMessage - currentRangeEndTs;
+        }
+        const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
+        const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
+        const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
+        const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
+
+        // If the first message is on different day than the last message, then we know
+        // there are messages on days before the last mesage and can safely round to the
+        // nearest day and see new content still.
+        //
+        // We use this information to handle situations where we jump over multiple day
+        // gaps with no messages in between. In those cases, we don't want to round down
+        // where there are no messages in the gap.
+        const hasMessagesOnDayBeforeDayOfLastMessage = !areTimestampsFromSameUtcDay(
+          tsOfFirstMessage,
+          tsOfLastMessage
         );
 
         // Back-track from the last message timestamp to the nearest date boundary.
@@ -474,36 +507,7 @@ router.get(
         // other reason not to return the exact date is maybe there multiple messages at
         // the same timestamp and we will lose messages in the gap because it displays
         // more than we thought.
-        const fromDifferentDay = !areTimestampsFromSameUtcDay(currentRangeEndTs, tsOfLastMessage);
-        const fromDifferentHour = !areTimestampsFromSameUtcHour(currentRangeEndTs, tsOfLastMessage);
-        const fromDifferentMinute = !areTimestampsFromSameUtcMinute(
-          currentRangeEndTs,
-          tsOfLastMessage
-        );
-        const fromDifferentSecond = !areTimestampsFromSameUtcSecond(
-          currentRangeEndTs,
-          tsOfLastMessage
-        );
-
-        // To handle sparsely populated days (quiet days) or conversely busy days with
-        // too many messages to today, we also check that TODO
-        const hasMessagesInBetweenFromDifferentDay = !areTimestampsFromSameUtcDay(
-          tsOfFirstMessage,
-          tsOfLastMessage
-        );
-        const hasMessagesInBetweenFromDifferentHour = !areTimestampsFromSameUtcHour(
-          tsOfFirstMessage,
-          tsOfLastMessage
-        );
-        const hasMessagesInBetweenFromDifferentMinute = !areTimestampsFromSameUtcMinute(
-          tsOfFirstMessage,
-          tsOfLastMessage
-        );
-        const hasMessagesInBetweenFromDifferentSecond = !areTimestampsFromSameUtcSecond(
-          tsOfFirstMessage,
-          tsOfLastMessage
-        );
-
+        //
         // If the `/messages` response returns less than the `archiveMessageLimit`
         // looking forwards, it means we're looking at the latest events in the room. We
         // can simply just display the day that the latest event occured on or the given
@@ -518,8 +522,8 @@ router.get(
         }
         // More than a day gap here, so we can just back-track to the nearest day as
         // long as there are messages we haven't seen yet if we visit the nearest day.
-        else if (fromDifferentDay && hasMessagesInBetweenFromDifferentDay) {
-          const utcMidnightOfDayBefore = getUtcStartOfDayTs(dateOfLastMessage);
+        else if (moreThanDayGap && hasMessagesOnDayBeforeDayOfLastMessage) {
+          const utcMidnightOfDayBefore = getUtcStartOfDayTs(tsOfLastMessage);
           // We `- 1` from UTC midnight to get the timestamp that is a millisecond
           // before the next day but we choose a no time precision so we jump to just
           // the bare date without a time. A bare date in the `/date/2022/12/16`
@@ -529,26 +533,21 @@ router.get(
           newOriginServerTs = endOfDayBeforeTs;
           preferredPrecision = TIME_PRECISION_VALUES.none;
         }
-        // More than a hour gap here, we will need to back-track to the nearest hour as
-        // long as there are messages we haven't seen yet if we visit the nearest hour.
-        else if (fromDifferentHour && hasMessagesInBetweenFromDifferentHour) {
-          const utcTopOfHourBefore = getUtcStartOfHourTs(dateOfLastMessage);
+        // More than a hour gap here, we will need to back-track to the nearest hour
+        else if (moreThanHourGap) {
+          const utcTopOfHourBefore = getUtcStartOfHourTs(tsOfLastMessage);
           newOriginServerTs = utcTopOfHourBefore;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a minute gap here, we will need to back-track to the nearest minute
-        // as long as there are messages we haven't seen yet if we visit the nearest
-        // minute.
-        else if (fromDifferentMinute && hasMessagesInBetweenFromDifferentMinute) {
-          const utcTopOfMinuteBefore = getUtcStartOfMinuteTs(dateOfLastMessage);
+        else if (moreThanMinuteGap) {
+          const utcTopOfMinuteBefore = getUtcStartOfMinuteTs(tsOfLastMessage);
           newOriginServerTs = utcTopOfMinuteBefore;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a second gap here, we will need to back-track to the nearest second
-        // as long as there are messages we haven't seen yet if we visit the nearest
-        // second.
-        else if (fromDifferentSecond && hasMessagesInBetweenFromDifferentSecond) {
-          const utcTopOfSecondBefore = getUtcStartOfSecondTs(dateOfLastMessage);
+        else if (moreThanSecondGap) {
+          const utcTopOfSecondBefore = getUtcStartOfSecondTs(tsOfLastMessage);
           newOriginServerTs = utcTopOfSecondBefore;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }

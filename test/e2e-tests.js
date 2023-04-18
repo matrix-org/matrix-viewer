@@ -1865,16 +1865,17 @@ describe('matrix-public-archive', () => {
             // come before `m.room.create` and other primordial events here (related to
             // https://github.com/matrix-org/matrix-public-archive/issues/169). From
             // event3, we jump forward 10 messages (`archiveMessageLimit`) to event12,
-            // then back-track to the nearest hour which starts off at event11 and
-            // render the page with 5 messages because we fetch one more than
-            // `archiveMessageLimit` to determine overflow.
+            // then back-track to the nearest hour which starts off at event11 and try
+            // to render the page with 11 messages because we fetch one more than
+            // `archiveMessageLimit` to determine overflow but there aren't enough
+            // messages.
             testName: 'can jump forward from one room to the successor room (different day)',
             roomDayMessageStructureString: `
               [room1]     [room2                                                                 ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
               [day1 ]     [day2                                                                  ]
               [page1]
-                    |------------------jump-fwd-10-messages----------------------->|
+                          |------------------jump-fwd-10-messages----------------->|
                           [page2                                            ]
             `,
             archiveMessageLimit: 10,
@@ -1889,20 +1890,27 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // TODO
+            // We jump from event8 which is found as the closest event looking forward
+            // from the ts=0 in the successor room because the timestamp massaged events
+            // come before `m.room.create` and other primordial events here (related to
+            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
+            // event8, we jump forward 10 messages (`archiveMessageLimit`) to the end of
+            // the room, then go to the day of the last message which will show us all
+            // messages in room2 because we fetch one more than `archiveMessageLimit` to
+            // determine overflow which is more messages than room2 has.
             testName: 'can jump forward from one room to the successor room (same day)',
             roomDayMessageStructureString: `
               [room1                              ]     [room2                                   ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
               [day1 ]     [day2                                                                  ]
               [page1                              ]
-                    |------------------jump-fwd-10-messages----------------------->|
-                                               [page2                                            ]
+                                                        |------------------jump-fwd-10-messages----------------------->|
+                                                        [page2                                   ]
             `,
             archiveMessageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/02T05:00',
             page1: {
-              url: '/roomid/room1/date/2022/01/01T05:00',
+              url: '/roomid/room1/date/2022/01/02T05:00',
               action: 'next',
             },
             page2: {
@@ -1915,17 +1923,18 @@ describe('matrix-public-archive', () => {
             // from the ts=0 in the successor room because the timestamp massaged events
             // come before `m.room.create` and other primordial events here (related to
             // https://github.com/matrix-org/matrix-public-archive/issues/169). From
-            // event3, we jump forward 10 messages (`archiveMessageLimit`) to event12,
-            // then back-track to the nearest hour which starts off at event11 and
-            // render the page with 5 messages because we fetch one more than
-            // `archiveMessageLimit` to determine overflow.
+            // event3, we jump forward 10 messages (`archiveMessageLimit`) to event13,
+            // then back-track to the nearest hour which starts off at event11 and try
+            // to render the page with 11 messages because we fetch one more than
+            // `archiveMessageLimit` to determine overflow but there aren't enough
+            // messages.
             testName: 'can jump forward from one room to the successor room (multiple day gap)',
             roomDayMessageStructureString: `
               [room1]     [room2                                                                 ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
               [day1 ]     [day5                                                                  ]
               [page1]
-                    |------------------jump-fwd-10-messages----------------------->|
+                          |----------------jump-fwd-10-messages------------------->|
                           [page2                                            ]
             `,
             archiveMessageLimit: 10,
@@ -1940,15 +1949,36 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // TODO
+            // For the jump from page1 to page2, we jump forward 10 messages which gets
+            // us to the end of the room.
+            //
+            // For the jump from page2 to page3, since we see the end of room1, we jump
+            // to the successor room and find the closest event from ts=0 looking
+            // forward which is event5 because the timestamp massaged events come before
+            // `m.room.create` and other primordial events here (related to
+            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
+            // event5, we jump forward 10 messages (`archiveMessageLimit`) to event14,
+            // then back-track to the *day* before the last message found which starts off
+            // at event6 and try to render the page with 11 messages because we fetch
+            // one more than `archiveMessageLimit` to determine overflow but there
+            // aren't enough messages.
+            //
+            // For the jump from page3 to page4, we jump forward 10 messages to event16,
+            // then back-track to the nearest hour which starts off at event15 and try
+            // to render the page with 11 messages because we fetch one more than
+            // `archiveMessageLimit`.
             testName: 'can jump forward from one room to the successor room (across multiple days)',
             roomDayMessageStructureString: `
               [room1            ]     [room2                                                                   ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
               [day1 ]     [day2             ]     [day3                                                        ]
               [page1]
+                    |--jump-10->|
               [page2            ]
-                                      [page3                                                     ]
+                                      |------------------jump-fwd-10-messages------------------->|
+                                      [page3]
+                                            |----------------------jump-fwd-10-messages----------------------->|
+                                      [page4                                                            ]
             `,
             archiveMessageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01',
@@ -1957,16 +1987,20 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              url: '/roomid/room1/date/2022/01/02T01:00?at=$event3',
-              action: null,
+              url: '/roomid/room1/date/2022/01/02?at=$event3',
+              action: 'next',
             },
             page3: {
-              url: '/roomid/room2/date/2022/01/03T08:00?at=$event5',
+              url: '/roomid/room2/date/2022/01/02?at=$event5',
+              action: 'next',
+            },
+            page4: {
+              url: '/roomid/room2/date/2022/01/03T09:00?at=$event7',
               action: null,
             },
           },
           {
-            // TODO
+            // (same as the test above just with more day gaps)
             testName:
               'can jump forward from one room to the successor room (across multiple days and day gaps)',
             roomDayMessageStructureString: `
@@ -1974,8 +2008,12 @@ describe('matrix-public-archive', () => {
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
               [day1 ]     [day4             ]     [day6                                                        ]
               [page1]
+                    |--jump-10->|
               [page2            ]
-                                      [page3                                                     ]
+                                      |------------------jump-fwd-10-messages------------------->|
+                                      [page3]
+                                            |----------------------jump-fwd-10-messages----------------------->|
+                                      [page4                                                            ]
             `,
             archiveMessageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01',
@@ -1984,14 +2022,21 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              url: '/roomid/room1/date/2022/01/04T01:00?at=$event3',
-              action: null,
+              url: '/roomid/room1/date/2022/01/04?at=$event3',
+              action: 'next',
             },
             page3: {
-              url: '/roomid/room2/date/2022/01/06T08:00?at=$event5',
+              // You might expect `/date/2022/01/04?at=$event5` here but we just get the
+              // UTC day before the day of last message we jumped to (event14)
+              url: '/roomid/room2/date/2022/01/05?at=$event5',
+              action: 'next',
+            },
+            page4: {
+              url: '/roomid/room2/date/2022/01/06T09:00?at=$event7',
               action: null,
             },
           },
+          // TODO: Test with navigation back to date in time spanning multiple room upgrades
         ];
 
         jumpTestCases.forEach((testCase) => {
