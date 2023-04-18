@@ -1783,7 +1783,7 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // Page2 doesn't only shows 3 messages ($event2-4) instead of 4
+            // Page2 only shows 3 messages ($event2-4) instead of 4
             // (`archiveMessageLimit` + 1) because it also has the tombstone event which
             // is hidden
             testName: 'jumping back before room was created will go down the predecessor chain',
@@ -1842,15 +1842,22 @@ describe('matrix-public-archive', () => {
 
         const jumpForwardSuccessorTestCases = [
           {
-            // TODO: Explain intracies of the pages
+            // We jump from event3 which is found as the closest event looking forward
+            // because the timestamp massaged events come before `m.room.create` and
+            // other primordial events here (related to
+            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
+            // event3, we jump forward 10 messages (`archiveMessageLimit`) to event12,
+            // then back-track to the nearest hour which starts off at event11 and
+            // render the page with 5 messages because we fetch one more than
+            // `archiveMessageLimit` to determine overflow.
             testName: 'can jump forward from one room to the successor room (different day)',
             roomDayMessageStructureString: `
               [room1]     [room2                                                                 ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
               [day1 ]     [day2                                                                  ]
               [page1]
-                    |--jump-fwd-10-messages~~>
-                          [page2]
+                    |------------------jump-fwd-10-messages----------------------->|
+                          [page2                                            ]
             `,
             archiveMessageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01T02:00',
@@ -1859,7 +1866,7 @@ describe('matrix-public-archive', () => {
               action: 'next',
             },
             page2: {
-              url: '/roomid/room2/date/2022/01/02T04:00?at=$event3',
+              url: '/roomid/room2/date/2022/01/02T09:00?at=$event3',
               action: null,
             },
           },
