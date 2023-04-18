@@ -1861,8 +1861,8 @@ describe('matrix-public-archive', () => {
         const jumpForwardSuccessorTestCases = [
           {
             // We jump from event3 which is found as the closest event looking forward
-            // because the timestamp massaged events come before `m.room.create` and
-            // other primordial events here (related to
+            // from the ts=0 in the successor room because the timestamp massaged events
+            // come before `m.room.create` and other primordial events here (related to
             // https://github.com/matrix-org/matrix-public-archive/issues/169). From
             // event3, we jump forward 10 messages (`archiveMessageLimit`) to event12,
             // then back-track to the nearest hour which starts off at event11 and
@@ -1878,13 +1878,117 @@ describe('matrix-public-archive', () => {
                           [page2                                            ]
             `,
             archiveMessageLimit: 10,
-            startUrl: '/roomid/room1/date/2022/01/01T02:00',
+            startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
-              url: '/roomid/room1/date/2022/01/01T02:00',
+              url: '/roomid/room1/date/2022/01/01',
               action: 'next',
             },
             page2: {
               url: '/roomid/room2/date/2022/01/02T09:00?at=$event3',
+              action: null,
+            },
+          },
+          {
+            // TODO
+            testName: 'can jump forward from one room to the successor room (same day)',
+            roomDayMessageStructureString: `
+              [room1                              ]     [room2                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day2                                                                  ]
+              [page1                              ]
+                    |------------------jump-fwd-10-messages----------------------->|
+                                               [page2                                            ]
+            `,
+            archiveMessageLimit: 10,
+            startUrl: '/roomid/room1/date/2022/01/02T05:00',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01T05:00',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room2/date/2022/01/02?at=$event8',
+              action: null,
+            },
+          },
+          {
+            // We jump from event3 which is found as the closest event looking forward
+            // from the ts=0 in the successor room because the timestamp massaged events
+            // come before `m.room.create` and other primordial events here (related to
+            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
+            // event3, we jump forward 10 messages (`archiveMessageLimit`) to event12,
+            // then back-track to the nearest hour which starts off at event11 and
+            // render the page with 5 messages because we fetch one more than
+            // `archiveMessageLimit` to determine overflow.
+            testName: 'can jump forward from one room to the successor room (multiple day gap)',
+            roomDayMessageStructureString: `
+              [room1]     [room2                                                                 ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1 ]     [day5                                                                  ]
+              [page1]
+                    |------------------jump-fwd-10-messages----------------------->|
+                          [page2                                            ]
+            `,
+            archiveMessageLimit: 10,
+            startUrl: '/roomid/room1/date/2022/01/01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room2/date/2022/01/05T09:00?at=$event3',
+              action: null,
+            },
+          },
+          {
+            // TODO
+            testName: 'can jump forward from one room to the successor room (across multiple days)',
+            roomDayMessageStructureString: `
+              [room1            ]     [room2                                                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
+              [day1 ]     [day2             ]     [day3                                                        ]
+              [page1]
+              [page2            ]
+                                      [page3                                                     ]
+            `,
+            archiveMessageLimit: 10,
+            startUrl: '/roomid/room1/date/2022/01/01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/02T01:00?at=$event3',
+              action: null,
+            },
+            page3: {
+              url: '/roomid/room2/date/2022/01/03T08:00?at=$event5',
+              action: null,
+            },
+          },
+          {
+            // TODO
+            testName:
+              'can jump forward from one room to the successor room (across multiple days and day gaps)',
+            roomDayMessageStructureString: `
+              [room1            ]     [room2                                                                   ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
+              [day1 ]     [day4             ]     [day6                                                        ]
+              [page1]
+              [page2            ]
+                                      [page3                                                     ]
+            `,
+            archiveMessageLimit: 10,
+            startUrl: '/roomid/room1/date/2022/01/01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/04T01:00?at=$event3',
+              action: null,
+            },
+            page3: {
+              url: '/roomid/room2/date/2022/01/06T08:00?at=$event5',
               action: null,
             },
           },
