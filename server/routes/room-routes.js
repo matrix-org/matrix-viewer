@@ -281,7 +281,7 @@ router.get(
       console.log(
         `jumping from ${new Date(
           ts
-        ).toISOString()} (${ts}) (fromCausalEventId=${fromCausalEventId}) in direction ${dir}`
+        ).toISOString()} (${ts}) (fromCausalEventId=${fromCausalEventId}) in direction ${dir} (roomId=${roomId}))`
       );
       let roomCreateEventId;
       // Find the closest event to the given timestamp
@@ -576,6 +576,13 @@ router.get(
         if (dir === DIRECTION.backward) {
           const { roomCreationTs, predecessorRoomId, predecessorViaServers } =
             await fetchPredecessorInfo(matrixAccessToken, roomId);
+
+          if (!predecessorRoomId) {
+            throw new StatusError(
+              404,
+              `No predecessor room found for ${roomId} so we can't jump backwards to anywhere (you already reached the end of the room)`
+            );
+          }
 
           // We have to join the predecessor room before we can fetch the successor info
           // (this could be our first time seeing the room)

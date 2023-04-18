@@ -52,7 +52,7 @@ const fetchRoomCreationInfo = traceFunction(async function (matrixAccessToken, r
     predecessorRoomId = data?.content?.predecessor?.room_id;
   }
 
-  return { eventId, roomCreationTs, predecessorRoomId };
+  return { roomCreationTs, predecessorRoomId };
 });
 
 const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, roomId) {
@@ -75,8 +75,8 @@ const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, ro
     predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
   }
   // Then fallback to the predecessor defined by the room creation event
-  else if (roomCreationInfoOutcome.predecessorRoomId) {
-    predecessorRoomId = roomCreationInfoOutcome.predecessorRoomId;
+  else if (roomCreationInfoOutcome.reason === undefined) {
+    ({ predecessorRoomId } = roomCreationInfoOutcome.value);
   }
 
   const { roomCreationTs } = roomCreationInfoOutcome;

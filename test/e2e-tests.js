@@ -784,7 +784,15 @@ describe('matrix-public-archive', () => {
             // String used to log out all possible events in the room
             function getDebugStringForEventsInRoomsAndLookForEventId(eventIdToLookFor) {
               return `For reference, here are all of the events in the rooms: ${JSON.stringify(
-                Object.fromEntries(fancyRoomIdToDebugEventsInRoom.entries()),
+                Object.fromEntries(
+                  Array.from(fancyRoomIdToDebugEventsInRoom.entries()).map((entry) => {
+                    const fancyRoomId = entry[0];
+                    const newKey = `${fancyRoomId} - ${fancyIdentifierToRoomIdMap.get(
+                      fancyRoomId
+                    )}`;
+                    return [newKey, entry[1]];
+                  })
+                ),
                 null,
                 2
               )
@@ -980,6 +988,16 @@ describe('matrix-public-archive', () => {
                 let relevantContentString = '';
                 if (event.type === 'm.room.message' && event.content.msgtype === 'm.text') {
                   relevantContentString = ` "${event.content.body}"`;
+                } else if (event.type === 'm.room.create') {
+                  const predecessorRoomId = event.content?.predecessor?.room_id;
+                  if (predecessorRoomId) {
+                    relevantContentString = ` "predecessor=${predecessorRoomId}"`;
+                  }
+                } else if (event.type === 'm.room.tombstone') {
+                  const replacementRoomId = event.content?.replacement_room;
+                  if (replacementRoomId) {
+                    relevantContentString = ` "successor=${replacementRoomId}"`;
+                  }
                 }
 
                 return `${event.type}${event.state_key ? ` (${event.state_key})` : ''}: ${
