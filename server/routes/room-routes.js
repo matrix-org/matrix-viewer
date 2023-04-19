@@ -23,6 +23,7 @@ const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const { removeMe_fetchRoomCreateEventId } = require('../lib/matrix-utils/fetch-room-data');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
+const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const {
   MS_LOOKUP,
@@ -868,15 +869,16 @@ router.get(
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
 
+    const pageOptions = {
+      title: `${roomData.name} - Matrix Public Archive`,
+      styles: [hydrogenStylesUrl, stylesUrl],
+      scripts: [jsBundleUrl],
+      locationHref: urlJoin(basePath, req.originalUrl),
+      shouldIndex,
+      cspNonce: res.locals.cspNonce,
+    };
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml({
-      pageOptions: {
-        title: `${roomData.name} - Matrix Public Archive`,
-        styles: [hydrogenStylesUrl, stylesUrl],
-        scripts: [jsBundleUrl],
-        locationHref: urlJoin(basePath, req.originalUrl),
-        shouldIndex,
-        cspNonce: res.locals.cspNonce,
-      },
+      pageOptions,
       vmRenderScriptFilePath: path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       vmRenderContext: {
         toTimestamp,
@@ -899,6 +901,8 @@ router.get(
         },
       },
     });
+
+    setHeadersToPreloadAssets(res, pageOptions);
 
     res.set('Content-Type', 'text/html');
     res.send(pageHtml);
