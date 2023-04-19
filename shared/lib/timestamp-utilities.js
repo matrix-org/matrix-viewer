@@ -70,19 +70,35 @@ function getUtcStartOfSecondTs(ts) {
   );
 }
 
-function areTimestampsFromSameUtcDay(aTs, bTs) {
+function doTimestampsShareRoundedUpUtcDay(aTs, bTs) {
+  return roundUpTimestampToUtcDay(aTs) === roundUpTimestampToUtcDay(bTs);
+}
+
+function doTimestampsShareRoundedUpUtcHour(aTs, bTs) {
+  return roundUpTimestampToUtcHour(aTs) === roundUpTimestampToUtcHour(bTs);
+}
+
+function doTimestampsShareRoundedUpUtcMinute(aTs, bTs) {
+  return roundUpTimestampToUtcMinute(aTs) === roundUpTimestampToUtcMinute(bTs);
+}
+
+function doTimestampsShareRoundedUpUtcSecond(aTs, bTs) {
+  return roundUpTimestampToUtcSecond(aTs) === roundUpTimestampToUtcSecond(bTs);
+}
+
+function doTimestampsStartFromSameUtcDay(aTs, bTs) {
   return getUtcStartOfDayTs(aTs) === getUtcStartOfDayTs(bTs);
 }
 
-function areTimestampsFromSameUtcHour(aTs, bTs) {
+function doTimestampsStartFromSameUtcHour(aTs, bTs) {
   return getUtcStartOfHourTs(aTs) === getUtcStartOfHourTs(bTs);
 }
 
-function areTimestampsFromSameUtcMinute(aTs, bTs) {
+function doTimestampsStartFromSameUtcMinute(aTs, bTs) {
   return getUtcStartOfMinuteTs(aTs) === getUtcStartOfMinuteTs(bTs);
 }
 
-function areTimestampsFromSameUtcSecond(aTs, bTs) {
+function doTimestampsStartFromSameUtcSecond(aTs, bTs) {
   return getUtcStartOfSecondTs(aTs) === getUtcStartOfSecondTs(bTs);
 }
 
@@ -91,12 +107,19 @@ module.exports = {
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,
   roundUpTimestampToUtcSecond,
+
   getUtcStartOfDayTs,
   getUtcStartOfHourTs,
   getUtcStartOfMinuteTs,
   getUtcStartOfSecondTs,
-  areTimestampsFromSameUtcDay,
-  areTimestampsFromSameUtcHour,
-  areTimestampsFromSameUtcMinute,
-  areTimestampsFromSameUtcSecond,
+
+  doTimestampsShareRoundedUpUtcDay,
+  doTimestampsShareRoundedUpUtcHour,
+  doTimestampsShareRoundedUpUtcMinute,
+  doTimestampsShareRoundedUpUtcSecond,
+
+  doTimestampsStartFromSameUtcDay,
+  doTimestampsStartFromSameUtcHour,
+  doTimestampsStartFromSameUtcMinute,
+  doTimestampsStartFromSameUtcSecond,
 };

@@ -36,14 +36,20 @@ const {
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,
   roundUpTimestampToUtcSecond,
+
   getUtcStartOfDayTs,
   getUtcStartOfHourTs,
   getUtcStartOfMinuteTs,
   getUtcStartOfSecondTs,
-  areTimestampsFromSameUtcDay,
-  areTimestampsFromSameUtcHour,
-  areTimestampsFromSameUtcMinute,
-  areTimestampsFromSameUtcSecond,
+
+  doTimestampsShareRoundedUpUtcHour,
+  doTimestampsShareRoundedUpUtcMinute,
+  doTimestampsShareRoundedUpUtcSecond,
+
+  doTimestampsStartFromSameUtcDay,
+  doTimestampsStartFromSameUtcHour,
+  doTimestampsStartFromSameUtcMinute,
+  doTimestampsStartFromSameUtcSecond,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 const config = require('../lib/config');
@@ -256,6 +262,8 @@ router.get(
       //
       // XXX: This is probably an edge-case flaw when there could be multiple events at
       // the same timestamp
+      //
+      // TODO: Remove the `- 1` when we have the MSC3999 causal event ID support
       ts = currentRangeStartTs - 1;
       fromCausalEventId = timelineStartEventId;
     } else if (dir === DIRECTION.forward) {
@@ -263,6 +271,8 @@ router.get(
       //
       // XXX: This is probably an edge-case flaw when there could be multiple events at
       // the same timestamp
+      //
+      // TODO: Remove the `+ 1` when we have the MSC3999 causal event ID support
       ts = currentRangeEndTs + 1;
       fromCausalEventId = timelineEndEventId;
     } else {
@@ -344,24 +354,45 @@ router.get(
       //
       // When jumping backwards, since a given room archive URL represents the end of
       // the day/time-period looking backward (scroll is also anchored to the bottom),
-      // we just need to get the user to the *next* previous time-period.
+      // we just need to move the user to the time-period just prior the current one.
       //
       // We are trying to avoid sending the user to the same time period they were just
       // viewing. i.e, if they were visiting `/2020/01/02T16:00:00` (displays messages
       // backwards from that time up to the limit), which had more messages than we
       // could display in that day, jumping backwards from the earliest displayed event
-      // in the displayed range, say `T12:00:05` would still give us the same day
-      // `/2020/01/02` and we want to redirect them to previous chunk from that same
-      // day, like `/2020/01/02T12:00:00`
+      // in the displayed range (say that occured on `T12:00:25`) would still give us
+      // the same day `/2020/01/02` and we want to redirect them to previous chunk from
+      // that same day that still encompasses the closest message looking backwards,
+      // like `/2020/01/02T13:00:00`
       if (dir === DIRECTION.backward) {
+        // `currentRangeEndTs` represents what is being displayed in the URL (we fetch
+        // from this time backwards to render a page):
+        //
+        //  - When the URL is `/date/2020/01/02`, `currentRangeEndTs=1578009599999`
+        //    (2020-01-02T23:59:59.999Z)
+        //  - When the URL is `/date/2022/11/16T02:00`, `currentRangeEndTs=1577930400000`
+        //   (2020-01-02T02:00:00.000Z)
+        //
+        // We choose `currentRangeEndTs` vs the `ts` (the jump point) because TODO: why?
+        //
+        // We use `doTimestampsStartFromSameUtcDay` for day precision because TODO: why?
         const fromSameDay =
-          tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent &&
+          doTimestampsStartFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
+        // We use `doTimestampsShareRoundedUpUtcX` for any time precision because TODO: why?
         const fromSameHour =
-          tsForClosestEvent && areTimestampsFromSameUtcHour(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent &&
+          doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
         const fromSameMinute =
-          tsForClosestEvent && areTimestampsFromSameUtcMinute(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent &&
+          doTimestampsShareRoundedUpUtcMinute(currentRangeEndTs, tsForClosestEvent);
         const fromSameSecond =
-          tsForClosestEvent && areTimestampsFromSameUtcSecond(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent &&
+          doTimestampsShareRoundedUpUtcSecond(currentRangeEndTs, tsForClosestEvent);
+        console.log('fromSameDay', fromSameDay);
+        console.log('fromSameHour', fromSameHour, ts, tsForClosestEvent, currentRangeEndTs);
+        console.log('fromSameMinute', fromSameMinute);
+        console.log('fromSameSecond', fromSameSecond);
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -476,7 +507,8 @@ router.get(
         }
         // Otherwise do the normal calculation: where we jumped to - where we jumped from
         else {
-          msGapFromJumpPointToLastMessage = tsOfLastMessage - currentRangeEndTs;
+          // TODO: Should we use `ts` be `currentRangeStartTs`?
+          msGapFromJumpPointToLastMessage = tsOfLastMessage - ts;
         }
         const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
         const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
@@ -485,12 +517,12 @@ router.get(
 
         // If the first message is on different day than the last message, then we know
         // there are messages on days before the last mesage and can safely round to the
-        // nearest day and see new content still.
+        // nearest day and still see new content.
         //
-        // We use this information to handle situations where we jump over multiple day
+        // We use this information to handle situations where we jump over multiple-day
         // gaps with no messages in between. In those cases, we don't want to round down
-        // where there are no messages in the gap.
-        const hasMessagesOnDayBeforeDayOfLastMessage = !areTimestampsFromSameUtcDay(
+        // to a day where there are no messages in the gap.
+        const hasMessagesOnDayBeforeDayOfLastMessage = !doTimestampsStartFromSameUtcDay(
           tsOfFirstMessage,
           tsOfLastMessage
         );
@@ -824,7 +856,7 @@ router.get(
     const isNewestEventFromSameDay =
       newestEvent &&
       newestEvent?.origin_server_ts &&
-      areTimestampsFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
+      doTimestampsStartFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
     // Check if we need to navigate forward to the successor room
     if (roomData.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
       // Jump to the successor room at the date/time the user is trying to visit at

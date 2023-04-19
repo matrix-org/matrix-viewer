@@ -7,15 +7,31 @@ const {
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,
   roundUpTimestampToUtcSecond,
+
   getUtcStartOfDayTs,
   getUtcStartOfHourTs,
   getUtcStartOfMinuteTs,
   getUtcStartOfSecondTs,
-  areTimestampsFromSameUtcDay,
-  areTimestampsFromSameUtcHour,
-  areTimestampsFromSameUtcMinute,
-  areTimestampsFromSameUtcSecond,
+
+  doTimestampsShareRoundedUpUtcDay,
+  doTimestampsShareRoundedUpUtcHour,
+  doTimestampsShareRoundedUpUtcMinute,
+  doTimestampsShareRoundedUpUtcSecond,
+
+  doTimestampsStartFromSameUtcDay,
+  doTimestampsStartFromSameUtcHour,
+  doTimestampsStartFromSameUtcMinute,
+  doTimestampsStartFromSameUtcSecond,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
+
+// Handles things like `Uncaught RangeError: Invalid time value`
+function getStringifiedTimestampForTestTitle(inputTs) {
+  try {
+    new Date(inputTs).toISOString();
+  } catch (err) {
+    return `Invalid time value (${inputTs})`;
+  }
+}
 
 describe('timestamp-utilities', () => {
   describe('roundUpTimestampToUtcX', () => {
@@ -272,18 +288,18 @@ describe('timestamp-utilities', () => {
     });
   });
 
-  describe('areTimestampsFromSameUtcX', () => {
-    function testAreTimestampsFromSameXFunction(areTimestampsFromSameXFunctionToTest, testMeta) {
-      it(`${testMeta.description} -- A=${new Date(
+  describe('doTimestampsStartFromSameUtcX', () => {
+    function testDoTimestampsStartFromSameUtcX(doTimestampsStartFromSameUtcXToTest, testMeta) {
+      it(`${testMeta.description} -- A=${getStringifiedTimestampForTestTitle(
         testMeta.inputATs
-      ).toISOString()} and B=${new Date(testMeta.inputBTs).toISOString()} should${
+      )} and B=${getStringifiedTimestampForTestTitle(testMeta.inputBTs)} should${
         testMeta.expected ? '' : ' *NOT*'
       } be from the same day`, () => {
         assert(testMeta.inputATs);
         assert(testMeta.inputBTs);
         assert(testMeta.expected !== undefined);
 
-        const actualValue = areTimestampsFromSameXFunctionToTest(
+        const actualValue = doTimestampsStartFromSameUtcXToTest(
           testMeta.inputATs,
           testMeta.inputBTs
         );
@@ -291,7 +307,7 @@ describe('timestamp-utilities', () => {
       });
     }
 
-    describe('areTimestampsFromSameUtcDay', () => {
+    describe('doTimestampsStartFromSameUtcDay', () => {
       [
         {
           description: 'same timestamp is considered from the same day',
@@ -333,11 +349,11 @@ describe('timestamp-utilities', () => {
           expected: false,
         },
       ].forEach((testMeta) => {
-        testAreTimestampsFromSameXFunction(areTimestampsFromSameUtcDay, testMeta);
+        testDoTimestampsStartFromSameUtcX(doTimestampsStartFromSameUtcDay, testMeta);
       });
     });
 
-    describe('areTimestampsFromSameUtcHour', () => {
+    describe('doTimestampsStartFromSameUtcHour', () => {
       [
         {
           description: 'same timestamp is considered from the same hour',
@@ -386,11 +402,11 @@ describe('timestamp-utilities', () => {
           expected: false,
         },
       ].forEach((testMeta) => {
-        testAreTimestampsFromSameXFunction(areTimestampsFromSameUtcHour, testMeta);
+        testDoTimestampsStartFromSameUtcX(doTimestampsStartFromSameUtcHour, testMeta);
       });
     });
 
-    describe('areTimestampsFromSameUtcMinute', () => {
+    describe('doTimestampsStartFromSameUtcMinute', () => {
       [
         {
           description: 'same timestamp is considered from the same minute',
@@ -439,11 +455,11 @@ describe('timestamp-utilities', () => {
           expected: false,
         },
       ].forEach((testMeta) => {
-        testAreTimestampsFromSameXFunction(areTimestampsFromSameUtcMinute, testMeta);
+        testDoTimestampsStartFromSameUtcX(doTimestampsStartFromSameUtcMinute, testMeta);
       });
     });
 
-    describe('areTimestampsFromSameUtcSecond', () => {
+    describe('doTimestampsStartFromSameUtcSecond', () => {
       [
         {
           description: 'same timestamp is considered from the same second',
@@ -492,7 +508,243 @@ describe('timestamp-utilities', () => {
           expected: false,
         },
       ].forEach((testMeta) => {
-        testAreTimestampsFromSameXFunction(areTimestampsFromSameUtcSecond, testMeta);
+        testDoTimestampsStartFromSameUtcX(doTimestampsStartFromSameUtcSecond, testMeta);
+      });
+    });
+  });
+
+  describe('doTimestampsShareRoundedUpUtcX', () => {
+    function testDoTimestampsShareRoundedUpUtcX(doTimestampsShareRoundedUpUtcXToTest, testMeta) {
+      it(`${testMeta.description} -- A=${getStringifiedTimestampForTestTitle(
+        testMeta.inputATs
+      )} and B=${getStringifiedTimestampForTestTitle(testMeta.inputBTs)} should${
+        testMeta.expected ? '' : ' *NOT*'
+      } share rounded up day`, () => {
+        assert(testMeta.inputATs);
+        assert(testMeta.inputBTs);
+        assert(testMeta.expected !== undefined);
+
+        const actualValue = doTimestampsShareRoundedUpUtcXToTest(
+          testMeta.inputATs,
+          testMeta.inputBTs
+        );
+        assert.strictEqual(actualValue, testMeta.expected);
+      });
+    }
+
+    describe('doTimestampsShareRoundedUpUtcDay', () => {
+      [
+        {
+          description: 'same timestamp is considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description: 'timestamp from the middle of the same day is considered sharing',
+          inputATs: new Date('2022-01-15T01:03:03.003Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:05:05.005Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at extremes of the day for this function is considered sharing (.001 rounds up to the next day)',
+          inputATs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          inputBTs: new Date('2022-01-16T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at 00:00:00.000 extreme is a different day than anything after it',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp from different days (exactly 24 hours apart) should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-16T00:00:00.000Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp that is only 1ms from the other at end of the should be considered sharing',
+          inputATs: new Date('2022-01-14T23:59:59.999Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp that is less than a day apart but from different days should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T04:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-14T20:00:00.000Z').getTime(),
+          expected: false,
+        },
+      ].forEach((testMeta) => {
+        testDoTimestampsShareRoundedUpUtcX(doTimestampsShareRoundedUpUtcDay, testMeta);
+      });
+    });
+
+    describe('doTimestampsShareRoundedUpUtcHour', () => {
+      [
+        {
+          description: 'same timestamp is considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description: 'timestamp from the middle of the same hour is considered sharing',
+          inputATs: new Date('2022-01-15T05:03:03.003Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:35:05.005Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at extremes of the hour for this function is considered sharing (.001 rounds up to the next day)',
+          inputATs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          inputBTs: new Date('2022-01-15T01:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at 00:00:00.000 extreme is a different hour than anything after it',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp from different hours (exactly 60 minutes apart) should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T01:00:00.000Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp that is only 1ms from the other at end of the should be considered sharing',
+          inputATs: new Date('2022-01-14T23:59:59.999Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp that is less than a hour apart but from different hours should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T04:45:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:10:00.000Z').getTime(),
+          expected: false,
+        },
+      ].forEach((testMeta) => {
+        testDoTimestampsShareRoundedUpUtcX(doTimestampsShareRoundedUpUtcHour, testMeta);
+      });
+    });
+
+    describe('doTimestampsShareRoundedUpUtcMinute', () => {
+      [
+        {
+          description: 'same timestamp is considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description: 'timestamp from the middle of the same minute is considered sharing',
+          inputATs: new Date('2022-01-15T05:30:03.003Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:30:35.005Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at extremes of the minute for this function is considered sharing (.001 rounds up to the next day)',
+          inputATs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:01:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at 00:00:00.000 extreme is a different minute than anything after it',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp from different minutes (exactly 60 seconds apart) should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:01:00.000Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp that is only 1ms from the other at end of the should be considered sharing',
+          inputATs: new Date('2022-01-14T23:59:59.999Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp that is less than a minute apart but from different minutes should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T05:45:45.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:46:10.000Z').getTime(),
+          expected: false,
+        },
+      ].forEach((testMeta) => {
+        testDoTimestampsShareRoundedUpUtcX(doTimestampsShareRoundedUpUtcMinute, testMeta);
+      });
+    });
+
+    describe('doTimestampsShareRoundedUpUtcSecond', () => {
+      [
+        {
+          description: 'same timestamp is considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description: 'timestamp from the middle of the same second is considered sharing',
+          inputATs: new Date('2022-01-15T05:30:35.003Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:30:35.035Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at extremes of the second for this function is considered sharing (.001 rounds up to the next day)',
+          inputATs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:01.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp at 00:00:00.000 extreme is a different second than anything after it',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.001Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp from different seconds (exactly 1000ms apart) should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:01.000Z').getTime(),
+          expected: false,
+        },
+        {
+          description:
+            'timestamp that is only 1ms from the other at end of the should be considered sharing',
+          inputATs: new Date('2022-01-14T23:59:59.999Z').getTime(),
+          inputBTs: new Date('2022-01-15T00:00:00.000Z').getTime(),
+          expected: true,
+        },
+        {
+          description:
+            'timestamp that is less than a second apart but from different seconds should *NOT* be considered sharing',
+          inputATs: new Date('2022-01-15T04:45:45.750Z').getTime(),
+          inputBTs: new Date('2022-01-15T05:45:46.110Z').getTime(),
+          expected: false,
+        },
+      ].forEach((testMeta) => {
+        testDoTimestampsShareRoundedUpUtcX(doTimestampsShareRoundedUpUtcSecond, testMeta);
       });
     });
   });

@@ -940,7 +940,8 @@ describe('matrix-public-archive', () => {
               // Just spread things out a bit so the event times are more obvious
               // and stand out from each other while debugging and so we just have
               // to deal with hour time slicing
-              const eventSendTimeIncrement = ONE_HOUR_IN_MS;
+              const eventSendTimeIncrement =
+                testCase.timeIncrementBetweenMessages || ONE_HOUR_IN_MS;
 
               for (const eventMeta of room.events) {
                 const archiveDate = new Date(Date.UTC(2022, 0, eventMeta.dayNumber, 0, 0, 0, 1));
@@ -1748,6 +1749,31 @@ describe('matrix-public-archive', () => {
             },
             page2: {
               url: '/roomid/room1/date/2022/01/02?at=$event7',
+              action: null,
+            },
+          },
+          {
+            // TODO
+            testName:
+              'can jump backward to the previous activity when less than an hour between all messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1                                                                              ]
+                                                                    [page1                       ]
+                                      [page2                  ]
+            `,
+            // More than a minute for each but less than an hour when you multiply this
+            // across all of messages
+            timeIncrementBetweenMessages: 2 * ONE_MINUTE_IN_MS,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01T01:00',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01T01:00',
+              action: 'previous',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/01T00:17?at=$event9',
               action: null,
             },
           },
