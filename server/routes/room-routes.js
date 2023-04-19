@@ -378,21 +378,23 @@ router.get(
         // We use `doTimestampsStartFromSameUtcDay` for day precision because TODO: why?
         // ... because a day should be from T00:00:00.000 to T23:59:59.999.
         const fromSameDay =
-          tsForClosestEvent &&
-          doTimestampsStartFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && doTimestampsStartFromSameUtcDay(ts, tsForClosestEvent);
         // We use `doTimestampsShareRoundedUpUtcX` for any time precision because TODO:
         // why? ... so that when the URL is `T02:00`, a message from `T01:23` will still
         // be considered from the same hour. But also when the URL is `T01:00`, a
         // message from `T01:23` will be considered from a *different* hour.
         const fromSameHour =
           tsForClosestEvent &&
-          doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
+          //doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
+          doTimestampsStartFromSameUtcHour(ts, tsForClosestEvent);
         const fromSameMinute =
           tsForClosestEvent &&
-          doTimestampsShareRoundedUpUtcMinute(currentRangeEndTs, tsForClosestEvent);
+          //doTimestampsShareRoundedUpUtcMinute(currentRangeEndTs, tsForClosestEvent);
+          doTimestampsStartFromSameUtcMinute(ts, tsForClosestEvent);
         const fromSameSecond =
           tsForClosestEvent &&
-          doTimestampsShareRoundedUpUtcSecond(currentRangeEndTs, tsForClosestEvent);
+          //doTimestampsShareRoundedUpUtcSecond(currentRangeEndTs, tsForClosestEvent);
+          doTimestampsStartFromSameUtcSecond(ts, tsForClosestEvent);
         console.log('fromSameDay', fromSameDay);
         console.log('fromSameHour', fromSameHour, ts, tsForClosestEvent, currentRangeEndTs);
         console.log('fromSameMinute', fromSameMinute);
@@ -609,8 +611,12 @@ router.get(
       // we should try to go to the predecessor/successor room appropriately.
       if (is404Error) {
         if (dir === DIRECTION.backward) {
-          const { roomCreationTs, predecessorRoomId, predecessorViaServers } =
-            await fetchPredecessorInfo(matrixAccessToken, roomId);
+          const {
+            currentRoomCreationTs,
+            predecessorRoomId,
+            predecessorLastKnownEventId,
+            predecessorViaServers,
+          } = await fetchPredecessorInfo(matrixAccessToken, roomId);
 
           if (!predecessorRoomId) {
             throw new StatusError(
@@ -626,6 +632,23 @@ router.get(
             successorRoomId: successorRoomIdForPredecessor,
             successorSetTs: successorSetTsForPredecessor,
           } = await fetchSuccessorInfo(matrixAccessToken, predecessorRoomId);
+
+          let tombstoneEventId;
+          if (!predecessorLastKnownEventId) {
+            // This is a hack because we can't get the tombstone event ID directly from
+            // `fetchSuccessorInfo(...)` and the `/state?format=event`
+            // endpoint, so we have to do this trick. Related to
+            // https://github.com/matrix-org/synapse/issues/15454
+            //
+            // We just assume this is the tombstone event ID but in any case it gets us to
+            // an event that happened at the same time.
+            ({ eventId: tombstoneEventId } = await timestampToEvent({
+              accessToken: matrixAccessToken,
+              roomId: predecessorRoomId,
+              ts: successorSetTsForPredecessor,
+              direction: DIRECTION.backward,
+            }));
+          }
 
           // Try to continue from the tombstone event in the predecessor room because
           // that is the signal that the room admins gave to indicate the end of the
@@ -643,7 +666,7 @@ router.get(
           // room tombstone which will work just fine and as expected for normal room
           // upgrade scenarios.
           else {
-            continueAtTsInPredecessorRoom = roomCreationTs;
+            continueAtTsInPredecessorRoom = currentRoomCreationTs;
           }
 
           if (
@@ -665,17 +688,22 @@ router.get(
           console.log(
             `/jump hit the beginning of the room, jumping to predecessorRoomId=${predecessorRoomId}`
           );
+          // Going backwards, we already know where to go so we can navigate straight there
           res.redirect(
-            matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(predecessorRoomId, {
-              viaServers: Array.from(predecessorViaServers || []),
-              dir: DIRECTION.backward,
-              currentRangeStartTs: continueAtTsInPredecessorRoom,
-              currentRangeEndTs: currentRangeEndTs,
-              // We don't need to define
-              // `currentRangeStartEventId`/`currentRangeEndEventId` here because we're
-              // jumping to a completely new room so the event IDs won't pertain to the
-              // new room and we don't have any to use anyway.
-            })
+            matrixPublicArchiveURLCreator.archiveUrlForDate(
+              predecessorRoomId,
+              new Date(continueAtTsInPredecessorRoom),
+              {
+                viaServers: Array.from(predecessorViaServers || []),
+                scrollStartEventId: predecessorLastKnownEventId || tombstoneEventId,
+                // We can just visit a rough time where the tombstone is as we assume
+                // it's the last event in the room or at least the last event we care
+                // about. A given day should be good for most cases but it's possible
+                // that messages are sent after the tombstone and we end up missing the
+                // tombstone.
+                preferredPrecision: TIME_PRECISION_VALUES.none,
+              }
+            )
           );
           return;
         } else if (dir === DIRECTION.forward) {

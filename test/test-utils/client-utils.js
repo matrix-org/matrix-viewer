@@ -214,7 +214,7 @@ async function upgradeTestRoom({
   const newRoomid = await createTestRoom(client, createOptions);
 
   // Now send the tombstone event pointing from the old room to the new room
-  await sendEvent({
+  const tombstoneEventId = await sendEvent({
     client,
     roomId: oldRoomId,
     eventType: 'm.room.tombstone',
@@ -225,7 +225,10 @@ async function upgradeTestRoom({
     timestamp,
   });
 
-  return newRoomid;
+  return {
+    newRoomid,
+    tombstoneEventId,
+  };
 }
 
 async function getCanonicalAlias({ client, roomId }) {

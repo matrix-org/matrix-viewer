@@ -911,7 +911,7 @@ describe('matrix-public-archive', () => {
             for (const [roomIndex, room] of rooms.entries()) {
               let roomId;
               if (previousRoomId) {
-                roomId = await upgradeTestRoom({
+                const { newRoomid, tombstoneEventId } = await upgradeTestRoom({
                   client,
                   oldRoomId: previousRoomId,
                   //useMsc3946DynamicPredecessor: TODO: Enable this when we have a way to configure it.
@@ -919,6 +919,11 @@ describe('matrix-public-archive', () => {
                   // things are sequential `/timestamp_to_event` doesn't get confused.
                   timestamp: lastEventTsUsedInPreviousRoom + 1,
                 });
+                roomId = newRoomid;
+
+                const fancyEventId = `$tombstone`;
+                fancyIdentifierToEventIdMap.set(fancyEventId, tombstoneEventId);
+                eventIdToFancyIdentifierMap.set(tombstoneEventId, fancyEventId);
               } else {
                 // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it
                 // supports it, see https://github.com/matrix-org/matrix-public-archive/issues/169
@@ -1874,7 +1879,7 @@ describe('matrix-public-archive', () => {
               action: 'previous',
             },
             page2: {
-              url: '/roomid/room1/date/2022/01/02?at=$event7',
+              url: '/roomid/room1/date/2022/01/02?at=$tombstone',
               action: null,
             },
           },
@@ -1897,7 +1902,7 @@ describe('matrix-public-archive', () => {
               action: 'previous',
             },
             page2: {
-              url: '/roomid/room1/date/2022/01/02T05:00?at=$event7',
+              url: '/roomid/room1/date/2022/01/02?at=$tombstone',
               action: null,
             },
           },

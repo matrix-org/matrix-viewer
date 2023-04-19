@@ -20,7 +20,11 @@ function getStateEndpointForRoomIdAndEventType(roomId, eventType) {
   );
 }
 
-// TODO: Remove this when we have MSC3999 (see usage)
+// Unfortunately, we can't just get the event ID from the `/state?format=event`
+// endpoint, so we have to do this trick. Related to
+// https://github.com/matrix-org/synapse/issues/15454
+//
+// TODO: Remove this when we have MSC3999 (because it's the only usage)
 const removeMe_fetchRoomCreateEventId = traceFunction(async function (matrixAccessToken, roomId) {
   const { data } = await fetchEndpointAsJson(
     urlJoin(
@@ -46,13 +50,15 @@ const fetchRoomCreationInfo = traceFunction(async function (matrixAccessToken, r
 
   let roomCreationTs;
   let predecessorRoomId;
+  let predecessorLastKnownEventId;
   if (stateCreateResDataOutcome.reason === undefined) {
     const { data } = stateCreateResDataOutcome.value;
     roomCreationTs = data?.origin_server_ts;
+    predecessorLastKnownEventId = data?.content?.event_id;
     predecessorRoomId = data?.content?.predecessor?.room_id;
   }
 
-  return { roomCreationTs, predecessorRoomId };
+  return { roomCreationTs, predecessorRoomId, predecessorLastKnownEventId };
 });
 
 const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, roomId) {
@@ -67,23 +73,28 @@ const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, ro
   ]);
 
   let predecessorRoomId;
+  let predecessorLastKnownEventId;
   let predecessorViaServers;
   // Prefer the dynamic predecessor from the dedicated state event
   if (statePredecessorResDataOutcome.reason === undefined) {
     const { data } = statePredecessorResDataOutcome.value;
     predecessorRoomId = data?.content?.predecessor_room_id;
+    predecessorLastKnownEventId = data?.content?.last_known_event_id;
     predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
   }
   // Then fallback to the predecessor defined by the room creation event
   else if (roomCreationInfoOutcome.reason === undefined) {
-    ({ predecessorRoomId } = roomCreationInfoOutcome.value);
+    ({ predecessorRoomId, predecessorLastKnownEventId } = roomCreationInfoOutcome.value);
   }
 
-  const { roomCreationTs } = roomCreationInfoOutcome;
+  const { roomCreationTs: currentRoomCreationTs } = roomCreationInfoOutcome;
 
   return {
-    roomCreationTs,
+    // This is prefixed with "current" so we don't get this confused with the
+    // predecessor room creation timestamp.
+    currentRoomCreationTs,
     predecessorRoomId,
+    predecessorLastKnownEventId,
     predecessorViaServers,
   };
 });
@@ -177,9 +188,15 @@ const fetchRoomData = traceFunction(async function (matrixAccessToken, roomId) {
 
   let roomCreationTs;
   let predecessorRoomId;
+  let predecessorLastKnownEventId;
   let predecessorViaServers;
   if (predecessorInfoOutcome.reason === undefined) {
-    ({ roomCreationTs, predecessorRoomId, predecessorViaServers } = predecessorInfoOutcome.value);
+    ({
+      currentRoomCreationTs: roomCreationTs,
+      predecessorRoomId,
+      predecessorLastKnownEventId,
+      predecessorViaServers,
+    } = predecessorInfoOutcome.value);
   }
   let successorRoomId;
   let successorSetTs;
@@ -196,6 +213,7 @@ const fetchRoomData = traceFunction(async function (matrixAccessToken, roomId) {
     joinRule,
     roomCreationTs,
     predecessorRoomId,
+    predecessorLastKnownEventId,
     predecessorViaServers,
     successorRoomId,
     successorSetTs,
