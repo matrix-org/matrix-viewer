@@ -317,7 +317,6 @@ router.get(
       // start of the room.
       //
       // XXX: Once we have MSC3999, we can remove this check in favor of that mechanism
-      // (TODO: Create issue to track this)
       if (
         dir === DIRECTION.forward &&
         timelineEndEventId &&
