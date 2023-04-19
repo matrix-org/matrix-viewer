@@ -42,6 +42,7 @@ const {
   getUtcStartOfMinuteTs,
   getUtcStartOfSecondTs,
 
+  doTimestampsShareRoundedUpUtcDay,
   doTimestampsShareRoundedUpUtcHour,
   doTimestampsShareRoundedUpUtcMinute,
   doTimestampsShareRoundedUpUtcSecond,
@@ -378,27 +379,55 @@ router.get(
         // We use `doTimestampsStartFromSameUtcDay` for day precision because TODO: why?
         // ... because a day should be from T00:00:00.000 to T23:59:59.999.
         const fromSameDay =
-          tsForClosestEvent && doTimestampsStartFromSameUtcDay(ts, tsForClosestEvent);
+          tsForClosestEvent &&
+          doTimestampsStartFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
         // We use `doTimestampsShareRoundedUpUtcX` for any time precision because TODO:
         // why? ... so that when the URL is `T02:00`, a message from `T01:23` will still
         // be considered from the same hour. But also when the URL is `T01:00`, a
         // message from `T01:23` will be considered from a *different* hour.
         const fromSameHour =
           tsForClosestEvent &&
-          //doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
-          doTimestampsStartFromSameUtcHour(ts, tsForClosestEvent);
+          doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
+        //doTimestampsStartFromSameUtcHour(ts, tsForClosestEvent);
         const fromSameMinute =
           tsForClosestEvent &&
-          //doTimestampsShareRoundedUpUtcMinute(currentRangeEndTs, tsForClosestEvent);
-          doTimestampsStartFromSameUtcMinute(ts, tsForClosestEvent);
+          doTimestampsShareRoundedUpUtcMinute(currentRangeEndTs, tsForClosestEvent);
+        //doTimestampsStartFromSameUtcMinute(ts, tsForClosestEvent);
         const fromSameSecond =
           tsForClosestEvent &&
-          //doTimestampsShareRoundedUpUtcSecond(currentRangeEndTs, tsForClosestEvent);
-          doTimestampsStartFromSameUtcSecond(ts, tsForClosestEvent);
+          doTimestampsShareRoundedUpUtcSecond(currentRangeEndTs, tsForClosestEvent);
+        //doTimestampsStartFromSameUtcSecond(ts, tsForClosestEvent);
         console.log('fromSameDay', fromSameDay);
         console.log('fromSameHour', fromSameHour, ts, tsForClosestEvent, currentRangeEndTs);
         console.log('fromSameMinute', fromSameMinute);
         console.log('fromSameSecond', fromSameSecond);
+
+        // TODO: Give some context for this logic
+        const currentRangeFromSameDay = doTimestampsStartFromSameUtcDay(
+          currentRangeStartTs,
+          tsForClosestEvent
+        );
+        const currentRangeFromSameHour = doTimestampsShareRoundedUpUtcHour(
+          currentRangeStartTs,
+          tsForClosestEvent
+        );
+        const currentRangeFromSameMinute = doTimestampsShareRoundedUpUtcMinute(
+          currentRangeStartTs,
+          tsForClosestEvent
+        );
+        const currentRangeFromSameSecond = doTimestampsShareRoundedUpUtcSecond(
+          currentRangeStartTs,
+          tsForClosestEvent
+        );
+        console.log('currentRangeFromSameDay', currentRangeFromSameDay);
+        console.log('currentRangeFromSameHour', currentRangeFromSameHour);
+        console.log('currentRangeFromSameMinute', currentRangeFromSameMinute);
+        console.log(
+          'currentRangeFromSameSecond',
+          currentRangeFromSameSecond,
+          currentRangeStartTs,
+          tsForClosestEvent
+        );
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -410,28 +439,28 @@ router.get(
         // XXX: If there is too many messages all within the same second, people will be
         // stuck visiting the same page over and over every time they try to jump
         // backwards from that range.
-        if (fromSameSecond) {
+        if (fromSameSecond || currentRangeFromSameSecond) {
           newOriginServerTs = tsForClosestEvent;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // The closest event is from the same minute we tried to jump from, we will need
         // to round up to the nearest second so that the URL encompasses the closest
         // event looking backwards
-        else if (fromSameMinute) {
+        else if (fromSameMinute || currentRangeFromSameMinute) {
           newOriginServerTs = roundUpTimestampToUtcSecond(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // The closest event is from the same hour we tried to jump from, we will need
         // to round up to the nearest minute so that the URL encompasses the closest
         // event looking backwards
-        else if (fromSameHour) {
+        else if (fromSameHour || currentRangeFromSameHour) {
           newOriginServerTs = roundUpTimestampToUtcMinute(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // The closest event is from the same day we tried to jump from, we will need to
         // round up to the nearest hour so that the URL encompasses the closest event
         // looking backwards
-        else if (fromSameDay) {
+        else if (fromSameDay || currentRangeFromSameDay) {
           newOriginServerTs = roundUpTimestampToUtcHour(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }

@@ -1414,17 +1414,14 @@ describe('matrix-public-archive', () => {
             // From the first page with too many messages, starting at event5(page1
             // rangeStart), we look backwards for the closest event. Because we find
             // event4 as the closest, which is from a different day from event9(page1
-            // rangeEnd), we can just display the day where event5 resides.
-            //
-            // Even though there is overlap between
-            // the pages, our scroll continues from the event where the 1st page starts.
+            // rangeEnd), we can just display the time where event4 resides.
             testName: 'can jump backward to the previous activity',
             roomDayMessageStructureString: `
               [room1                                                               ]
               1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12
               [day1       ]     [day2       ]     [day3       ]     [day4          ]
                                       [page1                  ]
-                    [page2                  ]
+              [page2            ]
             `,
             archiveMessageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/03',
@@ -1435,7 +1432,7 @@ describe('matrix-public-archive', () => {
             page2: {
               // Continuing from the first event of day2 since we already saw the rest
               // of day2 in the first page
-              url: '/roomid/room1/date/2022/01/02?at=$event4',
+              url: '/roomid/room1/date/2022/01/02T01:00?at=$event4',
               action: null,
             },
           },
@@ -1857,6 +1854,7 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          // TODO: Add tests for "less than X" for the forwards direction
         ];
 
         const jumpBackwardPredecessorTestCases = [
