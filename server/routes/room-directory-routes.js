@@ -65,9 +65,20 @@ router.get(
     const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-directory.es.js');
 
-    const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
-      path.resolve(__dirname, '../../shared/room-directory-vm-render-script.js'),
-      {
+    const pageHtml = await renderHydrogenVmRenderScriptToPageHtml({
+      pageOptions: {
+        title: `Matrix Public Archive`,
+        styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
+        scripts: [jsBundleUrl],
+        locationHref: urlJoin(basePath, req.originalUrl),
+        shouldIndex,
+        cspNonce: res.locals.cspNonce,
+      },
+      vmRenderScriptFilePath: path.resolve(
+        __dirname,
+        '../../shared/room-directory-vm-render-script.js'
+      ),
+      vmRenderContext: {
         rooms,
         roomFetchError: roomFetchError
           ? {
@@ -89,15 +100,7 @@ router.get(
           matrixServerName,
         },
       },
-      {
-        title: `Matrix Public Archive`,
-        styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
-        scripts: [jsBundleUrl],
-        locationHref: urlJoin(basePath, req.originalUrl),
-        shouldIndex,
-        cspNonce: res.locals.cspNonce,
-      }
-    );
+    });
 
     res.set('Content-Type', 'text/html');
     res.send(pageHtml);
