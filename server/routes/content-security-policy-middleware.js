@@ -8,7 +8,7 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
 function contentSecurityPolicyMiddleware(req, res, next) {
-  const nonce = crypto.randomBytes(16).toString('hex');
+  const cspNonce = crypto.randomBytes(16).toString('hex');
 
   // Based on https://web.dev/strict-csp/
   const directives = [
@@ -20,7 +20,7 @@ function contentSecurityPolicyMiddleware(req, res, next) {
     // 'unsafe-inline' as a fallback. All recent browsers will ignore 'unsafe-inline' if
     // a CSP nonce or hash is present. (via
     // https://web.dev/strict-csp/#step-4-add-fallbacks-to-support-safari-and-older-browsers)
-    `script-src 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline';`,
+    `script-src 'nonce-${cspNonce}' 'strict-dynamic' https: 'unsafe-inline';`,
     // Hydrogen uses a bunch of inline styles and `style-src-attr` isn't well supported
     // in Firefox to allow it specifically. In the future, when it has better support we
     // should switch to a strict nonce based style directive.
@@ -43,7 +43,7 @@ function contentSecurityPolicyMiddleware(req, res, next) {
   res.set('Content-Security-Policy', directives.join(' '));
 
   // Make this available for down-stream routes to reference and use
-  res.locals.cspNonce = nonce;
+  res.locals.cspNonce = cspNonce;
 
   next();
 }

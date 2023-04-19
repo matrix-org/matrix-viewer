@@ -868,10 +868,17 @@ router.get(
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
 
-    // XXX: The `renderHydrogenVmRenderScriptToPageHtml` API surface is pretty awkward
-    const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
-      path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
-      {
+    const pageHtml = await renderHydrogenVmRenderScriptToPageHtml({
+      pageOptions: {
+        title: `${roomData.name} - Matrix Public Archive`,
+        styles: [hydrogenStylesUrl, stylesUrl],
+        scripts: [jsBundleUrl],
+        locationHref: urlJoin(basePath, req.originalUrl),
+        shouldIndex,
+        cspNonce: res.locals.cspNonce,
+      },
+      vmRenderScriptFilePath: path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
+      vmRenderContext: {
         toTimestamp,
         precisionFromUrl,
         roomData: {
@@ -891,15 +898,7 @@ router.get(
           matrixServerUrl: matrixServerUrl,
         },
       },
-      {
-        title: `${roomData.name} - Matrix Public Archive`,
-        styles: [hydrogenStylesUrl, stylesUrl],
-        scripts: [jsBundleUrl],
-        locationHref: urlJoin(basePath, req.originalUrl),
-        shouldIndex,
-        cspNonce: res.locals.cspNonce,
-      }
-    );
+    });
 
     res.set('Content-Type', 'text/html');
     res.send(pageHtml);

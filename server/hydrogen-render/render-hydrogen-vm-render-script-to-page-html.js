@@ -7,11 +7,11 @@ const renderHydrogenToString = require('../hydrogen-render/render-hydrogen-to-st
 const sanitizeHtml = require('../lib/sanitize-html');
 const safeJson = require('../lib/safe-json');
 
-async function renderHydrogenVmRenderScriptToPageHtml(
+async function renderHydrogenVmRenderScriptToPageHtml({
+  pageOptions,
   vmRenderScriptFilePath,
   vmRenderContext,
-  pageOptions
-) {
+}) {
   assert(vmRenderScriptFilePath);
   assert(vmRenderContext);
   assert(pageOptions);
