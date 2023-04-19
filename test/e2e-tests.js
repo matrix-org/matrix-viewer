@@ -1014,11 +1014,6 @@ describe('matrix-public-archive', () => {
               fancyRoomIdToDebugEventsInRoom.set(fancyRoomId, eventDebugStrings);
             }
 
-            console.log(
-              'getDebugStringForEventsInRoomsAndLookForEventId()\n',
-              getDebugStringForEventsInRoomsAndLookForEventId()
-            );
-
             // Now Test
             // --------------------------------------
             // --------------------------------------

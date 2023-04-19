@@ -282,11 +282,6 @@ router.get(
       // updated value between each e2e test
       const archiveMessageLimit = config.get('archiveMessageLimit');
 
-      console.log(
-        `jumping from ${new Date(
-          ts
-        ).toISOString()} (${ts}) (fromCausalEventId=${fromCausalEventId}) in direction ${dir} (roomId=${roomId}))`
-      );
       let roomCreateEventId;
       // Find the closest event to the given timestamp
       [{ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent }, roomCreateEventId] =
@@ -309,12 +304,6 @@ router.get(
           }),
           removeMe_fetchRoomCreateEventId(matrixAccessToken, roomId),
         ]);
-      console.log(
-        'found eventIdForClosestEvent',
-        eventIdForClosestEvent,
-        new Date(tsForClosestEvent).toISOString(),
-        tsForClosestEvent
-      );
 
       // Without MSC3999, we currently only detect one kind of loop where the
       // `m.room.create` has a timestamp that comes after the timestamp massaged events
@@ -371,10 +360,6 @@ router.get(
         const fromSameSecond =
           tsForClosestEvent &&
           areTimestampsFromSameUtcSecond(currentRangeStartTs, tsForClosestEvent);
-        console.log('fromSameDay', fromSameDay);
-        console.log('fromSameHour', fromSameHour, ts, tsForClosestEvent, currentRangeEndTs);
-        console.log('fromSameMinute', fromSameMinute);
-        console.log('fromSameSecond', fromSameSecond);
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -458,21 +443,9 @@ router.get(
 
         const firstMessage = messageResData.chunk[0];
         const tsOfFirstMessage = firstMessage.origin_server_ts;
-        console.log(
-          'tsOfFirstMessage',
-          new Date(tsOfFirstMessage).toISOString(),
-          tsOfFirstMessage,
-          firstMessage.event_id
-        );
 
         const lastMessage = messageResData.chunk[messageResData.chunk.length - 1];
         const tsOfLastMessage = lastMessage.origin_server_ts;
-        console.log(
-          'tsOfLastMessage',
-          new Date(tsOfLastMessage).toISOString(),
-          tsOfLastMessage,
-          lastMessage.event_id
-        );
 
         let msGapFromJumpPointToLastMessage;
         // If someone is jumping from `0`, let's assume this is their first time
@@ -660,11 +633,9 @@ router.get(
             );
           }
 
-          // Jump to the predecessor room at the appropriate timestamp to continue from
-          console.log(
-            `/jump hit the beginning of the room, jumping to predecessorRoomId=${predecessorRoomId}`
-          );
-          // Going backwards, we already know where to go so we can navigate straight there
+          // Jump to the predecessor room at the appropriate timestamp to continue from.
+          // Since we're going backwards, we already know where to go so we can navigate
+          // straight there.
           res.redirect(
             matrixPublicArchiveURLCreator.archiveUrlForDate(
               predecessorRoomId,
@@ -690,9 +661,6 @@ router.get(
           const { successorRoomId } = await fetchSuccessorInfo(matrixAccessToken, roomId);
           if (successorRoomId) {
             // Jump to the successor room and continue at the first event of the room
-            console.log(
-              `/jump hit the end of the room, jumping to successorRoomId=${successorRoomId}`
-            );
             res.redirect(
               matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(successorRoomId, {
                 dir: DIRECTION.forward,
