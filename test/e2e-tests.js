@@ -1777,6 +1777,81 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          {
+            // TODO
+            testName:
+              'can jump backward to the previous activity when less than an hour between all messages (starting from day precision)',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1                                                                              ]
+                                                                    [page1                       ]
+                                      [page2                  ]
+            `,
+            // More than a minute for each but less than an hour when you multiply this
+            // across all of messages
+            timeIncrementBetweenMessages: 2 * ONE_MINUTE_IN_MS,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01',
+              action: 'previous',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/01T00:17?at=$event9',
+              action: null,
+            },
+          },
+          {
+            // TODO
+            testName:
+              'can jump backward to the previous activity when less than an minute between all messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1                                                                              ]
+                                                                    [page1                       ]
+                                      [page2                  ]
+            `,
+            // More than a second for each but less than an minute when you multiply
+            // this across all of messages
+            timeIncrementBetweenMessages: 2 * ONE_SECOND_IN_MS,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01T00:01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01T00:01',
+              action: 'previous',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/01T00:00:17?at=$event9',
+              action: null,
+            },
+          },
+          {
+            // TODO
+            testName:
+              'can jump backward to the previous activity when less than an minute between all messages (starting from day precision)',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1                                                                              ]
+                                                                    [page1                       ]
+                                      [page2                  ]
+            `,
+            // More than a second for each but less than an minute when you multiply
+            // this across all of messages
+            timeIncrementBetweenMessages: 2 * ONE_SECOND_IN_MS,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01',
+              action: 'previous',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/01T00:00:17?at=$event9',
+              action: null,
+            },
+          },
         ];
 
         const jumpBackwardPredecessorTestCases = [

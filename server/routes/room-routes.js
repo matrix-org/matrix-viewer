@@ -376,10 +376,14 @@ router.get(
         // We choose `currentRangeEndTs` vs the `ts` (the jump point) because TODO: why?
         //
         // We use `doTimestampsStartFromSameUtcDay` for day precision because TODO: why?
+        // ... because a day should be from T00:00:00.000 to T23:59:59.999.
         const fromSameDay =
           tsForClosestEvent &&
           doTimestampsStartFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
-        // We use `doTimestampsShareRoundedUpUtcX` for any time precision because TODO: why?
+        // We use `doTimestampsShareRoundedUpUtcX` for any time precision because TODO:
+        // why? ... so that when the URL is `T02:00`, a message from `T01:23` will still
+        // be considered from the same hour. But also when the URL is `T01:00`, a
+        // message from `T01:23` will be considered from a *different* hour.
         const fromSameHour =
           tsForClosestEvent &&
           doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
