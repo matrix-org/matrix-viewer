@@ -25,7 +25,7 @@ function installRoutes(app) {
     identifyRoute('health-check'),
     asyncHandler(async function (req, res) {
       if (!healthCheckResponse) {
-        const versionTags = await getVersionTags();
+        const versionTags = getVersionTags();
         const responseObject = {
           ok: true,
           ...versionTags,
