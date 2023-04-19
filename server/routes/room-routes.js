@@ -366,68 +366,24 @@ router.get(
       // that same day that still encompasses the closest message looking backwards,
       // like `/2020/01/02T13:00:00`
       if (dir === DIRECTION.backward) {
-        // `currentRangeEndTs` represents what is being displayed in the URL (we fetch
-        // from this time backwards to render a page):
-        //
-        //  - When the URL is `/date/2020/01/02`, `currentRangeEndTs=1578009599999`
-        //    (2020-01-02T23:59:59.999Z)
-        //  - When the URL is `/date/2022/11/16T02:00`, `currentRangeEndTs=1577930400000`
-        //   (2020-01-02T02:00:00.000Z)
-        //
-        // We choose `currentRangeEndTs` vs the `ts` (the jump point) because TODO: why?
-        //
-        // We use `doTimestampsStartFromSameUtcDay` for day precision because TODO: why?
-        // ... because a day should be from T00:00:00.000 to T23:59:59.999.
+        // We choose `currentRangeStartTs` instead of `ts` (the jump point) because TODO: why?
+        // and we don't choose `currentRangeEndTs` because TODO: why?
         const fromSameDay =
           tsForClosestEvent &&
-          doTimestampsStartFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
-        // We use `doTimestampsShareRoundedUpUtcX` for any time precision because TODO:
-        // why? ... so that when the URL is `T02:00`, a message from `T01:23` will still
-        // be considered from the same hour. But also when the URL is `T01:00`, a
-        // message from `T01:23` will be considered from a *different* hour.
+          doTimestampsStartFromSameUtcDay(currentRangeStartTs, tsForClosestEvent);
         const fromSameHour =
           tsForClosestEvent &&
-          doTimestampsShareRoundedUpUtcHour(currentRangeEndTs, tsForClosestEvent);
-        //doTimestampsStartFromSameUtcHour(ts, tsForClosestEvent);
+          doTimestampsStartFromSameUtcHour(currentRangeStartTs, tsForClosestEvent);
         const fromSameMinute =
           tsForClosestEvent &&
-          doTimestampsShareRoundedUpUtcMinute(currentRangeEndTs, tsForClosestEvent);
-        //doTimestampsStartFromSameUtcMinute(ts, tsForClosestEvent);
+          doTimestampsStartFromSameUtcMinute(currentRangeStartTs, tsForClosestEvent);
         const fromSameSecond =
           tsForClosestEvent &&
-          doTimestampsShareRoundedUpUtcSecond(currentRangeEndTs, tsForClosestEvent);
-        //doTimestampsStartFromSameUtcSecond(ts, tsForClosestEvent);
+          doTimestampsStartFromSameUtcSecond(currentRangeStartTs, tsForClosestEvent);
         console.log('fromSameDay', fromSameDay);
         console.log('fromSameHour', fromSameHour, ts, tsForClosestEvent, currentRangeEndTs);
         console.log('fromSameMinute', fromSameMinute);
         console.log('fromSameSecond', fromSameSecond);
-
-        // TODO: Give some context for this logic
-        const currentRangeFromSameDay = doTimestampsStartFromSameUtcDay(
-          currentRangeStartTs,
-          tsForClosestEvent
-        );
-        const currentRangeFromSameHour = doTimestampsShareRoundedUpUtcHour(
-          currentRangeStartTs,
-          tsForClosestEvent
-        );
-        const currentRangeFromSameMinute = doTimestampsShareRoundedUpUtcMinute(
-          currentRangeStartTs,
-          tsForClosestEvent
-        );
-        const currentRangeFromSameSecond = doTimestampsShareRoundedUpUtcSecond(
-          currentRangeStartTs,
-          tsForClosestEvent
-        );
-        console.log('currentRangeFromSameDay', currentRangeFromSameDay);
-        console.log('currentRangeFromSameHour', currentRangeFromSameHour);
-        console.log('currentRangeFromSameMinute', currentRangeFromSameMinute);
-        console.log(
-          'currentRangeFromSameSecond',
-          currentRangeFromSameSecond,
-          currentRangeStartTs,
-          tsForClosestEvent
-        );
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -439,28 +395,28 @@ router.get(
         // XXX: If there is too many messages all within the same second, people will be
         // stuck visiting the same page over and over every time they try to jump
         // backwards from that range.
-        if (fromSameSecond || currentRangeFromSameSecond) {
+        if (fromSameSecond) {
           newOriginServerTs = tsForClosestEvent;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // The closest event is from the same minute we tried to jump from, we will need
         // to round up to the nearest second so that the URL encompasses the closest
         // event looking backwards
-        else if (fromSameMinute || currentRangeFromSameMinute) {
+        else if (fromSameMinute) {
           newOriginServerTs = roundUpTimestampToUtcSecond(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
         // The closest event is from the same hour we tried to jump from, we will need
         // to round up to the nearest minute so that the URL encompasses the closest
         // event looking backwards
-        else if (fromSameHour || currentRangeFromSameHour) {
+        else if (fromSameHour) {
           newOriginServerTs = roundUpTimestampToUtcMinute(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // The closest event is from the same day we tried to jump from, we will need to
         // round up to the nearest hour so that the URL encompasses the closest event
         // looking backwards
-        else if (fromSameDay || currentRangeFromSameDay) {
+        else if (fromSameDay) {
           newOriginServerTs = roundUpTimestampToUtcHour(tsForClosestEvent);
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
@@ -542,7 +498,7 @@ router.get(
         }
         // Otherwise do the normal calculation: where we jumped to - where we jumped from
         else {
-          // TODO: Should we use `ts` be `currentRangeStartTs`?
+          // TODO: Should we use `ts` or `currentRangeStartTs` here?
           msGapFromJumpPointToLastMessage = tsOfLastMessage - ts;
         }
         const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
@@ -721,6 +677,10 @@ router.get(
           res.redirect(
             matrixPublicArchiveURLCreator.archiveUrlForDate(
               predecessorRoomId,
+              // XXX: We should probably go fetch and use the timestamp from
+              // `predecessorLastKnownEventId` here but that requires an extra
+              // `timestampToEvent(...)` lookup. We can assume it's close to the
+              // tombstone for now.
               new Date(continueAtTsInPredecessorRoom),
               {
                 viaServers: Array.from(predecessorViaServers || []),
