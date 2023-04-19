@@ -14,7 +14,7 @@ assert(basePath);
 // `/r/#room-alias:server/date/2022/10/27` -> `/r/room-alias:server/date/2022/10/27`
 function clientSideRoomAliasHashRedirectRoute(req, res) {
   const cspNonce = res.locals.cspNonce;
-  const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
+  const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-assets/hydrogen-styles.css');
   const stylesUrl = urlJoin(basePath, '/css/styles.css');
   const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-alias-hash-redirect.es.js');
 

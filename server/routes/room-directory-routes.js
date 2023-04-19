@@ -61,7 +61,7 @@ router.get(
     // We index the room directory unless the config says we shouldn't index anything
     const shouldIndex = !stopSearchEngineIndexing;
 
-    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
+    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-assets/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-directory.es.js');
