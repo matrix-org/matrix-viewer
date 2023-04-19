@@ -4,7 +4,7 @@
 
 const { TemplateView } = require('hydrogen-view-sdk');
 const {
-  doTimestampsStartFromSameUtcDay,
+  areTimestampsFromSameUtcDay,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 // Get the number of days in the given month where the `inputDate` lies.
@@ -157,7 +157,7 @@ class CalendarView extends TemplateView {
                   const isDayInFuture = dayNumberDate.getTime() - todayTs > 0;
 
                   // The current day displayed in the archive
-                  const isActive = doTimestampsStartFromSameUtcDay(
+                  const isActive = areTimestampsFromSameUtcDay(
                     dayNumberDate.getTime(),
                     vm.activeDate.getTime()
                   );

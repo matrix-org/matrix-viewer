@@ -36,21 +36,14 @@ const {
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,
   roundUpTimestampToUtcSecond,
-
   getUtcStartOfDayTs,
   getUtcStartOfHourTs,
   getUtcStartOfMinuteTs,
   getUtcStartOfSecondTs,
-
-  doTimestampsShareRoundedUpUtcDay,
-  doTimestampsShareRoundedUpUtcHour,
-  doTimestampsShareRoundedUpUtcMinute,
-  doTimestampsShareRoundedUpUtcSecond,
-
-  doTimestampsStartFromSameUtcDay,
-  doTimestampsStartFromSameUtcHour,
-  doTimestampsStartFromSameUtcMinute,
-  doTimestampsStartFromSameUtcSecond,
+  areTimestampsFromSameUtcDay,
+  areTimestampsFromSameUtcHour,
+  areTimestampsFromSameUtcMinute,
+  areTimestampsFromSameUtcSecond,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 const config = require('../lib/config');
@@ -369,17 +362,15 @@ router.get(
         // We choose `currentRangeStartTs` instead of `ts` (the jump point) because TODO: why?
         // and we don't choose `currentRangeEndTs` because TODO: why?
         const fromSameDay =
-          tsForClosestEvent &&
-          doTimestampsStartFromSameUtcDay(currentRangeStartTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeStartTs, tsForClosestEvent);
         const fromSameHour =
-          tsForClosestEvent &&
-          doTimestampsStartFromSameUtcHour(currentRangeStartTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcHour(currentRangeStartTs, tsForClosestEvent);
         const fromSameMinute =
           tsForClosestEvent &&
-          doTimestampsStartFromSameUtcMinute(currentRangeStartTs, tsForClosestEvent);
+          areTimestampsFromSameUtcMinute(currentRangeStartTs, tsForClosestEvent);
         const fromSameSecond =
           tsForClosestEvent &&
-          doTimestampsStartFromSameUtcSecond(currentRangeStartTs, tsForClosestEvent);
+          areTimestampsFromSameUtcSecond(currentRangeStartTs, tsForClosestEvent);
         console.log('fromSameDay', fromSameDay);
         console.log('fromSameHour', fromSameHour, ts, tsForClosestEvent, currentRangeEndTs);
         console.log('fromSameMinute', fromSameMinute);
@@ -513,7 +504,7 @@ router.get(
         // We use this information to handle situations where we jump over multiple-day
         // gaps with no messages in between. In those cases, we don't want to round down
         // to a day where there are no messages in the gap.
-        const hasMessagesOnDayBeforeDayOfLastMessage = !doTimestampsStartFromSameUtcDay(
+        const hasMessagesOnDayBeforeDayOfLastMessage = !areTimestampsFromSameUtcDay(
           tsOfFirstMessage,
           tsOfLastMessage
         );
@@ -877,7 +868,7 @@ router.get(
     const isNewestEventFromSameDay =
       newestEvent &&
       newestEvent?.origin_server_ts &&
-      doTimestampsStartFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
+      areTimestampsFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
     // Check if we need to navigate forward to the successor room
     if (roomData.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
       // Jump to the successor room at the date/time the user is trying to visit at
