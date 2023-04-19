@@ -50,7 +50,7 @@ async function timeoutMiddleware(req, res, next) {
 
     const cspNonce = res.locals.cspNonce;
 
-    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-styles.css');
+    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-assets/hydrogen-styles.css');
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
 
     const pageHtml = `
