@@ -30,6 +30,16 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
     return this._entry?.content?.['jumpRangeEndTimestamp'];
   }
 
+  // The first event shown in the timeline.
+  get timelineStartEventId() {
+    return this._entry?.content?.['timelineStartEventId'];
+  }
+
+  // The last event shown in the timeline.
+  get timelineEndEventId() {
+    return this._entry?.content?.['timelineEndEventId'];
+  }
+
   get jumpToPreviousActivityUrl() {
     return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
@@ -37,6 +47,8 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
         dir: DIRECTION.backward,
         currentRangeStartTs: this.jumpRangeStartTimestamp,
         currentRangeEndTs: this.jumpRangeEndTimestamp,
+        timelineStartEventId: this.timelineStartEventId,
+        timelineEndEventId: this.timelineEndEventId,
       }
     );
   }

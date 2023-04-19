@@ -12,7 +12,7 @@
     "start": "node server/server.js",
     "start-dev": "node server/start-dev.js",
     "test": "npm run mocha -- test/**/*-tests.js --timeout 15000",
-    "test-e2e-interactive": "npm run mocha -- test/e2e-tests.js --timeout 15000 --interactive",
+    "test-e2e-interactive": "npm run mocha -- test/e2e-tests.js --timeout 15000 --bail --interactive",
     "nodemon": "nodemon",
     "vite": "vite",
     "mocha": "mocha",
@@ -23,6 +23,7 @@
     "node": ">=16.0.0"
   },
   "devDependencies": {
+    "chalk": "^4.1.2",
     "escape-string-regexp": "^4.0.0",
     "eslint": "^8.37.0",
     "eslint-config-prettier": "^8.8.0",

@@ -32,6 +32,7 @@ function roundUpTimestampToUtcSecond(ts) {
   return dateRountedUp.getTime();
 }
 
+// XXX: Should these just be renamed to `roundDownTimestampToUtcDay`?
 function getUtcStartOfDayTs(ts) {
   assert(typeof ts === 'number' || ts instanceof Date);
   const date = new Date(ts);

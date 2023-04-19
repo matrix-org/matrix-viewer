@@ -3,6 +3,7 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 const { fetchEndpointAsJson, fetchEndpoint } = require('../../server/lib/fetch-endpoint');
+const getServerNameFromMatrixRoomIdOrAlias = require('../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias');
 
 const config = require('../../server/lib/config');
 const matrixAccessToken = config.get('matrixAccessToken');
@@ -85,6 +86,62 @@ async function getTestClientForHs(testMatrixServerUrl) {
   };
 }
 
+async function sendEvent({ client, roomId, eventType, stateKey, content, timestamp }) {
+  assert(client);
+  assert(roomId);
+  assert(content);
+
+  let qs = new URLSearchParams();
+  if (timestamp) {
+    assert(
+      timestamp && client.applicationServiceUserIdOverride,
+      'We can only do `?ts` massaging from an application service access token. ' +
+        'Expected `client.applicationServiceUserIdOverride` to be defined so we can act on behalf of that user'
+    );
+
+    qs.append('ts', timestamp);
+  }
+
+  if (client.applicationServiceUserIdOverride) {
+    qs.append('user_id', client.applicationServiceUserIdOverride);
+  }
+
+  let url;
+  if (typeof stateKey === 'string') {
+    url = urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(
+        roomId
+      )}/state/${eventType}/${stateKey}?${qs.toString()}`
+    );
+  } else {
+    url = urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(
+        roomId
+      )}/send/${eventType}/${getTxnId()}?${qs.toString()}`
+    );
+  }
+
+  const { data: sendResponse } = await fetchEndpointAsJson(url, {
+    method: 'PUT',
+    body: content,
+    accessToken: client.accessToken,
+  });
+
+  const eventId = sendResponse['event_id'];
+  assert(eventId);
+  return eventId;
+}
+
+const WORLD_READABLE_STATE_EVENT = {
+  type: 'm.room.history_visibility',
+  state_key: '',
+  content: {
+    history_visibility: 'world_readable',
+  },
+};
+
 // Create a public room to test in
 async function createTestRoom(client, overrideCreateOptions = {}) {
   let qs = new URLSearchParams();
@@ -103,15 +160,7 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
         preset: 'public_chat',
         name: roomName,
         room_alias_name: roomAlias,
-        initial_state: [
-          {
-            type: 'm.room.history_visibility',
-            state_key: '',
-            content: {
-              history_visibility: 'world_readable',
-            },
-          },
-        ],
+        initial_state: [WORLD_READABLE_STATE_EVENT],
         visibility: 'public',
         ...overrideCreateOptions,
       },
@@ -122,6 +171,64 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
   const roomId = createRoomResponse['room_id'];
   assert(roomId);
   return roomId;
+}
+
+async function upgradeTestRoom({
+  client,
+  oldRoomId,
+  useMsc3946DynamicPredecessor = false,
+  overrideCreateOptions = {},
+  timestamp,
+}) {
+  assert(client);
+  assert(oldRoomId);
+
+  const createOptions = {
+    ...overrideCreateOptions,
+  };
+  // Setup the pointer from the new room to the old room
+  if (useMsc3946DynamicPredecessor) {
+    createOptions.initial_state = [
+      WORLD_READABLE_STATE_EVENT,
+      {
+        type: 'org.matrix.msc3946.room_predecessor',
+        state_key: '',
+        content: {
+          predecessor_room_id: oldRoomId,
+          via_servers: [getServerNameFromMatrixRoomIdOrAlias(oldRoomId)],
+        },
+      },
+    ];
+  } else {
+    createOptions.creation_content = {
+      predecessor: {
+        room_id: oldRoomId,
+        // The event ID of the last known event in the old room (supposedly required).
+        //event_id: TODO,
+      },
+    };
+  }
+
+  // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it supports it,
+  // see https://github.com/matrix-org/matrix-public-archive/issues/169
+  const newRoomid = await createTestRoom(client, createOptions);
+
+  // Now send the tombstone event pointing from the old room to the new room
+  const tombstoneEventId = await sendEvent({
+    client,
+    roomId: oldRoomId,
+    eventType: 'm.room.tombstone',
+    stateKey: '',
+    content: {
+      replacement_room: newRoomid,
+    },
+    timestamp,
+  });
+
+  return {
+    newRoomid,
+    tombstoneEventId,
+  };
 }
 
 async function getCanonicalAlias({ client, roomId }) {
@@ -167,54 +274,6 @@ async function joinRoom({ client, roomId, viaServers }) {
   return joinedRoomId;
 }
 
-async function sendEvent({ client, roomId, eventType, stateKey, content, timestamp }) {
-  assert(client);
-  assert(roomId);
-  assert(content);
-
-  let qs = new URLSearchParams();
-  if (timestamp) {
-    assert(
-      timestamp && client.applicationServiceUserIdOverride,
-      'We can only do `?ts` massaging from an application service access token. ' +
-        'Expected `client.applicationServiceUserIdOverride` to be defined so we can act on behalf of that user'
-    );
-
-    qs.append('ts', timestamp);
-  }
-
-  if (client.applicationServiceUserIdOverride) {
-    qs.append('user_id', client.applicationServiceUserIdOverride);
-  }
-
-  let url;
-  if (stateKey) {
-    url = urlJoin(
-      client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${encodeURIComponent(
-        roomId
-      )}/state/${eventType}/${stateKey}?${qs.toString()}`
-    );
-  } else {
-    url = urlJoin(
-      client.homeserverUrl,
-      `/_matrix/client/v3/rooms/${encodeURIComponent(
-        roomId
-      )}/send/${eventType}/${getTxnId()}?${qs.toString()}`
-    );
-  }
-
-  const { data: sendResponse } = await fetchEndpointAsJson(url, {
-    method: 'PUT',
-    body: content,
-    accessToken: client.accessToken,
-  });
-
-  const eventId = sendResponse['event_id'];
-  assert(eventId);
-  return eventId;
-}
-
 async function sendMessage({ client, roomId, content, timestamp }) {
   return sendEvent({ client, roomId, eventType: 'm.room.message', content, timestamp });
 }
@@ -257,6 +316,28 @@ async function createMessagesInRoom({
   assert.strictEqual(eventIds.length, numMessages);
 
   return { eventIds, eventMap };
+}
+
+async function getMessagesInRoom({ client, roomId, limit }) {
+  assert(client);
+  assert(roomId);
+  assert(limit);
+
+  let qs = new URLSearchParams();
+  qs.append('limit', limit);
+
+  const { data } = await fetchEndpointAsJson(
+    urlJoin(
+      client.homeserverUrl,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?${qs.toString()}`
+    ),
+    {
+      method: 'GET',
+      accessToken: client.accessToken,
+    }
+  );
+
+  return data.chunk;
 }
 
 async function updateProfile({ client, displayName, avatarUrl }) {
@@ -345,11 +426,13 @@ module.exports = {
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
+  upgradeTestRoom,
   getCanonicalAlias,
   joinRoom,
   sendEvent,
   sendMessage,
   createMessagesInRoom,
+  getMessagesInRoom,
   updateProfile,
   uploadContent,
 };

@@ -12,10 +12,15 @@ const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-arc
 
 const { HTTPResponseError } = require('../lib/fetch-endpoint');
 const parseViaServersFromUserInput = require('../lib/parse-via-servers-from-user-input');
-const fetchRoomData = require('../lib/matrix-utils/fetch-room-data');
+const {
+  fetchRoomData,
+  fetchPredecessorInfo,
+  fetchSuccessorInfo,
+} = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
 const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
+const { removeMe_fetchRoomCreateEventId } = require('../lib/matrix-utils/fetch-room-data');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
@@ -23,6 +28,7 @@ const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
+  VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
@@ -57,10 +63,6 @@ const router = express.Router({
   mergeParams: true,
 });
 
-const VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP = {
-  r: '#',
-  roomid: '!',
-};
 const validSigilList = Object.values(VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP);
 const sigilRe = new RegExp(`^(${validSigilList.join('|')})`);
 
@@ -231,30 +233,45 @@ router.get(
       '?dir query parameter must be [f|b]'
     );
 
+    const timelineStartEventId = req.query.timelineStartEventId;
+    assert(
+      ['string', 'undefined'].includes(typeof timelineStartEventId),
+      `?timelineStartEventId must be a string or undefined but saw ${typeof timelineStartEventId}`
+    );
+    const timelineEndEventId = req.query.timelineEndEventId;
+    assert(
+      ['string', 'undefined'].includes(typeof timelineStartEventId),
+      `?timelineEndEventId must be a string or undefined but saw ${typeof timelineStartEventId}`
+    );
+
+    // We have to wait for the room join to happen first before we can use the jump to
+    // date endpoint (or any other Matrix endpoint)
+    const viaServers = parseViaServersFromUserInput(req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, viaServers);
+
     let ts;
+    let fromCausalEventId;
     if (dir === DIRECTION.backward) {
       // We `- 1` so we don't jump to the same event because the endpoint is inclusive.
       //
       // XXX: This is probably an edge-case flaw when there could be multiple events at
       // the same timestamp
+      //
+      // TODO: Remove the `- 1` when we have the MSC3999 causal event ID support
       ts = currentRangeStartTs - 1;
+      fromCausalEventId = timelineStartEventId;
     } else if (dir === DIRECTION.forward) {
       // We `+ 1` so we don't jump to the same event because the endpoint is inclusive
       //
       // XXX: This is probably an edge-case flaw when there could be multiple events at
       // the same timestamp
+      //
+      // TODO: Remove the `+ 1` when we have the MSC3999 causal event ID support
       ts = currentRangeEndTs + 1;
+      fromCausalEventId = timelineEndEventId;
     } else {
-      throw new Error(`Unable to handle unknown dir=${dir} in /jump`);
+      throw new StatusError(400, `Unable to handle unknown dir=${dir} in /jump`);
     }
-
-    // We have to wait for the room join to happen first before we can use the jump to
-    // date endpoint
-    const roomId = await ensureRoomJoined(
-      matrixAccessToken,
-      roomIdOrAlias,
-      parseViaServersFromUserInput(req.query.via)
-    );
 
     let eventIdForClosestEvent;
     let tsForClosestEvent;
@@ -265,14 +282,53 @@ router.get(
       // updated value between each e2e test
       const archiveMessageLimit = config.get('archiveMessageLimit');
 
+      let roomCreateEventId;
       // Find the closest event to the given timestamp
-      ({ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent } =
-        await timestampToEvent({
-          accessToken: matrixAccessToken,
-          roomId,
-          ts: ts,
-          direction: dir,
-        }));
+      [{ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent }, roomCreateEventId] =
+        await Promise.all([
+          timestampToEvent({
+            accessToken: matrixAccessToken,
+            roomId,
+            ts: ts,
+            direction: dir,
+            // Since timestamps are untrusted and can be crafted to make loops in the
+            // timeline. We use this as a signal to keep progressing from this event
+            // regardless of what timestamp shenanigans are going on. See MSC3999
+            // (https://github.com/matrix-org/matrix-spec-proposals/pull/3999)
+            //
+            // TODO: Add tests for timestamp loops once Synapse supports MSC3999. We
+            // currently just have this set in case some server has this implemented in
+            // the future but there currently is no implementation (as of 2023-04-17) and
+            // we can't have passing tests without a server implementation first.
+            'org.matrix.msc3999.event_id': fromCausalEventId,
+          }),
+          removeMe_fetchRoomCreateEventId(matrixAccessToken, roomId),
+        ]);
+
+      // Without MSC3999, we currently only detect one kind of loop where the
+      // `m.room.create` has a timestamp that comes after the timestamp massaged events
+      // in the room. This is a common pattern for historical Gitter rooms where we
+      // created the room and then imported a bunch of messages at a time before the
+      // room was created.
+      //
+      // By nature of having an `timelineEndEventId`, we know we are already paginated
+      // past the `m.room.create` event which is always the first event in the room. So
+      // we can use that to detect the end of the room before we loop back around to the
+      // start of the room.
+      //
+      // XXX: Once we have MSC3999, we can remove this check in favor of that mechanism
+      if (
+        dir === DIRECTION.forward &&
+        timelineEndEventId &&
+        eventIdForClosestEvent === roomCreateEventId
+      ) {
+        throw new StatusError(
+          404,
+          `/jump?dir=${dir}: We detected a loop back to the beginning of the room so we can assume ` +
+            `we hit the end of the room instead of doing a loop. We throw a 404 error here we hit ` +
+            `the normal 404 no more /messages error handling below`
+        );
+      }
 
       // Based on what we found was the closest, figure out the URL that will represent
       // the next chunk in the desired direction.
@@ -280,24 +336,31 @@ router.get(
       //
       // When jumping backwards, since a given room archive URL represents the end of
       // the day/time-period looking backward (scroll is also anchored to the bottom),
-      // we just need to get the user to the previous time-period.
+      // we just need to move the user to the time-period just prior the current one.
       //
       // We are trying to avoid sending the user to the same time period they were just
       // viewing. i.e, if they were visiting `/2020/01/02T16:00:00` (displays messages
       // backwards from that time up to the limit), which had more messages than we
       // could display in that day, jumping backwards from the earliest displayed event
-      // in the displayed range, say `T12:00:05` would still give us the same day
-      // `/2020/01/02` and we want to redirect them to previous chunk from that same
-      // day, like `/2020/01/02T12:00:00`
+      // in the displayed range (say that occured on `T12:00:25`) would still give us
+      // the same day `/2020/01/02` and we want to redirect them to previous chunk from
+      // that same day that still encompasses the closest message looking backwards,
+      // like `/2020/01/02T13:00:00`
       if (dir === DIRECTION.backward) {
+        // We choose `currentRangeStartTs` instead of `ts` (the jump point) because
+        // TODO: why? and we don't choose `currentRangeEndTs` because TODO: why? - I
+        // feel like I can't justify this, see
+        // https://github.com/matrix-org/matrix-public-archive/pull/167#discussion_r1170850432
         const fromSameDay =
-          tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeStartTs, tsForClosestEvent);
         const fromSameHour =
-          tsForClosestEvent && areTimestampsFromSameUtcHour(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent && areTimestampsFromSameUtcHour(currentRangeStartTs, tsForClosestEvent);
         const fromSameMinute =
-          tsForClosestEvent && areTimestampsFromSameUtcMinute(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent &&
+          areTimestampsFromSameUtcMinute(currentRangeStartTs, tsForClosestEvent);
         const fromSameSecond =
-          tsForClosestEvent && areTimestampsFromSameUtcSecond(currentRangeEndTs, tsForClosestEvent);
+          tsForClosestEvent &&
+          areTimestampsFromSameUtcSecond(currentRangeStartTs, tsForClosestEvent);
 
         // The closest event is from the same second we tried to jump from. Since we
         // can't represent something smaller than a second in the URL yet (we could do
@@ -355,13 +418,11 @@ router.get(
       // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
       // could backfill messages which will fill up the response before we perfectly
       // connect and continue from the position they were jumping from before. When
-      // `/messages?dir=f` backfills, we won't have this problem anymore because any
-      // messages backfilled in the forwards direction would be picked up the same going
-      // backwards.
-      if (dir === DIRECTION.forward) {
-        // Use `/messages?dir=f` and get the `end` pagination token to paginate from. And
-        // then start the scroll from the top of the page so they can continue.
-        //
+      // `/messages?dir=f` backfills (forwards fill), we won't have this problem anymore
+      // because any messages backfilled in the forwards direction would be picked up
+      // the same going backwards. See MSC4000
+      // (https://github.com/matrix-org/matrix-spec-proposals/pull/4000).
+      else if (dir === DIRECTION.forward) {
         // XXX: It would be cool to somehow cache this response and re-use our work here
         // for the actual room display that we redirect to from this route. No need for
         // us go out 100 messages, only for us to go backwards 100 messages again in the
@@ -377,13 +438,50 @@ router.get(
         if (!messageResData.chunk?.length) {
           throw new StatusError(
             404,
-            `/jump?dir=${dir}: /messages response didn't contain any more messages to jump to`
+            `/jump?dir=${dir}: /messages response didn't contain any more messages to jump to so we can assume we reached the end of the room.`
           );
         }
 
-        const timestampOfLastMessage =
-          messageResData.chunk[messageResData.chunk.length - 1].origin_server_ts;
-        const dateOfLastMessage = new Date(timestampOfLastMessage);
+        const firstMessage = messageResData.chunk[0];
+        const tsOfFirstMessage = firstMessage.origin_server_ts;
+
+        const lastMessage = messageResData.chunk[messageResData.chunk.length - 1];
+        const tsOfLastMessage = lastMessage.origin_server_ts;
+
+        let msGapFromJumpPointToLastMessage;
+        // If someone is jumping from `0`, let's assume this is their first time
+        // navigating in the room and are just trying to get to the first messages in
+        // the room. Instead of using `0` which give us `moreThanDayGap=true` every time
+        // (unless someone sent messages in 1970 :P), and round us down to the nearest
+        // day before any of the messages in the room start, let's just use the start of
+        // the timeline as the start which will show us a page of content on the first
+        // try. For the backwards direction, we could have a similar check but with
+        // `currentRangeStartTs === Infinity` check but it's not necessary since we
+        // don't have to do any back-tracking extra work.
+        if (currentRangeEndTs === 0) {
+          msGapFromJumpPointToLastMessage = tsOfLastMessage - tsOfFirstMessage;
+        }
+        // Otherwise do the normal calculation: where we jumped to - where we jumped from
+        else {
+          // TODO: Should we use `ts` or `currentRangeStartTs` here?
+          msGapFromJumpPointToLastMessage = tsOfLastMessage - ts;
+        }
+        const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
+        const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
+        const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
+        const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
+
+        // If the first message is on different day than the last message, then we know
+        // there are messages on days before the last mesage and can safely round to the
+        // nearest day and still see new content.
+        //
+        // We use this information to handle situations where we jump over multiple-day
+        // gaps with no messages in between. In those cases, we don't want to round down
+        // to a day where there are no messages in the gap.
+        const hasMessagesOnDayBeforeDayOfLastMessage = !areTimestampsFromSameUtcDay(
+          tsOfFirstMessage,
+          tsOfLastMessage
+        );
 
         // Back-track from the last message timestamp to the nearest date boundary.
         // Because we're back-tracking a couple events here, when we paginate back out
@@ -395,29 +493,25 @@ router.get(
         // back-tracking but then we get ugly URL's every time you jump instead of being
         // able to back-track and round down to the nearest hour in a lot of cases. The
         // other reason not to return the exact date is maybe there multiple messages at
-        // the same timestamp and we will lose messages in the gap it displays more than
-        // we thought.
-        const msGapFromJumpPointToLastMessage = timestampOfLastMessage - ts;
-        const moreThanDayGap = msGapFromJumpPointToLastMessage > ONE_DAY_IN_MS;
-        const moreThanHourGap = msGapFromJumpPointToLastMessage > ONE_HOUR_IN_MS;
-        const moreThanMinuteGap = msGapFromJumpPointToLastMessage > ONE_MINUTE_IN_MS;
-        const moreThanSecondGap = msGapFromJumpPointToLastMessage > ONE_SECOND_IN_MS;
-
+        // the same timestamp and we will lose messages in the gap because it displays
+        // more than we thought.
+        //
         // If the `/messages` response returns less than the `archiveMessageLimit`
         // looking forwards, it means we're looking at the latest events in the room. We
-        // can simply just display the day that the latest event occured on or given
+        // can simply just display the day that the latest event occured on or the given
         // rangeEnd (whichever is later).
         const haveReachedLatestMessagesInRoom = messageResData.chunk?.length < archiveMessageLimit;
         if (haveReachedLatestMessagesInRoom) {
-          const latestDesiredTs = Math.max(currentRangeEndTs, timestampOfLastMessage);
+          const latestDesiredTs = Math.max(currentRangeEndTs, tsOfLastMessage);
           const latestDesiredDate = new Date(latestDesiredTs);
           const utcMidnightTs = getUtcStartOfDayTs(latestDesiredDate);
           newOriginServerTs = utcMidnightTs;
           preferredPrecision = TIME_PRECISION_VALUES.none;
         }
-        // More than a day gap here, so we can just back-track to the nearest day
-        else if (moreThanDayGap) {
-          const utcMidnightOfDayBefore = getUtcStartOfDayTs(dateOfLastMessage);
+        // More than a day gap here, so we can just back-track to the nearest day as
+        // long as there are messages we haven't seen yet if we visit the nearest day.
+        else if (moreThanDayGap && hasMessagesOnDayBeforeDayOfLastMessage) {
+          const utcMidnightOfDayBefore = getUtcStartOfDayTs(tsOfLastMessage);
           // We `- 1` from UTC midnight to get the timestamp that is a millisecond
           // before the next day but we choose a no time precision so we jump to just
           // the bare date without a time. A bare date in the `/date/2022/12/16`
@@ -429,19 +523,19 @@ router.get(
         }
         // More than a hour gap here, we will need to back-track to the nearest hour
         else if (moreThanHourGap) {
-          const utcTopOfHourBefore = getUtcStartOfHourTs(dateOfLastMessage);
+          const utcTopOfHourBefore = getUtcStartOfHourTs(tsOfLastMessage);
           newOriginServerTs = utcTopOfHourBefore;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a minute gap here, we will need to back-track to the nearest minute
         else if (moreThanMinuteGap) {
-          const utcTopOfMinuteBefore = getUtcStartOfMinuteTs(dateOfLastMessage);
+          const utcTopOfMinuteBefore = getUtcStartOfMinuteTs(tsOfLastMessage);
           newOriginServerTs = utcTopOfMinuteBefore;
           preferredPrecision = TIME_PRECISION_VALUES.minutes;
         }
         // More than a second gap here, we will need to back-track to the nearest second
         else if (moreThanSecondGap) {
-          const utcTopOfSecondBefore = getUtcStartOfSecondTs(dateOfLastMessage);
+          const utcTopOfSecondBefore = getUtcStartOfSecondTs(tsOfLastMessage);
           newOriginServerTs = utcTopOfSecondBefore;
           preferredPrecision = TIME_PRECISION_VALUES.seconds;
         }
@@ -459,11 +553,134 @@ router.get(
         }
       }
     } catch (err) {
-      const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
+      const is404HTTPResponseError =
+        err instanceof HTTPResponseError && err.response.status === 404;
+      const is404StatusError = err instanceof StatusError && err.status === 404;
+      const is404Error = is404HTTPResponseError || is404StatusError;
+      // A 404 error just means there is no more messages to paginate in that room and
+      // we should try to go to the predecessor/successor room appropriately.
+      if (is404Error) {
+        if (dir === DIRECTION.backward) {
+          const {
+            currentRoomCreationTs,
+            predecessorRoomId,
+            predecessorLastKnownEventId,
+            predecessorViaServers,
+          } = await fetchPredecessorInfo(matrixAccessToken, roomId);
+
+          if (!predecessorRoomId) {
+            throw new StatusError(
+              404,
+              `No predecessor room found for ${roomId} so we can't jump backwards to anywhere (you already reached the end of the room)`
+            );
+          }
+
+          // We have to join the predecessor room before we can fetch the successor info
+          // (this could be our first time seeing the room)
+          await ensureRoomJoined(matrixAccessToken, predecessorRoomId, viaServers);
+          const {
+            successorRoomId: successorRoomIdForPredecessor,
+            successorSetTs: successorSetTsForPredecessor,
+          } = await fetchSuccessorInfo(matrixAccessToken, predecessorRoomId);
+
+          let tombstoneEventId;
+          if (!predecessorLastKnownEventId) {
+            // This is a hack because we can't get the tombstone event ID directly from
+            // `fetchSuccessorInfo(...)` and the `/state?format=event`
+            // endpoint, so we have to do this trick. Related to
+            // https://github.com/matrix-org/synapse/issues/15454
+            //
+            // We just assume this is the tombstone event ID but in any case it gets us to
+            // an event that happened at the same time.
+            ({ eventId: tombstoneEventId } = await timestampToEvent({
+              accessToken: matrixAccessToken,
+              roomId: predecessorRoomId,
+              ts: successorSetTsForPredecessor,
+              direction: DIRECTION.backward,
+            }));
+          }
+
+          // Try to continue from the tombstone event in the predecessor room because
+          // that is the signal that the room admins gave to indicate the end of the
+          // room in favor of the other regardless of further activity that may have
+          // occured in the room.
+          //
+          // Make sure the the room that the predecessor specifies as the replacement
+          // room is the same as what the current room is. This is a good signal that
+          // the rooms are a true continuation of each other and the room admins agree.
+          let continueAtTsInPredecessorRoom;
+          if (successorRoomIdForPredecessor === roomId) {
+            continueAtTsInPredecessorRoom = successorSetTsForPredecessor;
+          }
+          // Fallback to the room creation event time if we can't find the predecessor
+          // room tombstone which will work just fine and as expected for normal room
+          // upgrade scenarios.
+          else {
+            continueAtTsInPredecessorRoom = currentRoomCreationTs;
+          }
+
+          if (
+            continueAtTsInPredecessorRoom === null ||
+            continueAtTsInPredecessorRoom === undefined
+          ) {
+            throw new StatusError(
+              500,
+              `You navigated past the end of the room and it has a predecessor set (${predecessorRoomId}) ` +
+                `but we were unable to find a suitable place to jump to and continue from. ` +
+                `We could just redirect you to that predecessor room but we decided to throw an error ` +
+                `instead because we should be able to fallback to the room creation time in any case. ` +
+                `In other words, there shouldn't be a reason why we can't fetch the \`m.room.create\`` +
+                `event for this room unless the server is just broken right now. You can try refreshing to try again.`
+            );
+          }
+
+          // Jump to the predecessor room at the appropriate timestamp to continue from.
+          // Since we're going backwards, we already know where to go so we can navigate
+          // straight there.
+          res.redirect(
+            matrixPublicArchiveURLCreator.archiveUrlForDate(
+              predecessorRoomId,
+              // XXX: We should probably go fetch and use the timestamp from
+              // `predecessorLastKnownEventId` here but that requires an extra
+              // `timestampToEvent(...)` lookup. We can assume it's close to the
+              // tombstone for now.
+              new Date(continueAtTsInPredecessorRoom),
+              {
+                viaServers: Array.from(predecessorViaServers || []),
+                scrollStartEventId: predecessorLastKnownEventId || tombstoneEventId,
+                // We can just visit a rough time where the tombstone is as we assume
+                // it's the last event in the room or at least the last event we care
+                // about. A given day should be good for most cases but it's possible
+                // that messages are sent after the tombstone and we end up missing the
+                // tombstone.
+                preferredPrecision: TIME_PRECISION_VALUES.none,
+              }
+            )
+          );
+          return;
+        } else if (dir === DIRECTION.forward) {
+          const { successorRoomId } = await fetchSuccessorInfo(matrixAccessToken, roomId);
+          if (successorRoomId) {
+            // Jump to the successor room and continue at the first event of the room
+            res.redirect(
+              matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(successorRoomId, {
+                dir: DIRECTION.forward,
+                currentRangeStartTs: 0,
+                currentRangeEndTs: 0,
+                // We don't need to define
+                // `currentRangeStartEventId`/`currentRangeEndEventId` here because we're
+                // jumping to a completely new room so the event IDs won't pertain to the
+                // new room and we don't have any to use anyway.
+              })
+            );
+            return;
+          }
+        }
+      }
       // Only throw if it's something other than a 404 error. 404 errors are fine, they
       // just mean there is no more messages to paginate in that room and we were
       // already viewing the latest in the room.
-      if (!is404Error) {
+      else {
         throw err;
       }
     }
@@ -511,6 +728,7 @@ router.get(
   timeoutMiddleware,
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
+    const nowTs = Date.now();
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
     // We pull this fresh from the config for each request to ensure we have an
@@ -532,8 +750,8 @@ router.get(
       precisionFromUrl = TIME_PRECISION_VALUES.minutes;
     }
 
-    // Just 404 if anyone is trying to view the future, no need to waste resources on that
-    const nowTs = Date.now();
+    // Just 404 if anyone is trying to view the future, no need to waste resources on
+    // that
     if (toTimestamp > roundUpTimestampToUtcDay(nowTs)) {
       throw new StatusError(
         404,
@@ -545,11 +763,12 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(
-      matrixAccessToken,
-      roomIdOrAlias,
-      parseViaServersFromUserInput(req.query.via)
-    );
+    //
+    // XXX: It would be better if we just tried fetching first and assume that we are
+    // already joined and only join after we see a 403 Forbidden error (we should do
+    // this for all places we `ensureRoomJoined`)
+    const viaServers = parseViaServersFromUserInput(req.query.via);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, viaServers);
 
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
@@ -577,14 +796,63 @@ router.get(
 
     // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
     const allowedToViewRoom =
-      roomData?.historyVisibility === 'world_readable' ||
-      (roomData?.historyVisibility === 'shared' && roomData?.joinRule === 'public');
+      roomData.historyVisibility === 'world_readable' ||
+      (roomData.historyVisibility === 'shared' && roomData.joinRule === 'public');
 
     if (!allowedToViewRoom) {
       throw new StatusError(
         403,
-        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData?.historyVisibility} m.room.join_rules=${roomData?.joinRule}`
+        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility} m.room.join_rules=${roomData.joinRule}`
       );
+    }
+
+    // Since we're looking backwards from the given day, if we don't see any events,
+    // then we can assume that it's before the start of the room (it's the only way we
+    // would see no events).
+    const hasNavigatedBeforeStartOfRoom = events.length === 0;
+    // Check if we need to navigate backward to the predecessor room
+    if (hasNavigatedBeforeStartOfRoom && roomData.predecessorRoomId) {
+      // Jump to the predecessor room at the date/time the user is trying to visit at
+      res.redirect(
+        matrixPublicArchiveURLCreator.archiveUrlForDate(
+          roomData.predecessorRoomId,
+          new Date(toTimestamp),
+          {
+            preferredPrecision: precisionFromUrl,
+            // XXX: Should we also try combining `viaServers` we used to get to this room?
+            viaServers: Array.from(roomData.predecessorViaServers || []),
+          }
+        )
+      );
+      return;
+    }
+
+    // We only care to navigate to the successor room if we're trying to view something
+    // past when the successor was set (it's an indicator that we need to go to the new
+    // room from this time forward).
+    const isNavigatedPastSuccessor = toTimestamp > roomData.successorSetTs;
+    // But if we're viewing the day when the successor was set, we want to allow viewing
+    // the room up until the successor was set.
+    const newestEvent = events[events.length - 1];
+    const isNewestEventFromSameDay =
+      newestEvent &&
+      newestEvent?.origin_server_ts &&
+      areTimestampsFromSameUtcDay(toTimestamp, newestEvent?.origin_server_ts);
+    // Check if we need to navigate forward to the successor room
+    if (roomData.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
+      // Jump to the successor room at the date/time the user is trying to visit at
+      res.redirect(
+        matrixPublicArchiveURLCreator.archiveUrlForDate(
+          roomData.successorRoomId,
+          new Date(toTimestamp),
+          {
+            preferredPrecision: precisionFromUrl,
+            // Just try to pass on the `viaServers` the user was using to get to this room
+            viaServers: Array.from(viaServers || []),
+          }
+        )
+      );
+      return;
     }
 
     // Default to no indexing (safe default)
@@ -600,6 +868,7 @@ router.get(
     const stylesUrl = urlJoin(basePath, '/css/styles.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
 
+    // XXX: The `renderHydrogenVmRenderScriptToPageHtml` API surface is pretty awkward
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml(
       path.resolve(__dirname, '../../shared/hydrogen-vm-render-script.js'),
       {
