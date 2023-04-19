@@ -7,10 +7,11 @@ const asyncHandler = require('../lib/express-async-handler');
 
 const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
 const getVersionTags = require('../lib/get-version-tags');
-const preventClickjackingMiddleware = require('./prevent-clickjacking-middleware');
-const contentSecurityPolicyMiddleware = require('./content-security-policy-middleware');
+const preventClickjackingMiddleware = require('../middleware/prevent-clickjacking-middleware');
+const contentSecurityPolicyMiddleware = require('../middleware/content-security-policy-middleware');
+const identifyRoute = require('../middleware/identify-route-middleware');
 const clientSideRoomAliasHashRedirectRoute = require('./client-side-room-alias-hash-redirect-route');
-const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
+const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
 
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
@@ -21,6 +22,7 @@ function installRoutes(app) {
   let healthCheckResponse;
   app.get(
     '/health-check',
+    identifyRoute('health-check'),
     asyncHandler(async function (req, res) {
       if (!healthCheckResponse) {
         const versionTags = await getVersionTags();
@@ -71,11 +73,19 @@ function installRoutes(app) {
   // Since everything after the hash (`#`) won't make it to the server, let's serve a 404
   // page that will potentially redirect them to the correct place if they tried
   // `/r/#room-alias:server/date/2022/10/27` -> `/r/room-alias:server/date/2022/10/27`
-  app.use('/:entityDescriptor(r|roomid)', clientSideRoomAliasHashRedirectRoute);
+  app.get(
+    '/:entityDescriptor(r|roomid)',
+    identifyRoute('client-side-room-alias-hash-redirect'),
+    clientSideRoomAliasHashRedirectRoute
+  );
 
   // Correct any honest mistakes: If someone accidentally put the sigil in the URL, then
   // redirect them to the correct URL without the sigil to the correct path above.
-  app.use('/:roomIdOrAliasDirty', redirectToCorrectArchiveUrlIfBadSigil);
+  app.get(
+    '/:roomIdOrAliasDirty',
+    identifyRoute('redirect-to-correct-archive-url-if-bad-sigil'),
+    redirectToCorrectArchiveUrlIfBadSigil
+  );
 }
 
 module.exports = installRoutes;

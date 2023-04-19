@@ -7,8 +7,9 @@ const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/status-error');
 
-const timeoutMiddleware = require('./timeout-middleware');
-const redirectToCorrectArchiveUrlIfBadSigil = require('./redirect-to-correct-archive-url-if-bad-sigil-middleware');
+const timeoutMiddleware = require('../middleware/timeout-middleware');
+const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
+const identifyRoute = require('../middleware/identify-route-middleware');
 
 const { HTTPResponseError } = require('../lib/fetch-endpoint');
 const parseViaServersFromUserInput = require('../lib/parse-via-servers-from-user-input');
@@ -167,6 +168,7 @@ router.use(redirectToCorrectArchiveUrlIfBadSigil);
 
 router.get(
   '/',
+  identifyRoute('app-archive-room-index'),
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
@@ -208,6 +210,7 @@ router.get(
 
 router.get(
   '/event/:eventId',
+  identifyRoute('app-archive-room-event'),
   asyncHandler(async function (req, res) {
     // TODO: Fetch event to get `origin_server_ts` and redirect to
     // /!roomId/2022/01/01?at=$eventId
@@ -217,6 +220,7 @@ router.get(
 
 router.get(
   '/jump',
+  identifyRoute('app-archive-room-jump'),
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
@@ -726,6 +730,7 @@ router.get(
   // `path-to-regex` bug where the `?` wasn't attaching to the capture group, see
   // https://github.com/pillarjs/path-to-regexp/issues/287
   '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2}):time(T\\d\\d?:\\d\\d?((:\\d\\d?)?))?',
+  identifyRoute('app-archive-room-date'),
   timeoutMiddleware,
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {

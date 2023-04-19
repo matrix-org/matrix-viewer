@@ -6,6 +6,7 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
+const identifyRoute = require('../middleware/identify-route-middleware');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
@@ -29,6 +30,7 @@ const router = express.Router({
 
 router.get(
   '/',
+  identifyRoute('app-room-directory-index'),
   asyncHandler(async function (req, res) {
     const paginationToken = req.query.page;
     const searchTerm = req.query.search;
