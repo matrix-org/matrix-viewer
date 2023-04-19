@@ -2,11 +2,9 @@
 'use strict';
 
 const path = require('path');
-const { defineConfig, splitVendorChunkPlugin } = require('vite');
-
-const getVersionTags = require('../server/lib/get-version-tags');
-
-const { assetTag } = getVersionTags();
+const {
+  defineConfig, //splitVendorChunkPlugin
+} = require('vite');
 
 module.exports = defineConfig({
   // We have to specify this otherwise Vite will override NODE_ENV as
@@ -42,8 +40,8 @@ module.exports = defineConfig({
         path.resolve(__dirname, '../client/js/entry-client-room-directory.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-alias-hash-redirect.js'),
       ],
-      fileName: (format) => `[name].${assetTag}.${format}.js`,
-      //fileName: '[name]',
+      //fileName: (format) => `[name].${format}.js`,
+      fileName: '[name]',
       formats: [
         'es',
         //'cjs',
@@ -57,15 +55,20 @@ module.exports = defineConfig({
       },
     },
 
-    // TODO: xxx
+    // We want to know how the transformed source relates back to the original source
+    // for easier debugging
     sourcemap: true,
 
-    // Creates `dist/ssr-manifest.json` which is a map from module IDs to client files
-    // (which can have hashes and are normally hard to reference)
-    //ssrManifest: true,
-
-    // Generate `manifest.json` in outDir
+    // Generate `dist/manifest.json` that we can use to map a given file to it's built
+    // hashed file name and any dependencies it has.
     manifest: true,
+    // We don't want to use the `ssrManifest` option. It's supposedly "for determining
+    // style links and asset preload directives in production"
+    // (https://vitejs.dev/config/build-options.html#build-ssrmanifest) (also see
+    // https://vitejs.dev/guide/ssr.html#generating-preload-directives) but doesn't seem
+    // very useful or what we want.
+    //
+    // ssrManifest: true,
 
     // Since we're build other things to `dist/`, we don't want it to get wiped out
     emptyOutDir: false,

@@ -18,14 +18,12 @@ function readVersionFileSync(path) {
   }
 }
 
-const assetTag = readVersionFileSync(path.join(__dirname, '../../dist/ASSET_TAG'), 'utf8');
 const commit = readVersionFileSync(path.join(__dirname, '../../dist/GIT_COMMIT'), 'utf8');
 const version = readVersionFileSync(path.join(__dirname, '../../dist/VERSION'), 'utf8');
 const versionDate = readVersionFileSync(path.join(__dirname, '../../dist/VERSION_DATE'), 'utf8');
 
 function getVersionTags() {
   return {
-    assetTag,
     commit,
     version,
     versionDate,

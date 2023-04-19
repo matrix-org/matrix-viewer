@@ -38,10 +38,7 @@ async function writeVersionFiles() {
     );
   }
 
-  const assetTag = commit.slice(0, 8);
-
   await mkdirp(path.join(__dirname, '../dist/'));
-  await writeFile(path.join(__dirname, '../dist/ASSET_TAG'), assetTag);
   await writeFile(path.join(__dirname, '../dist/GIT_COMMIT'), commit);
   await writeFile(path.join(__dirname, '../dist/VERSION'), branch);
   await writeFile(path.join(__dirname, '../dist/VERSION_DATE'), new Date().toISOString());
