@@ -8,6 +8,7 @@ const asyncHandler = require('../lib/express-async-handler');
 
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
+const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -65,15 +66,16 @@ router.get(
     const roomDirectoryStylesUrl = urlJoin(basePath, '/css/room-directory.css');
     const jsBundleUrl = urlJoin(basePath, '/js/entry-client-room-directory.es.js');
 
+    const pageOptions = {
+      title: `Matrix Public Archive`,
+      styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
+      scripts: [jsBundleUrl],
+      locationHref: urlJoin(basePath, req.originalUrl),
+      shouldIndex,
+      cspNonce: res.locals.cspNonce,
+    };
     const pageHtml = await renderHydrogenVmRenderScriptToPageHtml({
-      pageOptions: {
-        title: `Matrix Public Archive`,
-        styles: [hydrogenStylesUrl, stylesUrl, roomDirectoryStylesUrl],
-        scripts: [jsBundleUrl],
-        locationHref: urlJoin(basePath, req.originalUrl),
-        shouldIndex,
-        cspNonce: res.locals.cspNonce,
-      },
+      pageOptions,
       vmRenderScriptFilePath: path.resolve(
         __dirname,
         '../../shared/room-directory-vm-render-script.js'
@@ -101,6 +103,8 @@ router.get(
         },
       },
     });
+
+    setHeadersToPreloadAssets(res, pageOptions);
 
     res.set('Content-Type', 'text/html');
     res.send(pageHtml);
