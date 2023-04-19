@@ -347,8 +347,10 @@ router.get(
       // that same day that still encompasses the closest message looking backwards,
       // like `/2020/01/02T13:00:00`
       if (dir === DIRECTION.backward) {
-        // We choose `currentRangeStartTs` instead of `ts` (the jump point) because TODO: why?
-        // and we don't choose `currentRangeEndTs` because TODO: why?
+        // We choose `currentRangeStartTs` instead of `ts` (the jump point) because
+        // TODO: why? and we don't choose `currentRangeEndTs` because TODO: why? - I
+        // feel like I can't justify this, see
+        // https://github.com/matrix-org/matrix-public-archive/pull/167#discussion_r1170850432
         const fromSameDay =
           tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeStartTs, tsForClosestEvent);
         const fromSameHour =
