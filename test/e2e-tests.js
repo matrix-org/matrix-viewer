@@ -1754,8 +1754,14 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
+          // Tests for "less than X" for the forwards direction
+          // --------------------------------------------------
           {
-            // TODO
+            // From the first page with too many messages, starting at event14 with
+            // minute precision in the URL, we look backwards for the closest event.
+            // Because we find event9 as the closest, where the page1
+            // `currentRangeStartTs` is less than an hour away from event9, we have to
+            // round up to the nearest minute.
             testName:
               'can jump backward to the previous activity when less than an hour between all messages',
             roomDayMessageStructureString: `
@@ -1780,7 +1786,11 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // TODO
+            // From the first page with too many messages, starting at event14 with
+            // day precision in the URL, we look backwards for the closest event.
+            // Because we find event9 as the closest, where the page1
+            // `currentRangeStartTs` is less than an hour away from event9, we have to
+            // round up to the nearest minute.
             testName:
               'can jump backward to the previous activity when less than an hour between all messages (starting from day precision)',
             roomDayMessageStructureString: `
@@ -1805,7 +1815,11 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // TODO
+            // From the first page with too many messages, starting at event14 with
+            // minute precision in the URL, we look backwards for the closest event.
+            // Because we find event9 as the closest, where the page1
+            // `currentRangeStartTs` is less than an minute away from event9, we have to
+            // round up to the nearest second.
             testName:
               'can jump backward to the previous activity when less than an minute between all messages',
             roomDayMessageStructureString: `
@@ -1830,7 +1844,11 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // TODO
+            // From the first page with too many messages, starting at event14 with
+            // day precision in the URL, we look backwards for the closest event.
+            // Because we find event9 as the closest, where the page1
+            // `currentRangeStartTs` is less than an minute away from event9, we have to
+            // round up to the nearest second.
             testName:
               'can jump backward to the previous activity when less than an minute between all messages (starting from day precision)',
             roomDayMessageStructureString: `
@@ -1854,7 +1872,69 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
-          // TODO: Add tests for "less than X" for the forwards direction
+          // Tests for "less than X" for the forwards direction
+          // --------------------------------------------------
+          // We can't do the `(start from day precision)` variants when jumping forwards
+          // because day precision starts off at `T23:59:59.999Z` and jumping forward
+          // will always land us in the next day.
+          {
+            // We jump forward 4 messages (`archiveMessageLimit`) to event10, then
+            // back-track to the nearest minute which starts off at event9 and render the
+            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // to determine overflow.
+            testName:
+              'can jump forward to the next activity when less than an hour between all messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1                                                                              ]
+                    [page1                  ]
+                                            |--jump-fwd-4-messages-->|
+                                      [page2                  ]
+            `,
+            // More than a minute for each but less than an hour when you multiply this
+            // across all of messages
+            timeIncrementBetweenMessages: 2 * ONE_MINUTE_IN_MS,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01T00:11',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01T00:11',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/01T00:18?at=$event7',
+              action: null,
+            },
+          },
+          {
+            // We jump forward 4 messages (`archiveMessageLimit`) to event10, then
+            // back-track to the nearest second which starts off at event9 and render the
+            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // to determine overflow.
+            testName:
+              'can jump forward to the next activity when less than an minute between all messages',
+            roomDayMessageStructureString: `
+              [room1                                                                             ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14
+              [day1                                                                              ]
+                    [page1                  ]
+                                            |--jump-fwd-4-messages-->|
+                                      [page2                  ]
+            `,
+            // More than a second for each but less than an minute when you multiply this
+            // across all of messages
+            timeIncrementBetweenMessages: 2 * ONE_SECOND_IN_MS,
+            archiveMessageLimit: 4,
+            startUrl: '/roomid/room1/date/2022/01/01T00:00:11',
+            page1: {
+              url: '/roomid/room1/date/2022/01/01T00:00:11',
+              action: 'next',
+            },
+            page2: {
+              url: '/roomid/room1/date/2022/01/01T00:00:18?at=$event7',
+              action: null,
+            },
+          },
         ];
 
         const jumpBackwardPredecessorTestCases = [
@@ -2140,7 +2220,26 @@ describe('matrix-public-archive', () => {
               action: null,
             },
           },
-          // TODO: Test with navigation back to date in time spanning multiple room upgrades
+          {
+            testName: 'jumping forward past the end of the room will go down the successor chain',
+            roomDayMessageStructureString: `
+              [room1            ]     [room2            ]     [room3               ]     [room4                ]
+              1 <-- 2 <-- 3 <-- 4 <-- 5 <-- 6 <-- 7 <-- 8 <-- 9 <-- 10 <-- 11 <-- 12 <-- 13 <-- 14 <-- 15 <-- 16
+              [day1 ]     [day2 ]     [day3 ]     [day4 ]     [day5  ]     [day6   ]     [day7   ]     [day8   ]
+                    [page1      ]
+                                                                                         [page2                ]
+            `,
+            archiveMessageLimit: 3,
+            startUrl: '/roomid/room1/date/2022/01/02',
+            page1: {
+              url: '/roomid/room1/date/2022/01/02',
+              action: 'navigate:/roomid/room1/date/2022/01/08',
+            },
+            page2: {
+              url: '/roomid/room4/date/2022/01/08',
+              action: null,
+            },
+          },
         ];
 
         jumpTestCases.forEach((testCase) => {
