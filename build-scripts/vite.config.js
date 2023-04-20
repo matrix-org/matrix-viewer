@@ -40,20 +40,14 @@ module.exports = defineConfig({
         path.resolve(__dirname, '../client/js/entry-client-room-directory.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-alias-hash-redirect.js'),
       ],
-      //fileName: (format) => `[name].${format}.js`,
-      fileName: '[name]',
+      fileName: (format) => `[name].${format}.js`,
+      //fileName: '[name]',
       formats: [
         'es',
         //'cjs',
       ],
     },
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'hydrogen-view-sdk': ['hydrogen-view-sdk'],
-        },
-      },
-    },
+    rollupOptions: {},
 
     // We want to know how the transformed source relates back to the original source
     // for easier debugging
