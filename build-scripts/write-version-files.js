@@ -2,7 +2,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import util from 'util';
-const exec = util.promisify(require('child_process').exec);
+import { exec as _exec } from 'child_process';
+const exec = util.promisify(_exec);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
