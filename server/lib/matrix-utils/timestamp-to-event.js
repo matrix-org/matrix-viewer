@@ -30,4 +30,4 @@ async function timestampToEvent({ accessToken, roomId, ts, direction }) {
   };
 }
 
-module.exports = traceFunction(timestampToEvent);
+export default traceFunction(timestampToEvent);

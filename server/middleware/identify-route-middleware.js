@@ -6,4 +6,4 @@ function identifyRouteMiddleware(routeName) {
   };
 }
 
-module.exports = identifyRouteMiddleware;
+export default identifyRouteMiddleware;

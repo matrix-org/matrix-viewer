@@ -86,4 +86,4 @@ function installRoutes(app) {
   );
 }
 
-module.exports = installRoutes;
+export default installRoutes;

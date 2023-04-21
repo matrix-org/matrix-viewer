@@ -33,4 +33,4 @@ async function buildClientScripts(extraConfig = {}) {
   }
 }
 
-module.exports = buildClientScripts;
+export default buildClientScripts;

@@ -13,4 +13,4 @@ class HomeserverSelectionModalContentViewModel extends ViewModel {
   }
 }
 
-module.exports = HomeserverSelectionModalContentViewModel;
+export default HomeserverSelectionModalContentViewModel;

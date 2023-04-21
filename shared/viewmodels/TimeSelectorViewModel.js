@@ -81,4 +81,4 @@ class TimeSelectorViewModel extends ViewModel {
   }
 }
 
-module.exports = TimeSelectorViewModel;
+export default TimeSelectorViewModel;

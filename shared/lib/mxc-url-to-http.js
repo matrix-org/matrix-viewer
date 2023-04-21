@@ -27,4 +27,4 @@ function mxcUrlToHttpThumbnail({ mxcUrl, homeserverUrl, size }) {
   )}?${qs.toString()}`;
 }
 
-module.exports = { mxcUrlToHttp, mxcUrlToHttpThumbnail };
+export { mxcUrlToHttp, mxcUrlToHttpThumbnail };

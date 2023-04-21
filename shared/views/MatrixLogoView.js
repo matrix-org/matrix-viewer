@@ -38,4 +38,4 @@ class MatrixLogoView extends TemplateView {
   }
 }
 
-module.exports = MatrixLogoView;
+export default MatrixLogoView;

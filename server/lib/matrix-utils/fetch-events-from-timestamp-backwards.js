@@ -85,4 +85,4 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
   };
 }
 
-module.exports = traceFunction(fetchEventsFromTimestampBackwards);
+export default traceFunction(fetchEventsFromTimestampBackwards);

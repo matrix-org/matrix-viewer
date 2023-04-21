@@ -57,4 +57,4 @@ function clientSideRoomAliasHashRedirectRoute(req, res) {
   res.send(pageHtml);
 }
 
-module.exports = clientSideRoomAliasHashRedirectRoute;
+export default clientSideRoomAliasHashRedirectRoute;

@@ -39,4 +39,4 @@ function generateViteConfigForEntryPoint(entryPoint) {
   });
 }
 
-module.exports = generateViteConfigForEntryPoint;
+export default generateViteConfigForEntryPoint;

@@ -41,4 +41,4 @@ class DeveloperOptionsContentViewModel extends ViewModel {
   }
 }
 
-module.exports = DeveloperOptionsContentViewModel;
+export default DeveloperOptionsContentViewModel;

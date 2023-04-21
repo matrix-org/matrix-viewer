@@ -59,4 +59,4 @@ class RightPanelContentView extends TemplateView {
   }
 }
 
-module.exports = RightPanelContentView;
+export default RightPanelContentView;

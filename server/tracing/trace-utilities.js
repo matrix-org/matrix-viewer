@@ -54,7 +54,4 @@ function traceFunction(fn) {
   return trace(fn.name, fn);
 }
 
-module.exports = {
-  trace,
-  traceFunction,
-};
+export { trace, traceFunction };

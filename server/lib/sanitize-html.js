@@ -16,4 +16,4 @@ function sanitizeHtml(dirtyHtml) {
   return cleanHtml;
 }
 
-module.exports = sanitizeHtml;
+export default sanitizeHtml;

@@ -306,4 +306,4 @@ class RoomDirectoryView extends TemplateView {
   }
 }
 
-module.exports = RoomDirectoryView;
+export default RoomDirectoryView;

@@ -29,7 +29,4 @@ function customViewClassForTile(vm) {
   }
 }
 
-module.exports = {
-  customTileClassForEntry,
-  customViewClassForTile,
-};
+export { customTileClassForEntry, customViewClassForTile };

@@ -40,4 +40,4 @@ function redirectIfRoomAliasInHash(matrixPublicArchiveURLCreator, redirectCallba
   return false;
 }
 
-module.exports = redirectIfRoomAliasInHash;
+export default redirectIfRoomAliasInHash;

@@ -174,4 +174,4 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
   }
 }
 
-module.exports = traceFunction(runInChildProcess);
+export default traceFunction(runInChildProcess);

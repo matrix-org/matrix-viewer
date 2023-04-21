@@ -24,4 +24,4 @@ function setHeadersToPreloadAssets(res, pageOptions) {
   res.append('Link', [].concat(styleLinks, scriptLinks).join(', '));
 }
 
-module.exports = setHeadersToPreloadAssets;
+export default setHeadersToPreloadAssets;

@@ -212,4 +212,4 @@ class ArchiveRoomView extends TemplateView {
   }
 }
 
-module.exports = ArchiveRoomView;
+export default ArchiveRoomView;

@@ -20,4 +20,4 @@ function assert(value, message) {
   }
 }
 
-module.exports = assert;
+export default assert;

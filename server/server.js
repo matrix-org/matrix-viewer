@@ -21,4 +21,4 @@ installRoutes(app);
 
 const server = app.listen(basePort);
 
-module.exports = server;
+export default server;

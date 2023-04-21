@@ -66,4 +66,4 @@ class CaptureSpanProcessor {
   }
 }
 
-module.exports = CaptureSpanProcessor;
+export default CaptureSpanProcessor;

@@ -65,4 +65,4 @@ function redirectToCorrectArchiveUrlIfBadSigilMiddleware(req, res, next) {
   next();
 }
 
-module.exports = redirectToCorrectArchiveUrlIfBadSigilMiddleware;
+export default redirectToCorrectArchiveUrlIfBadSigilMiddleware;

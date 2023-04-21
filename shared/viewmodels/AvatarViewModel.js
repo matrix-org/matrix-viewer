@@ -45,4 +45,4 @@ class AvatarViewModel extends ViewModel {
   }
 }
 
-module.exports = AvatarViewModel;
+export default AvatarViewModel;

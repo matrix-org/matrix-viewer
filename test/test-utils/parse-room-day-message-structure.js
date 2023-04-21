@@ -196,4 +196,4 @@ function parseRoomDayMessageStructure(roomDayMessageStructureString) {
   };
 }
 
-module.exports = parseRoomDayMessageStructure;
+export default parseRoomDayMessageStructure;

@@ -101,4 +101,4 @@ if (atEventId) {
   return pageHtml;
 }
 
-module.exports = renderHydrogenVmRenderScriptToPageHtml;
+export default renderHydrogenVmRenderScriptToPageHtml;

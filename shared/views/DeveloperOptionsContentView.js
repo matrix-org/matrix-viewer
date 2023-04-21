@@ -31,4 +31,4 @@ class DeveloperOptionsContentView extends TemplateView {
   }
 }
 
-module.exports = DeveloperOptionsContentView;
+export default DeveloperOptionsContentView;

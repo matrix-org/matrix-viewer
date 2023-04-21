@@ -60,4 +60,4 @@ class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
   }
 }
 
-module.exports = JumpToNextActivitySummaryTileViewModel;
+export default JumpToNextActivitySummaryTileViewModel;

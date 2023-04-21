@@ -63,9 +63,4 @@ async function fetchEndpointAsJson(endpoint, options) {
   return { data, res };
 }
 
-module.exports = {
-  HTTPResponseError,
-  fetchEndpoint,
-  fetchEndpointAsText,
-  fetchEndpointAsJson,
-};
+export { HTTPResponseError, fetchEndpoint, fetchEndpointAsText, fetchEndpointAsJson };

@@ -115,4 +115,4 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
   return documentString;
 }
 
-module.exports = _renderHydrogenToStringUnsafe;
+export default _renderHydrogenToStringUnsafe;

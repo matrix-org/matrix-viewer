@@ -56,4 +56,4 @@ async function renderHydrogenToString(renderOptions) {
   }
 }
 
-module.exports = renderHydrogenToString;
+export default renderHydrogenToString;

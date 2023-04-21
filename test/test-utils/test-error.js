@@ -8,4 +8,4 @@ class TestError extends Error {
   }
 }
 
-module.exports = TestError;
+export default TestError;

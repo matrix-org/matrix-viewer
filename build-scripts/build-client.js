@@ -5,4 +5,4 @@ async function build(extraConfig) {
   await Promise.all([writeVersionFiles(), buildClientScripts(extraConfig)]);
 }
 
-module.exports = build;
+export default build;

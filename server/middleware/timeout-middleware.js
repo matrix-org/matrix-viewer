@@ -96,4 +96,4 @@ async function timeoutMiddleware(req, res, next) {
   next();
 }
 
-module.exports = asyncHandler(timeoutMiddleware);
+export default asyncHandler(timeoutMiddleware);

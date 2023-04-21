@@ -33,4 +33,4 @@ class ModalViewModel extends ViewModel {
   }
 }
 
-module.exports = ModalViewModel;
+export default ModalViewModel;

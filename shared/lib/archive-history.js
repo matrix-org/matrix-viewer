@@ -92,4 +92,4 @@ class ArchiveHistory extends History {
   }
 }
 
-module.exports = ArchiveHistory;
+export default ArchiveHistory;

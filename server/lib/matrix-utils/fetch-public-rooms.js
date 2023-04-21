@@ -48,4 +48,4 @@ async function fetchPublicRooms(accessToken, { server, searchTerm, paginationTok
   };
 }
 
-module.exports = traceFunction(fetchPublicRooms);
+export default traceFunction(fetchPublicRooms);

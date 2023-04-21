@@ -45,4 +45,4 @@ function supressBlankAnchorsReloadingThePage() {
   window.addEventListener('hashchange', eventHandler);
 }
 
-module.exports = supressBlankAnchorsReloadingThePage;
+export default supressBlankAnchorsReloadingThePage;

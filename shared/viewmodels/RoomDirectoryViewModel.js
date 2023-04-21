@@ -287,4 +287,4 @@ class RoomDirectoryViewModel extends ViewModel {
   }
 }
 
-module.exports = RoomDirectoryViewModel;
+export default RoomDirectoryViewModel;

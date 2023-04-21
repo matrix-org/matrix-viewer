@@ -25,4 +25,4 @@ function parseViaServersFromUserInput(rawViaServers) {
   return new Set(viaServerList);
 }
 
-module.exports = parseViaServersFromUserInput;
+export default parseViaServersFromUserInput;

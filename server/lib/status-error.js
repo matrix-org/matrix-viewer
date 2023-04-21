@@ -17,4 +17,4 @@ function StatusError(status, inputMessage) {
 StatusError.prototype = Object.create(Error.prototype);
 StatusError.prototype.constructor = StatusError;
 
-module.exports = StatusError;
+export default StatusError;

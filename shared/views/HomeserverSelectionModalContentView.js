@@ -31,4 +31,4 @@ class HomeserverSelectionModalContentView extends TemplateView {
   }
 }
 
-module.exports = HomeserverSelectionModalContentView;
+export default HomeserverSelectionModalContentView;

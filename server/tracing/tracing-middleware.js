@@ -63,7 +63,7 @@ function getSerializableSpans() {
   return [];
 }
 
-module.exports = {
+export {
   handleTracingMiddleware: asyncHandler(handleTracingMiddleware),
   getSerializableSpans,
   getActiveTraceId,

@@ -419,7 +419,7 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
   return mxcUri;
 }
 
-module.exports = {
+export {
   ensureUserRegistered,
   getTestClientForAs,
   getTestClientForHs,

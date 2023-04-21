@@ -504,4 +504,4 @@ class ArchiveRoomViewModel extends ViewModel {
   }
 }
 
-module.exports = ArchiveRoomViewModel;
+export default ArchiveRoomViewModel;

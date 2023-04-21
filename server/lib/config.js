@@ -55,4 +55,4 @@ nconf.add('defaults', {
   format: JSON5,
 });
 
-module.exports = nconf;
+export default nconf;

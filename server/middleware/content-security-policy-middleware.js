@@ -46,4 +46,4 @@ function contentSecurityPolicyMiddleware(req, res, next) {
   next();
 }
 
-module.exports = contentSecurityPolicyMiddleware;
+export default contentSecurityPolicyMiddleware;

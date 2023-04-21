@@ -84,7 +84,7 @@ function areTimestampsFromSameUtcSecond(aTs, bTs) {
   return getUtcStartOfSecondTs(aTs) === getUtcStartOfSecondTs(bTs);
 }
 
-module.exports = {
+export {
   roundUpTimestampToUtcDay,
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,

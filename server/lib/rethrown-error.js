@@ -55,4 +55,4 @@ class RethrownError extends ExtendedError {
   }
 }
 
-module.exports = RethrownError;
+export default RethrownError;

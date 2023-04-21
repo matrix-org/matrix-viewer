@@ -5,4 +5,4 @@ function safeJson(string) {
   return string.replace(/<\//g, '<\\/');
 }
 
-module.exports = safeJson;
+export default safeJson;

@@ -102,8 +102,4 @@ function startTracing() {
   });
 }
 
-module.exports = {
-  startTracing,
-  provider,
-  captureSpanProcessor,
-};
+export { startTracing, provider, captureSpanProcessor };

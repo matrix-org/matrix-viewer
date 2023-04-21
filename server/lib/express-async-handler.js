@@ -9,4 +9,4 @@ const asyncUtil = (fn) =>
     return Promise.resolve(fnReturn).catch(next);
   };
 
-module.exports = asyncUtil;
+export default asyncUtil;

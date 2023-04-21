@@ -70,4 +70,4 @@ class CalendarViewModel extends ViewModel {
   }
 }
 
-module.exports = CalendarViewModel;
+export default CalendarViewModel;

@@ -29,4 +29,4 @@ function getVersionTags() {
   };
 }
 
-module.exports = getVersionTags;
+export default getVersionTags;

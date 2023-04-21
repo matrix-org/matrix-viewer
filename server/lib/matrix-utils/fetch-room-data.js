@@ -218,7 +218,7 @@ const fetchRoomData = traceFunction(async function (matrixAccessToken, roomId) {
   };
 });
 
-module.exports = {
+export {
   fetchRoomData,
   fetchRoomCreationInfo,
   fetchPredecessorInfo,

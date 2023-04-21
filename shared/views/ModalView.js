@@ -124,4 +124,4 @@ class ModalView extends TemplateView {
   }
 }
 
-module.exports = ModalView;
+export default ModalView;

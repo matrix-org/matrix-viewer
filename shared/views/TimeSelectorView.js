@@ -509,4 +509,4 @@ class TimeSelectorView extends TemplateView {
   }
 }
 
-module.exports = TimeSelectorView;
+export default TimeSelectorView;

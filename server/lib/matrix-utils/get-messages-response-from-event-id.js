@@ -59,4 +59,4 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
   return messageResData;
 }
 
-module.exports = getMessagesResponseFromEventId;
+export default getMessagesResponseFromEventId;

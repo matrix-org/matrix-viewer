@@ -31,7 +31,7 @@ const VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP = {
   roomid: '!',
 };
 
-module.exports = {
+export {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,

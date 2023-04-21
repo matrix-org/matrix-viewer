@@ -71,4 +71,4 @@ class JumpToNextActivitySummaryTileView extends TemplateView {
   }
 }
 
-module.exports = JumpToNextActivitySummaryTileView;
+export default JumpToNextActivitySummaryTileView;

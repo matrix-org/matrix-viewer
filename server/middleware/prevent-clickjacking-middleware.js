@@ -5,4 +5,4 @@ function preventClickjackingMiddleware(req, res, next) {
   next();
 }
 
-module.exports = preventClickjackingMiddleware;
+export default preventClickjackingMiddleware;

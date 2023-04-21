@@ -42,4 +42,4 @@ async function writeVersionFiles() {
   await writeFile(path.join(__dirname, '../dist/VERSION_DATE'), new Date().toISOString());
 }
 
-module.exports = writeVersionFiles;
+export default writeVersionFiles;

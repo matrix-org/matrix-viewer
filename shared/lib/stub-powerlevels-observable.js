@@ -12,4 +12,4 @@ const stubPowerLevelsObservable = new RetainedObservableValue(stubPowerLevels, (
   // I don't think we need to do anything here 🤷
 });
 
-module.exports = stubPowerLevelsObservable;
+export default stubPowerLevelsObservable;

@@ -47,4 +47,4 @@ async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = new Set
   }
 }
 
-module.exports = ensureRoomJoined;
+export default ensureRoomJoined;

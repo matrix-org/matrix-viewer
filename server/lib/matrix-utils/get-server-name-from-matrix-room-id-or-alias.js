@@ -20,4 +20,4 @@ function getServerNameFromMatrixRoomIdOrAlias(roomIdOrAlias) {
   return servername;
 }
 
-module.exports = getServerNameFromMatrixRoomIdOrAlias;
+export default getServerNameFromMatrixRoomIdOrAlias;

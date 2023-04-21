@@ -157,4 +157,4 @@ class URLCreator {
   }
 }
 
-module.exports = URLCreator;
+export default URLCreator;

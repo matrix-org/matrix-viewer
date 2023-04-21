@@ -201,4 +201,4 @@ class CalendarView extends TemplateView {
   }
 }
 
-module.exports = CalendarView;
+export default CalendarView;

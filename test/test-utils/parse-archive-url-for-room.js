@@ -24,4 +24,4 @@ function parseArchiveUrlForRoom(archiveUrlForRoom) {
   };
 }
 
-module.exports = parseArchiveUrlForRoom;
+export default parseArchiveUrlForRoom;

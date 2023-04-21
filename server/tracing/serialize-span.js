@@ -39,4 +39,4 @@ function serializeSpan(span) {
   };
 }
 
-module.exports = serializeSpan;
+export default serializeSpan;

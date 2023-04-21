@@ -92,4 +92,4 @@ class RoomCardView extends TemplateView {
   }
 }
 
-module.exports = RoomCardView;
+export default RoomCardView;
