@@ -8,7 +8,7 @@ const tracing = config.get('tracing');
 
 if (tracing) {
   console.log('Tracing is active 🕵️');
-  import { startTracing } from './tracing/tracing.js';
+  const { startTracing } = await import('./tracing/tracing.js');
   startTracing();
 }
 
