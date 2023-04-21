@@ -19,6 +19,7 @@
     "eslint": "eslint",
     "prettier": "prettier"
   },
+  "type": "module",
   "engines": {
     "node": ">=16.0.0"
   },
