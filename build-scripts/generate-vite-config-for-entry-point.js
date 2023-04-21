@@ -1,6 +1,9 @@
 // vite.config.js
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import { defineConfig } from 'vite';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function generateViteConfigForEntryPoint(entryPoint) {
   const entryPointName = path.basename(entryPoint, '.js');

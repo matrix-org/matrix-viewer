@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import assert from 'assert';
 import path from 'path';
 import urlJoin from 'url-join';
@@ -19,6 +20,8 @@ assert(matrixServerName);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 const stopSearchEngineIndexing = config.get('stopSearchEngineIndexing');
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const router = express.Router({
   caseSensitive: true,

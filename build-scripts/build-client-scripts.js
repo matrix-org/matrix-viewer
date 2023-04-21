@@ -8,12 +8,14 @@
 //  - https://github.com/vitejs/vite/issues/4530
 //  - https://github.com/vitejs/vite/discussions/1736
 
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import vite from 'vite';
 import mergeOptions from 'merge-options';
 
 import generateViteConfigForEntryPoint from './generate-vite-config-for-entry-point';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const entryPoints = [
   path.resolve(__dirname, '../public/js/entry-client-hydrogen.js'),
   path.resolve(__dirname, '../public/js/entry-client-room-directory.js'),

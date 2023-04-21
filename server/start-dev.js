@@ -2,10 +2,13 @@
 
 console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import nodemon from 'nodemon';
 
 import buildClient from '../build-scripts/build-client';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Build the client-side JavaScript bundle when we see any changes
 buildClient({

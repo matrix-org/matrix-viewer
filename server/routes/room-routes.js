@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import urlJoin from 'url-join';
 import express from 'express';
@@ -54,6 +55,8 @@ assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 const stopSearchEngineIndexing = config.get('stopSearchEngineIndexing');
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import assert from 'assert';
 import path from 'path';
 import fs from 'fs';
@@ -6,6 +7,8 @@ import packageInfo from '../../package.json';
 assert(packageInfo.version);
 
 const packageVersion = packageInfo.version;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function readFileSync(path) {
   try {

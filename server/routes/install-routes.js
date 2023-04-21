@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
@@ -10,6 +11,8 @@ import contentSecurityPolicyMiddleware from '../middleware/content-security-poli
 import identifyRoute from '../middleware/identify-route-middleware';
 import clientSideRoomAliasHashRedirectRoute from './client-side-room-alias-hash-redirect-route';
 import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function installRoutes(app) {
   app.use(handleTracingMiddleware);

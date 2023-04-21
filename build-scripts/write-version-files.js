@@ -1,7 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 const { mkdir, writeFile } = require('fs').promises;
 import util from 'util';
 const exec = util.promisify(require('child_process').exec);
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function mkdirp(path) {
   try {

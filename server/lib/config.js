@@ -1,6 +1,7 @@
 // This file is based off the Gitter config,
 // https://gitlab.com/gitlab-org/gitter/env/blob/master/lib/config.js
 
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import nconf from 'nconf';
 import JSON5 from 'json5';
@@ -21,6 +22,7 @@ function configureNodeEnv() {
 
 const nodeEnv = configureNodeEnv();
 console.log(`Config is using nodeEnv=${nodeEnv}`);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configDir = path.join(__dirname, '../../config');
 
 // Setup nconf to use (in-order):

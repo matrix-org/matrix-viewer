@@ -1,6 +1,7 @@
 process.env.NODE_ENV = 'test';
 
 import assert from 'assert';
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import http from 'http';
 import urlJoin from 'url-join';
@@ -37,6 +38,8 @@ const {
 import TestError from './test-utils/test-error';
 import parseRoomDayMessageStructure from './test-utils/parse-room-day-message-structure';
 import parseArchiveUrlForRoom from './test-utils/parse-archive-url-for-room';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
