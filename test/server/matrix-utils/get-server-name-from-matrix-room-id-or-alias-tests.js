@@ -1,6 +1,6 @@
-const assert = require('assert');
+import assert from 'assert';
 
-const getServerNameFromMatrixRoomIdOrAlias = require('../../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias');
+import getServerNameFromMatrixRoomIdOrAlias from '../../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias';
 
 describe('getServerNameFromMatrixRoomIdOrAlias', () => {
   // Some examples from https://spec.matrix.org/v1.5/appendices/#server-name

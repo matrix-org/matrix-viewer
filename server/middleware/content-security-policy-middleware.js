@@ -1,7 +1,7 @@
-const crypto = require('crypto');
-const assert = require('assert');
+import crypto from 'crypto';
+import assert from 'assert';
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

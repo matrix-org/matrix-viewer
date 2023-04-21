@@ -9,12 +9,12 @@
 // This is why we have the `1-render-hydrogen-to-string.js` layer to handle
 // this.
 
-const assert = require('assert');
-const vm = require('vm');
-const path = require('path');
+import assert from 'assert';
+import vm from 'vm';
+import path from 'path';
 const { readFile } = require('fs').promises;
-const crypto = require('crypto');
-const { parseHTML } = require('linkedom');
+import crypto from 'crypto';
+import { parseHTML } from 'linkedom';
 
 // Setup the DOM context with any necessary shims/polyfills and ensure the VM
 // context global has everything that a normal document does so Hydrogen can

@@ -4,9 +4,9 @@
 // we receive the SSR results. We don't want Hydrogen to keep running after we
 // get our initial rendered HTML.
 
-const assert = require('assert');
-const RethrownError = require('../lib/rethrown-error');
-const runInChildProcess = require('../child-process-runner/run-in-child-process');
+import assert from 'assert';
+import RethrownError from '../lib/rethrown-error';
+import runInChildProcess from '../child-process-runner/run-in-child-process';
 
 // The render should be fast. If it's taking more than 5 seconds, something has
 // gone really wrong.
@@ -30,7 +30,7 @@ async function renderHydrogenToString(renderOptions) {
     // the `child_process` part of it by using
     // `render-hydrogen-to-string-unsafe` directly.
     // ```js
-    // const _renderHydrogenToStringUnsafe = require('../hydrogen-render/render-hydrogen-to-string-unsafe');
+    // import _renderHydrogenToStringUnsafe from '../hydrogen-render/render-hydrogen-to-string-unsafe';
     // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(renderOptions);
     // ```
     //

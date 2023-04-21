@@ -3,16 +3,16 @@
 //
 // Data is passed in via `window.matrixPublicArchiveContext`
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { Platform, Navigation, createRouter } = require('hydrogen-view-sdk');
+import assert from 'matrix-public-archive-shared/lib/assert';
+import { Platform, Navigation, createRouter } from 'hydrogen-view-sdk';
 
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
-const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
-const redirectIfRoomAliasInHash = require('matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash');
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
+import ArchiveHistory from 'matrix-public-archive-shared/lib/archive-history';
+import supressBlankAnchorsReloadingThePage from 'matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page';
+import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash';
 
-const RoomDirectoryView = require('matrix-public-archive-shared/views/RoomDirectoryView');
-const RoomDirectoryViewModel = require('matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel');
+import RoomDirectoryView from 'matrix-public-archive-shared/views/RoomDirectoryView';
+import RoomDirectoryViewModel from 'matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel';
 
 const rooms = window.matrixPublicArchiveContext.rooms;
 assert(rooms);

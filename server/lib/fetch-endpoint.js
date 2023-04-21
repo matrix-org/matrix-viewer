@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 class HTTPResponseError extends Error {
   constructor(response, responseText, ...args) {

@@ -1,7 +1,7 @@
-const assert = require('assert');
-const escapeStringRegexp = require('escape-string-regexp');
+import assert from 'assert';
+import escapeStringRegexp from 'escape-string-regexp';
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const basePath = config.get('basePath');
 assert(basePath);
 const {

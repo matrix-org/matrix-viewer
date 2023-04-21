@@ -1,6 +1,6 @@
-const { ViewModel } = require('hydrogen-view-sdk');
+import { ViewModel } from 'hydrogen-view-sdk';
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+import assert from 'matrix-public-archive-shared/lib/assert';
 
 class CalendarViewModel extends ViewModel {
   constructor(options) {

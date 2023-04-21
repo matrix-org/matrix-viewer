@@ -1,9 +1,9 @@
-const { TemplateView, ListView, text } = require('hydrogen-view-sdk');
+import { TemplateView, ListView, text } from 'hydrogen-view-sdk';
 
-const ModalView = require('matrix-public-archive-shared/views/ModalView');
-const HomeserverSelectionModalContentView = require('./HomeserverSelectionModalContentView');
-const MatrixLogoView = require('./MatrixLogoView');
-const RoomCardView = require('./RoomCardView');
+import ModalView from 'matrix-public-archive-shared/views/ModalView';
+import HomeserverSelectionModalContentView from './HomeserverSelectionModalContentView';
+import MatrixLogoView from './MatrixLogoView';
+import RoomCardView from './RoomCardView';
 
 class RoomDirectoryView extends TemplateView {
   render(t, vm) {

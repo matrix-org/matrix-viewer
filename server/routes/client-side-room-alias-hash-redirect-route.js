@@ -1,9 +1,9 @@
-const assert = require('assert');
-const urlJoin = require('url-join');
-const safeJson = require('../lib/safe-json');
-const sanitizeHtml = require('../lib/sanitize-html');
+import assert from 'assert';
+import urlJoin from 'url-join';
+import safeJson from '../lib/safe-json';
+import sanitizeHtml from '../lib/sanitize-html';
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const basePath = config.get('basePath');
 assert(basePath);
 

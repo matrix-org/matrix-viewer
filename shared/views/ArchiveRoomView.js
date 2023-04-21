@@ -10,8 +10,8 @@ const {
   customViewClassForTile,
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
 
-const DeveloperOptionsContentView = require('matrix-public-archive-shared/views/DeveloperOptionsContentView');
-const ModalView = require('matrix-public-archive-shared/views/ModalView');
+import DeveloperOptionsContentView from 'matrix-public-archive-shared/views/DeveloperOptionsContentView';
+import ModalView from 'matrix-public-archive-shared/views/ModalView';
 
 class RoomHeaderView extends TemplateView {
   render(t, vm) {

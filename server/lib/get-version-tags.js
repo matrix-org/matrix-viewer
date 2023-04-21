@@ -1,8 +1,8 @@
-const assert = require('assert');
-const path = require('path');
-const fs = require('fs');
+import assert from 'assert';
+import path from 'path';
+import fs from 'fs';
 
-const packageInfo = require('../../package.json');
+import packageInfo from '../../package.json';
 assert(packageInfo.version);
 
 const packageVersion = packageInfo.version;

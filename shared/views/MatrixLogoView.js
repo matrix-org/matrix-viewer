@@ -1,4 +1,4 @@
-const { TemplateView } = require('hydrogen-view-sdk');
+import { TemplateView } from 'hydrogen-view-sdk';
 
 class MatrixLogoView extends TemplateView {
   render(t) {

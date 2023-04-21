@@ -1,18 +1,18 @@
 process.env.NODE_ENV = 'test';
 
-const assert = require('assert');
-const path = require('path');
-const http = require('http');
-const urlJoin = require('url-join');
-const escapeStringRegexp = require('escape-string-regexp');
-const { parseHTML } = require('linkedom');
+import assert from 'assert';
+import path from 'path';
+import http from 'http';
+import urlJoin from 'url-join';
+import escapeStringRegexp from 'escape-string-regexp';
+import { parseHTML } from 'linkedom';
 const { readFile } = require('fs').promises;
-const chalk = require('chalk');
+import chalk from 'chalk';
 
-const RethrownError = require('../server/lib/rethrown-error');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
-const config = require('../server/lib/config');
+import RethrownError from '../server/lib/rethrown-error';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
+import { fetchEndpointAsText, fetchEndpointAsJson } from '../server/lib/fetch-endpoint';
+import config from '../server/lib/config';
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
@@ -34,9 +34,9 @@ const {
   updateProfile,
   uploadContent,
 } = require('./test-utils/client-utils');
-const TestError = require('./test-utils/test-error');
-const parseRoomDayMessageStructure = require('./test-utils/parse-room-day-message-structure');
-const parseArchiveUrlForRoom = require('./test-utils/parse-archive-url-for-room');
+import TestError from './test-utils/test-error';
+import parseRoomDayMessageStructure from './test-utils/parse-room-day-message-structure';
+import parseArchiveUrlForRoom from './test-utils/parse-archive-url-for-room';
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');

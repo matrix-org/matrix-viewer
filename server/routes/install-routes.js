@@ -1,15 +1,15 @@
-const path = require('path');
-const express = require('express');
-const cors = require('cors');
-const asyncHandler = require('../lib/express-async-handler');
+import path from 'path';
+import express from 'express';
+import cors from 'cors';
+import asyncHandler from '../lib/express-async-handler';
 
-const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
-const getVersionTags = require('../lib/get-version-tags');
-const preventClickjackingMiddleware = require('../middleware/prevent-clickjacking-middleware');
-const contentSecurityPolicyMiddleware = require('../middleware/content-security-policy-middleware');
-const identifyRoute = require('../middleware/identify-route-middleware');
-const clientSideRoomAliasHashRedirectRoute = require('./client-side-room-alias-hash-redirect-route');
-const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
+import { handleTracingMiddleware } from '../tracing/tracing-middleware';
+import getVersionTags from '../lib/get-version-tags';
+import preventClickjackingMiddleware from '../middleware/prevent-clickjacking-middleware';
+import contentSecurityPolicyMiddleware from '../middleware/content-security-policy-middleware';
+import identifyRoute from '../middleware/identify-route-middleware';
+import clientSideRoomAliasHashRedirectRoute from './client-side-room-alias-hash-redirect-route';
+import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware';
 
 function installRoutes(app) {
   app.use(handleTracingMiddleware);

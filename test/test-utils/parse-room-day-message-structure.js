@@ -1,4 +1,4 @@
-const assert = require('assert');
+import assert from 'assert';
 
 function assertSequentialNumbersStartingFromOne(numbers) {
   for (let i = 0; i < numbers.length - 1; i++) {

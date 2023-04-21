@@ -1,9 +1,9 @@
-const assert = require('assert');
+import assert from 'assert';
 
-const { getSerializableSpans } = require('../tracing/tracing-middleware');
-const renderHydrogenToString = require('../hydrogen-render/render-hydrogen-to-string');
-const sanitizeHtml = require('../lib/sanitize-html');
-const safeJson = require('../lib/safe-json');
+import { getSerializableSpans } from '../tracing/tracing-middleware';
+import renderHydrogenToString from '../hydrogen-render/render-hydrogen-to-string';
+import sanitizeHtml from '../lib/sanitize-html';
+import safeJson from '../lib/safe-json';
 
 async function renderHydrogenVmRenderScriptToPageHtml({
   pageOptions,

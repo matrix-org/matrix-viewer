@@ -9,20 +9,20 @@ const {
   encodeEventIdKey,
 } = require('hydrogen-view-sdk');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+import assert from 'matrix-public-archive-shared/lib/assert';
 
-const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
-const TimeSelectorViewModel = require('matrix-public-archive-shared/viewmodels/TimeSelectorViewModel');
-const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
-const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
-const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarViewModel');
+import ModalViewModel from 'matrix-public-archive-shared/viewmodels/ModalViewModel';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
+import CalendarViewModel from 'matrix-public-archive-shared/viewmodels/CalendarViewModel';
+import TimeSelectorViewModel from 'matrix-public-archive-shared/viewmodels/TimeSelectorViewModel';
+import DeveloperOptionsContentViewModel from 'matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel';
+import RightPanelContentView from 'matrix-public-archive-shared/views/RightPanelContentView';
+import AvatarViewModel from 'matrix-public-archive-shared/viewmodels/AvatarViewModel';
 const {
   customTileClassForEntry,
 } = require('matrix-public-archive-shared/lib/custom-tile-utilities');
-const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+import stubPowerLevelsObservable from 'matrix-public-archive-shared/lib/stub-powerlevels-observable';
+import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
 const {
   areTimestampsFromSameUtcDay,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');

@@ -1,29 +1,29 @@
-const assert = require('assert');
-const path = require('path');
-const urlJoin = require('url-join');
-const express = require('express');
-const asyncHandler = require('../lib/express-async-handler');
-const StatusError = require('../lib/status-error');
+import assert from 'assert';
+import path from 'path';
+import urlJoin from 'url-join';
+import express from 'express';
+import asyncHandler from '../lib/express-async-handler';
+import StatusError from '../lib/status-error';
 
-const timeoutMiddleware = require('../middleware/timeout-middleware');
-const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
-const identifyRoute = require('../middleware/identify-route-middleware');
+import timeoutMiddleware from '../middleware/timeout-middleware';
+import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware';
+import identifyRoute from '../middleware/identify-route-middleware';
 
-const { HTTPResponseError } = require('../lib/fetch-endpoint');
-const parseViaServersFromUserInput = require('../lib/parse-via-servers-from-user-input');
+import { HTTPResponseError } from '../lib/fetch-endpoint';
+import parseViaServersFromUserInput from '../lib/parse-via-servers-from-user-input';
 const {
   fetchRoomData,
   fetchPredecessorInfo,
   fetchSuccessorInfo,
 } = require('../lib/matrix-utils/fetch-room-data');
-const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
-const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
-const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
-const { removeMe_fetchRoomCreateEventId } = require('../lib/matrix-utils/fetch-room-data');
-const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
-const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
-const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+import fetchEventsFromTimestampBackwards from '../lib/matrix-utils/fetch-events-from-timestamp-backwards';
+import ensureRoomJoined from '../lib/matrix-utils/ensure-room-joined';
+import timestampToEvent from '../lib/matrix-utils/timestamp-to-event';
+import { removeMe_fetchRoomCreateEventId } from '../lib/matrix-utils/fetch-room-data';
+import getMessagesResponseFromEventId from '../lib/matrix-utils/get-messages-response-from-event-id';
+import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html';
+import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
@@ -46,7 +46,7 @@ const {
   areTimestampsFromSameUtcSecond,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const basePath = config.get('basePath');
 assert(basePath);
 const matrixServerUrl = config.get('matrixServerUrl');

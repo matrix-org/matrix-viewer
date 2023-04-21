@@ -1,15 +1,15 @@
-const assert = require('assert');
-const path = require('path');
-const urlJoin = require('url-join');
-const express = require('express');
-const asyncHandler = require('../lib/express-async-handler');
+import assert from 'assert';
+import path from 'path';
+import urlJoin from 'url-join';
+import express from 'express';
+import asyncHandler from '../lib/express-async-handler';
 
-const identifyRoute = require('../middleware/identify-route-middleware');
-const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
-const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
-const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
+import identifyRoute from '../middleware/identify-route-middleware';
+import fetchPublicRooms from '../lib/matrix-utils/fetch-public-rooms';
+import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html';
+import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets';
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const basePath = config.get('basePath');
 assert(basePath);
 const matrixServerUrl = config.get('matrixServerUrl');

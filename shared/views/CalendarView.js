@@ -1,6 +1,6 @@
 // Be mindful to do all date operations in UTC (the archive is all in UTC date/times)
 
-const { TemplateView } = require('hydrogen-view-sdk');
+import { TemplateView } from 'hydrogen-view-sdk';
 const {
   areTimestampsFromSameUtcDay,
 } = require('matrix-public-archive-shared/lib/timestamp-utilities');

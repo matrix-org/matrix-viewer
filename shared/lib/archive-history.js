@@ -1,5 +1,5 @@
-const { History } = require('hydrogen-view-sdk');
-const assert = require('./assert');
+import { History } from 'hydrogen-view-sdk';
+import assert from './assert';
 
 // Mock a full hash whenever someone asks via `history.get()` but when
 // constructing URL's for use `href` etc, they should relative to the room

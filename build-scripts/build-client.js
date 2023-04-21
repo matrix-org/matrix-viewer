@@ -1,5 +1,5 @@
-const buildClientScripts = require('./build-client-scripts');
-const writeVersionFiles = require('./write-version-files');
+import buildClientScripts from './build-client-scripts';
+import writeVersionFiles from './write-version-files';
 
 async function build(extraConfig) {
   await Promise.all([writeVersionFiles(), buildClientScripts(extraConfig)]);

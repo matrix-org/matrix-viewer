@@ -1,7 +1,7 @@
-const { ViewModel, avatarInitials, getIdentifierColorNumber } = require('hydrogen-view-sdk');
+import { ViewModel, avatarInitials, getIdentifierColorNumber } from 'hydrogen-view-sdk';
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { mxcUrlToHttpThumbnail } = require('matrix-public-archive-shared/lib/mxc-url-to-http');
+import assert from 'matrix-public-archive-shared/lib/assert';
+import { mxcUrlToHttpThumbnail } from 'matrix-public-archive-shared/lib/mxc-url-to-http';
 
 class AvatarViewModel extends ViewModel {
   constructor(options) {

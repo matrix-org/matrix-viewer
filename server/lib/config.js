@@ -1,9 +1,9 @@
 // This file is based off the Gitter config,
 // https://gitlab.com/gitlab-org/gitter/env/blob/master/lib/config.js
 
-const path = require('path');
-const nconf = require('nconf');
-const JSON5 = require('json5');
+import path from 'path';
+import nconf from 'nconf';
+import JSON5 from 'json5';
 
 function configureNodeEnv() {
   const nodeEnv = process.env.NODE_ENV;

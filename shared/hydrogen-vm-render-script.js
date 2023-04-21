@@ -3,15 +3,15 @@
 //
 // Data is passed in via `window.matrixPublicArchiveContext`
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { Platform, MediaRepository, createNavigation, createRouter } = require('hydrogen-view-sdk');
+import assert from 'matrix-public-archive-shared/lib/assert';
+import { Platform, MediaRepository, createNavigation, createRouter } from 'hydrogen-view-sdk';
 
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
-const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
-const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
-const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
-const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
-const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
+import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
+import ArchiveRoomView from 'matrix-public-archive-shared/views/ArchiveRoomView';
+import ArchiveHistory from 'matrix-public-archive-shared/lib/archive-history';
+import supressBlankAnchorsReloadingThePage from 'matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page';
+import ArchiveRoomViewModel from 'matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel';
+import stubPowerLevelsObservable from 'matrix-public-archive-shared/lib/stub-powerlevels-observable';
 
 const toTimestamp = window.matrixPublicArchiveContext.toTimestamp;
 assert(toTimestamp);

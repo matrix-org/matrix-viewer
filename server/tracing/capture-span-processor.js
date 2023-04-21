@@ -1,6 +1,6 @@
-//const { SpanProcessor } = require('@opentelemetry/sdk-trace-base');
-const { suppressTracing } = require('@opentelemetry/core');
-const { context } = require('@opentelemetry/api');
+//import { SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { suppressTracing } from '@opentelemetry/core';
+import { context } from '@opentelemetry/api';
 
 // 1. Keeps track of all spans for a given trace after calling
 //    `trackSpansInTrace(traceId)` (call this in a middleware before any other

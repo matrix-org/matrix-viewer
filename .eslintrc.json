@@ -1,15 +1,14 @@
 {
   "env": {
     "es6": true,
-    "commonjs": true,
     "node": true
   },
   "parserOptions": {
     "ecmaVersion": 2022,
-    "sourceType": "script"
+    "sourceType": "module"
   },
   "plugins": ["node"],
-  "extends": ["eslint:recommended", "prettier"],
+  "extends": ["eslint:recommended", "prettier", "plugin:node/recommended"],
   "rules": {
     "indent": "off",
     "comma-dangle": "off",
@@ -75,10 +74,6 @@
           "mode": "minimum"
         }
       }
-    ],
-    "node/no-missing-require": "error",
-    "node/no-missing-import": "error",
-    "node/no-unsupported-features/es-syntax": "error",
-    "node/no-unsupported-features/es-builtins": "error"
+    ]
   }
 }

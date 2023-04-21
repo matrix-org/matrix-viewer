@@ -1,7 +1,7 @@
-const assert = require('assert');
-const opentelemetryApi = require('@opentelemetry/api');
+import assert from 'assert';
+import opentelemetryApi from '@opentelemetry/api';
 
-const packageInfo = require('../../package.json');
+import packageInfo from '../../package.json';
 assert(packageInfo.name);
 assert(packageInfo.version);
 

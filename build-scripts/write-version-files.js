@@ -1,6 +1,6 @@
-const path = require('path');
+import path from 'path';
 const { mkdir, writeFile } = require('fs').promises;
-const util = require('util');
+import util from 'util';
 const exec = util.promisify(require('child_process').exec);
 
 async function mkdirp(path) {

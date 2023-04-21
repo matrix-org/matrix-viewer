@@ -1,4 +1,4 @@
-const { RetainedObservableValue, PowerLevels } = require('hydrogen-view-sdk');
+import { RetainedObservableValue, PowerLevels } from 'hydrogen-view-sdk';
 
 // Fake power levels for viewing the room anonymously
 const stubPowerLevels = new PowerLevels({

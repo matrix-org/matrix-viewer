@@ -1,5 +1,5 @@
-const { TemplateView, AvatarView } = require('hydrogen-view-sdk');
-const AvatarViewModel = require('../viewmodels/AvatarViewModel');
+import { TemplateView, AvatarView } from 'hydrogen-view-sdk';
+import AvatarViewModel from '../viewmodels/AvatarViewModel';
 
 class RoomCardView extends TemplateView {
   render(t, vm) {

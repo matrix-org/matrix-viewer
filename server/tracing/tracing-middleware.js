@@ -1,8 +1,8 @@
-const opentelemetryApi = require('@opentelemetry/api');
+import opentelemetryApi from '@opentelemetry/api';
 
-const asyncHandler = require('../lib/express-async-handler');
-const { captureSpanProcessor } = require('./tracing');
-const serializeSpan = require('./serialize-span');
+import asyncHandler from '../lib/express-async-handler';
+import { captureSpanProcessor } from './tracing';
+import serializeSpan from './serialize-span';
 
 // From the current active context, grab the `traceId`. The `traceId` will be
 // shared for the whole request because all spans live under the root span.

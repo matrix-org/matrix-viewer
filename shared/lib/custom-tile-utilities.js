@@ -1,11 +1,11 @@
 // Extending the Hydrogen utilities to add our custom tiles
 
-const { tileClassForEntry, viewClassForTile } = require('hydrogen-view-sdk');
+import { tileClassForEntry, viewClassForTile } from 'hydrogen-view-sdk';
 
-const JumpToPreviousActivitySummaryTileViewModel = require('matrix-public-archive-shared/viewmodels/JumpToPreviousActivitySummaryTileViewModel');
-const JumpToPreviousActivitySummaryTileView = require('matrix-public-archive-shared/views/JumpToPreviousActivitySummaryTileView');
-const JumpToNextActivitySummaryTileViewModel = require('matrix-public-archive-shared/viewmodels/JumpToNextActivitySummaryTileViewModel');
-const JumpToNextActivitySummaryTileView = require('matrix-public-archive-shared/views/JumpToNextActivitySummaryTileView');
+import JumpToPreviousActivitySummaryTileViewModel from 'matrix-public-archive-shared/viewmodels/JumpToPreviousActivitySummaryTileViewModel';
+import JumpToPreviousActivitySummaryTileView from 'matrix-public-archive-shared/views/JumpToPreviousActivitySummaryTileView';
+import JumpToNextActivitySummaryTileViewModel from 'matrix-public-archive-shared/viewmodels/JumpToNextActivitySummaryTileViewModel';
+import JumpToNextActivitySummaryTileView from 'matrix-public-archive-shared/views/JumpToNextActivitySummaryTileView';
 
 function customTileClassForEntry(entry) {
   switch (entry.eventType) {

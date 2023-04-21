@@ -1,11 +1,11 @@
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { TemplateView } = require('hydrogen-view-sdk');
+import assert from 'matrix-public-archive-shared/lib/assert';
+import { TemplateView } from 'hydrogen-view-sdk';
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
-const { getUtcStartOfDayTs } = require('matrix-public-archive-shared/lib/timestamp-utilities');
+import { getUtcStartOfDayTs } from 'matrix-public-archive-shared/lib/timestamp-utilities';
 
 function clamp(input, min, max) {
   assert(input !== undefined);

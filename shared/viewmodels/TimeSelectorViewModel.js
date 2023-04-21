@@ -1,6 +1,6 @@
-const { ViewModel } = require('hydrogen-view-sdk');
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+import { ViewModel } from 'hydrogen-view-sdk';
+import assert from 'matrix-public-archive-shared/lib/assert';
+import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
 
 class TimeSelectorViewModel extends ViewModel {
   constructor(options) {

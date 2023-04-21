@@ -8,11 +8,11 @@
 //  - https://github.com/vitejs/vite/issues/4530
 //  - https://github.com/vitejs/vite/discussions/1736
 
-const path = require('path');
-const vite = require('vite');
-const mergeOptions = require('merge-options');
+import path from 'path';
+import vite from 'vite';
+import mergeOptions from 'merge-options';
 
-const generateViteConfigForEntryPoint = require('./generate-vite-config-for-entry-point');
+import generateViteConfigForEntryPoint from './generate-vite-config-for-entry-point';
 
 const entryPoints = [
   path.resolve(__dirname, '../public/js/entry-client-hydrogen.js'),

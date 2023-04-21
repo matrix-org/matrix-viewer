@@ -1,10 +1,10 @@
-const assert = require('assert');
+import assert from 'assert';
 
-const urlJoin = require('url-join');
-const { fetchEndpointAsJson } = require('../fetch-endpoint');
-const { traceFunction } = require('../../tracing/trace-utilities');
+import urlJoin from 'url-join';
+import { fetchEndpointAsJson } from '../fetch-endpoint';
+import { traceFunction } from '../../tracing/trace-utilities';
 
-const config = require('../config');
+import config from '../config';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

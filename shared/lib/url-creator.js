@@ -1,7 +1,7 @@
-const urlJoin = require('url-join');
+import urlJoin from 'url-join';
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+import assert from 'matrix-public-archive-shared/lib/assert';
+import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
 
 function qsToUrlPiece(qs) {
   if (qs.toString()) {

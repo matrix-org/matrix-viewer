@@ -1,9 +1,9 @@
 console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
-const path = require('path');
-const nodemon = require('nodemon');
+import path from 'path';
+import nodemon from 'nodemon';
 
-const buildClient = require('../build-scripts/build-client');
+import buildClient from '../build-scripts/build-client';
 
 // Build the client-side JavaScript bundle when we see any changes
 buildClient({

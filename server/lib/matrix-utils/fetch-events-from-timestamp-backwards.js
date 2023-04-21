@@ -1,11 +1,11 @@
-const assert = require('assert');
-const { traceFunction } = require('../../tracing/trace-utilities');
+import assert from 'assert';
+import { traceFunction } from '../../tracing/trace-utilities';
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
-const timestampToEvent = require('./timestamp-to-event');
-const getMessagesResponseFromEventId = require('./get-messages-response-from-event-id');
+import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values';
+import timestampToEvent from './timestamp-to-event';
+import getMessagesResponseFromEventId from './get-messages-response-from-event-id';
 
-const config = require('../config');
+import config from '../config';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

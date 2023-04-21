@@ -1,4 +1,4 @@
-const assert = require('assert');
+import assert from 'assert';
 
 // Set some preload link headers which we can use with Cloudflare to turn into 103 early
 // hints, https://developers.cloudflare.com/cache/about/early-hints/

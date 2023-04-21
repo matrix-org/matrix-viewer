@@ -1,10 +1,10 @@
-const assert = require('assert');
-const urlJoin = require('url-join');
+import assert from 'assert';
+import urlJoin from 'url-join';
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
-const { fetchEndpointAsJson } = require('../fetch-endpoint');
+import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values';
+import { fetchEndpointAsJson } from '../fetch-endpoint';
 
-const config = require('../config');
+import config from '../config';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

@@ -7,13 +7,13 @@
 // `unhandledRejection` to give more context if the process exits with code 1
 // (error) or timesout.
 
-const assert = require('assert');
-const { fork } = require('child_process');
+import assert from 'assert';
+import { fork } from 'child_process';
 
-const RethrownError = require('../lib/rethrown-error');
-const { traceFunction } = require('../tracing/trace-utilities');
+import RethrownError from '../lib/rethrown-error';
+import { traceFunction } from '../tracing/trace-utilities';
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
 
 if (!logOutputFromChildProcesses) {

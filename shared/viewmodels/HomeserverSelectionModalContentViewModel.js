@@ -1,4 +1,4 @@
-const { ViewModel } = require('hydrogen-view-sdk');
+import { ViewModel } from 'hydrogen-view-sdk';
 
 class HomeserverSelectionModalContentViewModel extends ViewModel {
   constructor(options) {

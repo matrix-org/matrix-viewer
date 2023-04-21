@@ -1,4 +1,4 @@
-const assert = require('assert');
+import assert from 'assert';
 
 // See https://spec.matrix.org/v1.5/appendices/#server-name
 function getServerNameFromMatrixRoomIdOrAlias(roomIdOrAlias) {

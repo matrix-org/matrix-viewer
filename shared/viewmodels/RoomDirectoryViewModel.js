@@ -1,9 +1,9 @@
-const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
+import { ViewModel, ObservableArray } from 'hydrogen-view-sdk';
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+import assert from 'matrix-public-archive-shared/lib/assert';
 
-const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
-const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel');
+import ModalViewModel from 'matrix-public-archive-shared/viewmodels/ModalViewModel';
+import HomeserverSelectionModalContentViewModel from 'matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel';
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 

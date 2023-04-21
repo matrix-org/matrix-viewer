@@ -1,8 +1,8 @@
-const assert = require('assert');
+import assert from 'assert';
 
-const { fetchEndpointAsJson } = require('./server/lib/fetch-endpoint');
+import { fetchEndpointAsJson } from './server/lib/fetch-endpoint';
 
-const config = require('./server/lib/config');
+import config from './server/lib/config';
 const basePort = config.get('basePort');
 assert(basePort);
 

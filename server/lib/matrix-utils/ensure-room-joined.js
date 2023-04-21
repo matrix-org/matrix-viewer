@@ -1,11 +1,11 @@
-const assert = require('assert');
-const urlJoin = require('url-join');
+import assert from 'assert';
+import urlJoin from 'url-join';
 
-const { fetchEndpointAsJson } = require('../fetch-endpoint');
-const getServerNameFromMatrixRoomIdOrAlias = require('./get-server-name-from-matrix-room-id-or-alias');
+import { fetchEndpointAsJson } from '../fetch-endpoint';
+import getServerNameFromMatrixRoomIdOrAlias from './get-server-name-from-matrix-room-id-or-alias';
 
-const config = require('../config');
-const StatusError = require('../status-error');
+import config from '../config';
+import StatusError from '../status-error';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

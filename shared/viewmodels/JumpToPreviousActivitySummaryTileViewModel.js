@@ -1,8 +1,8 @@
-const { SimpleTile } = require('hydrogen-view-sdk');
+import { SimpleTile } from 'hydrogen-view-sdk';
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const assert = require('../lib/assert');
+import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
+import assert from '../lib/assert';
 
 class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
   constructor(entry, options) {

@@ -1,27 +1,27 @@
-const assert = require('assert');
-const { registerInstrumentations } = require('@opentelemetry/instrumentation');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
-const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
+import assert from 'assert';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 const {
   BasicTracerProvider,
   // ConsoleSpanExporter,
   // SimpleSpanProcessor,
   BatchSpanProcessor,
 } = require('@opentelemetry/sdk-trace-base');
-const { AsyncLocalStorageContextManager } = require('@opentelemetry/context-async-hooks');
-const { OTTracePropagator } = require('@opentelemetry/propagator-ot-trace');
-const { Resource } = require('@opentelemetry/resources');
-const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
+import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
+import { OTTracePropagator } from '@opentelemetry/propagator-ot-trace';
+import { Resource } from '@opentelemetry/resources';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
-const CaptureSpanProcessor = require('./capture-span-processor');
+import CaptureSpanProcessor from './capture-span-processor';
 
-const config = require('../lib/config');
+import config from '../lib/config';
 const basePath = config.get('basePath');
 assert(basePath);
 const jaegerTracesEndpoint = config.get('jaegerTracesEndpoint');
 
-const packageInfo = require('../../package.json');
+import packageInfo from '../../package.json';
 assert(packageInfo.name);
 
 const basePathUrl = new URL(basePath);

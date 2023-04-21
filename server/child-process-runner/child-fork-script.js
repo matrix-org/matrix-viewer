@@ -1,9 +1,9 @@
 // Called by `child_process` `fork` in `run-in-child-process.js` so we can
 // get the data and exit the process cleanly.
 
-const assert = require('assert');
+import assert from 'assert';
 
-const RethrownError = require('../lib/rethrown-error');
+import RethrownError from '../lib/rethrown-error';
 
 // Serialize the error and send it back up to the parent process so we can
 // interact with it and know what happened when the process exits.
@@ -63,7 +63,7 @@ process.on('message', async (runArguments) => {
       modulePath,
       'Expected `modulePath` to be passed into `child-fork-script.js` via argv[2]'
     );
-    const moduleToRun = require(modulePath);
+    import moduleToRun from modulePath;
 
     // Run the module
     const result = await moduleToRun(runArguments);

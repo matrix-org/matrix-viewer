@@ -1,5 +1,5 @@
-const createDOMPurify = require('dompurify');
-const { parseHTML } = require('linkedom');
+import createDOMPurify from 'dompurify';
+import { parseHTML } from 'linkedom';
 
 const dom = parseHTML(`
 <!doctype html>
