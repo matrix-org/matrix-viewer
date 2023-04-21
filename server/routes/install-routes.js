@@ -44,16 +44,17 @@ function installRoutes(app) {
     })
   );
 
-  app.use(
-    '/hydrogen-assets',
-    express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/main.js')))
+  const hydrogenAssetsDirectoryPath = path.dirname(
+    require.resolve('hydrogen-view-sdk/assets/main.js')
   );
+  app.use('/hydrogen-assets', express.static(hydrogenAssetsDirectoryPath));
 
+  const hydrogenStylesPath = require.resolve('hydrogen-view-sdk/assets/theme-element-light.css');
   app.get(
     '/hydrogen-assets/hydrogen-styles.css',
     asyncHandler(async function (req, res) {
       res.set('Content-Type', 'text/css');
-      res.sendFile(require.resolve('hydrogen-view-sdk/assets/theme-element-light.css'));
+      res.sendFile(hydrogenStylesPath);
     })
   );
 
