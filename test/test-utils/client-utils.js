@@ -1,9 +1,9 @@
 import assert from 'assert';
 import urlJoin from 'url-join';
-import { fetchEndpointAsJson, fetchEndpoint } from '../../server/lib/fetch-endpoint';
-import getServerNameFromMatrixRoomIdOrAlias from '../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias';
+import { fetchEndpointAsJson, fetchEndpoint } from '../../server/lib/fetch-endpoint.js';
+import getServerNameFromMatrixRoomIdOrAlias from '../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias.js';
 
-import config from '../../server/lib/config';
+import config from '../../server/lib/config.js';
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');

@@ -3,16 +3,16 @@
 //
 // Data is passed in via `window.matrixPublicArchiveContext`
 
-import assert from 'matrix-public-archive-shared/lib/assert';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
 import { Platform, Navigation, createRouter } from 'hydrogen-view-sdk';
 
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-import ArchiveHistory from 'matrix-public-archive-shared/lib/archive-history';
-import supressBlankAnchorsReloadingThePage from 'matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page';
-import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
+import ArchiveHistory from 'matrix-public-archive-shared/lib/archive-history.js';
+import supressBlankAnchorsReloadingThePage from 'matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page.js';
+import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash.js';
 
-import RoomDirectoryView from 'matrix-public-archive-shared/views/RoomDirectoryView';
-import RoomDirectoryViewModel from 'matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel';
+import RoomDirectoryView from 'matrix-public-archive-shared/views/RoomDirectoryView.js';
+import RoomDirectoryViewModel from 'matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel.js';
 
 const rooms = window.matrixPublicArchiveContext.rooms;
 assert(rooms);

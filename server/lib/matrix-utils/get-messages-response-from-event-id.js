@@ -1,10 +1,10 @@
 import assert from 'assert';
 import urlJoin from 'url-join';
 
-import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values';
-import { fetchEndpointAsJson } from '../fetch-endpoint';
+import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values.js';
+import { fetchEndpointAsJson } from '../fetch-endpoint.js';
 
-import config from '../config';
+import config from '../config.js';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

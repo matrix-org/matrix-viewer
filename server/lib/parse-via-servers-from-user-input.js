@@ -1,4 +1,4 @@
-import StatusError from '../lib/status-error';
+import StatusError from '../lib/status-error.js';
 
 function parseViaServersFromUserInput(rawViaServers) {
   // `rawViaServers` could be an array, a single string, or undefined. Turn it into an

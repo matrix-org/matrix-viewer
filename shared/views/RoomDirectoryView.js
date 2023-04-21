@@ -1,9 +1,9 @@
 import { TemplateView, ListView, text } from 'hydrogen-view-sdk';
 
-import ModalView from 'matrix-public-archive-shared/views/ModalView';
-import HomeserverSelectionModalContentView from './HomeserverSelectionModalContentView';
-import MatrixLogoView from './MatrixLogoView';
-import RoomCardView from './RoomCardView';
+import ModalView from 'matrix-public-archive-shared/views/ModalView.js';
+import HomeserverSelectionModalContentView from './HomeserverSelectionModalContentView.js';
+import MatrixLogoView from './MatrixLogoView.js';
+import RoomCardView from './RoomCardView.js';
 
 class RoomDirectoryView extends TemplateView {
   render(t, vm) {

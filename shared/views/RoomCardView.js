@@ -1,5 +1,5 @@
 import { TemplateView, AvatarView } from 'hydrogen-view-sdk';
-import AvatarViewModel from '../viewmodels/AvatarViewModel';
+import AvatarViewModel from '../viewmodels/AvatarViewModel.js';
 
 class RoomCardView extends TemplateView {
   render(t, vm) {

@@ -1,5 +1,5 @@
 import { TemplateView } from 'hydrogen-view-sdk';
-import assert from '../lib/assert';
+import assert from '../lib/assert.js';
 
 class ModalView extends TemplateView {
   constructor(ContentViewClass, vm) {

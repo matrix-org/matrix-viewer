@@ -1,8 +1,8 @@
 import opentelemetryApi from '@opentelemetry/api';
 
-import asyncHandler from '../lib/express-async-handler';
-import { captureSpanProcessor } from './tracing';
-import serializeSpan from './serialize-span';
+import asyncHandler from '../lib/express-async-handler.js';
+import { captureSpanProcessor } from './tracing.js';
+import serializeSpan from './serialize-span.js';
 
 // From the current active context, grab the `traceId`. The `traceId` will be
 // shared for the whole request because all spans live under the root span.
@@ -21,7 +21,7 @@ function getActiveTraceId() {
 
 // Handles keeping track of tracing spans for each request.
 // Also adds the traceId to the to the `X-Trace-Id` response header.
-async function handleTracingMiddleware(req, res, next) {
+const handleTracingMiddleware = asyncHandler(async function (req, res, next) {
   const traceId = getActiveTraceId();
   if (traceId) {
     // Add the OpenTelemetry trace ID to the `X-Trace-Id` response header so
@@ -39,7 +39,7 @@ async function handleTracingMiddleware(req, res, next) {
   }
 
   next();
-}
+});
 
 // Get all of spans we're willing to show to the user.
 //
@@ -63,8 +63,4 @@ function getSerializableSpans() {
   return [];
 }
 
-export {
-  handleTracingMiddleware: asyncHandler(handleTracingMiddleware),
-  getSerializableSpans,
-  getActiveTraceId,
-};
+export { handleTracingMiddleware, getSerializableSpans, getActiveTraceId };

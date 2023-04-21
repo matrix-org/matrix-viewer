@@ -10,10 +10,10 @@
 import assert from 'assert';
 import { fork } from 'child_process';
 
-import RethrownError from '../lib/rethrown-error';
-import { traceFunction } from '../tracing/trace-utilities';
+import RethrownError from '../lib/rethrown-error.js';
+import { traceFunction } from '../tracing/trace-utilities.js';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
 
 if (!logOutputFromChildProcesses) {

@@ -1,9 +1,9 @@
 import assert from 'assert';
 
-import { getSerializableSpans } from '../tracing/tracing-middleware';
-import renderHydrogenToString from '../hydrogen-render/render-hydrogen-to-string';
-import sanitizeHtml from '../lib/sanitize-html';
-import safeJson from '../lib/safe-json';
+import { getSerializableSpans } from '../tracing/tracing-middleware.js';
+import renderHydrogenToString from '../hydrogen-render/render-hydrogen-to-string.js';
+import sanitizeHtml from '../lib/sanitize-html.js';
+import safeJson from '../lib/safe-json.js';
 
 async function renderHydrogenVmRenderScriptToPageHtml({
   pageOptions,

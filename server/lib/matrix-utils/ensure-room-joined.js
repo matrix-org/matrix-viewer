@@ -1,11 +1,11 @@
 import assert from 'assert';
 import urlJoin from 'url-join';
 
-import { fetchEndpointAsJson } from '../fetch-endpoint';
-import getServerNameFromMatrixRoomIdOrAlias from './get-server-name-from-matrix-room-id-or-alias';
+import { fetchEndpointAsJson } from '../fetch-endpoint.js';
+import getServerNameFromMatrixRoomIdOrAlias from './get-server-name-from-matrix-room-id-or-alias.js';
 
-import config from '../config';
-import StatusError from '../status-error';
+import config from '../config.js';
+import StatusError from '../status-error.js';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

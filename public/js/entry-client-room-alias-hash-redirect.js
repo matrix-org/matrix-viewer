@@ -1,6 +1,6 @@
-import assert from 'matrix-public-archive-shared/lib/assert';
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
+import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash.js';
 
 const config = window.matrixPublicArchiveContext.config;
 assert(config);

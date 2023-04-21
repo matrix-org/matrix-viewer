@@ -1,8 +1,8 @@
 import { TemplateView } from 'hydrogen-view-sdk';
 
-import CalendarView from 'matrix-public-archive-shared/views/CalendarView';
-import TimeSelectorView from 'matrix-public-archive-shared/views/TimeSelectorView';
-import assert from 'matrix-public-archive-shared/lib/assert';
+import CalendarView from 'matrix-public-archive-shared/views/CalendarView.js';
+import TimeSelectorView from 'matrix-public-archive-shared/views/TimeSelectorView.js';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
 
 class RightPanelContentView extends TemplateView {
   render(t, vm) {

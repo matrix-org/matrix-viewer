@@ -1,5 +1,5 @@
 import { History } from 'hydrogen-view-sdk';
-import assert from './assert';
+import assert from './assert.js';
 
 // Mock a full hash whenever someone asks via `history.get()` but when
 // constructing URL's for use `href` etc, they should relative to the room

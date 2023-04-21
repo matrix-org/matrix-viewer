@@ -1,9 +1,9 @@
 import assert from 'assert';
 import urlJoin from 'url-join';
-import safeJson from '../lib/safe-json';
-import sanitizeHtml from '../lib/sanitize-html';
+import safeJson from '../lib/safe-json.js';
+import sanitizeHtml from '../lib/sanitize-html.js';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const basePath = config.get('basePath');
 assert(basePath);
 

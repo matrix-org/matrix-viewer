@@ -1,11 +1,11 @@
 import assert from 'assert';
 import urlJoin from 'url-join';
-import asyncHandler from '../lib/express-async-handler';
-import { getSerializableSpans, getActiveTraceId } from '../tracing/tracing-middleware';
-import sanitizeHtml from '../lib/sanitize-html';
-import safeJson from '../lib/safe-json';
+import asyncHandler from '../lib/express-async-handler.js';
+import { getSerializableSpans, getActiveTraceId } from '../tracing/tracing-middleware.js';
+import sanitizeHtml from '../lib/sanitize-html.js';
+import safeJson from '../lib/safe-json.js';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const basePath = config.get('basePath');
 assert(basePath);
 const requestTimeoutMs = config.get('requestTimeoutMs');

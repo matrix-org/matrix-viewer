@@ -5,8 +5,8 @@
 // get our initial rendered HTML.
 
 import assert from 'assert';
-import RethrownError from '../lib/rethrown-error';
-import runInChildProcess from '../child-process-runner/run-in-child-process';
+import RethrownError from '../lib/rethrown-error.js';
+import runInChildProcess from '../child-process-runner/run-in-child-process.js';
 
 // The render should be fast. If it's taking more than 5 seconds, something has
 // gone really wrong.
@@ -30,7 +30,7 @@ async function renderHydrogenToString(renderOptions) {
     // the `child_process` part of it by using
     // `render-hydrogen-to-string-unsafe` directly.
     // ```js
-    // import _renderHydrogenToStringUnsafe from '../hydrogen-render/render-hydrogen-to-string-unsafe';
+    // import _renderHydrogenToStringUnsafe from '../hydrogen-render/render-hydrogen-to-string-unsafe.js';
     // const hydrogenHtmlOutput = await _renderHydrogenToStringUnsafe(renderOptions);
     // ```
     //

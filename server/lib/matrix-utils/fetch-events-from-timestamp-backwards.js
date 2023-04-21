@@ -1,11 +1,11 @@
 import assert from 'assert';
-import { traceFunction } from '../../tracing/trace-utilities';
+import { traceFunction } from '../../tracing/trace-utilities.js';
 
-import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values';
-import timestampToEvent from './timestamp-to-event';
-import getMessagesResponseFromEventId from './get-messages-response-from-event-id';
+import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values.js';
+import timestampToEvent from './timestamp-to-event.js';
+import getMessagesResponseFromEventId from './get-messages-response-from-event-id.js';
 
-import config from '../config';
+import config from '../config.js';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

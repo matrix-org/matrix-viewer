@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import getServerNameFromMatrixRoomIdOrAlias from '../../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias';
+import getServerNameFromMatrixRoomIdOrAlias from '../../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias.js';
 
 describe('getServerNameFromMatrixRoomIdOrAlias', () => {
   // Some examples from https://spec.matrix.org/v1.5/appendices/#server-name

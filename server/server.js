@@ -1,7 +1,7 @@
 console.log('server process.env.NODE_ENV', process.env.NODE_ENV);
 
 import assert from 'assert';
-import config from './lib/config';
+import config from './lib/config.js';
 const basePort = config.get('basePort');
 assert(basePort);
 const tracing = config.get('tracing');
@@ -14,7 +14,7 @@ if (tracing) {
 
 import express from 'express';
 
-import installRoutes from './routes/install-routes';
+import installRoutes from './routes/install-routes.js';
 
 const app = express();
 installRoutes(app);

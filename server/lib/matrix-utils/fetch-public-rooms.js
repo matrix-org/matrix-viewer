@@ -1,10 +1,10 @@
 import assert from 'assert';
 
 import urlJoin from 'url-join';
-import { fetchEndpointAsJson } from '../fetch-endpoint';
-import { traceFunction } from '../../tracing/trace-utilities';
+import { fetchEndpointAsJson } from '../fetch-endpoint.js';
+import { traceFunction } from '../../tracing/trace-utilities.js';
 
-import config from '../config';
+import config from '../config.js';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

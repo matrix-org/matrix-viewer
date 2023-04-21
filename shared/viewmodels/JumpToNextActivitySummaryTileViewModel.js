@@ -1,8 +1,8 @@
 import { SimpleTile } from 'hydrogen-view-sdk';
 
-import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values';
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-import assert from '../lib/assert';
+import { DIRECTION } from 'matrix-public-archive-shared/lib/reference-values.js';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
+import assert from '../lib/assert.js';
 
 class JumpToNextActivitySummaryTileViewModel extends SimpleTile {
   constructor(entry, options) {

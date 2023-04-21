@@ -3,7 +3,7 @@
 
 import assert from 'assert';
 
-import RethrownError from '../lib/rethrown-error';
+import RethrownError from '../lib/rethrown-error.js';
 
 // Serialize the error and send it back up to the parent process so we can
 // interact with it and know what happened when the process exits.

@@ -1,7 +1,7 @@
 import urlJoin from 'url-join';
 
-import assert from 'matrix-public-archive-shared/lib/assert';
-import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
+import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values.js';
 
 function qsToUrlPiece(qs) {
   if (qs.toString()) {

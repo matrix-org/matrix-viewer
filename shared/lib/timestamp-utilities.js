@@ -1,5 +1,5 @@
-import assert from 'matrix-public-archive-shared/lib/assert';
-import { MS_LOOKUP } from 'matrix-public-archive-shared/lib/reference-values';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
+import { MS_LOOKUP } from 'matrix-public-archive-shared/lib/reference-values.js';
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 function roundUpTimestampToUtcDay(ts) {

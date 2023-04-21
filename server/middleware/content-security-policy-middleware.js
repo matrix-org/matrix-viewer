@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import assert from 'assert';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

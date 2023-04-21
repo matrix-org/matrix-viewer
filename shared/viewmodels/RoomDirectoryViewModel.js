@@ -1,9 +1,9 @@
 import { ViewModel, ObservableArray } from 'hydrogen-view-sdk';
 
-import assert from 'matrix-public-archive-shared/lib/assert';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
 
-import ModalViewModel from 'matrix-public-archive-shared/viewmodels/ModalViewModel';
-import HomeserverSelectionModalContentViewModel from 'matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel';
+import ModalViewModel from 'matrix-public-archive-shared/viewmodels/ModalViewModel.js';
+import HomeserverSelectionModalContentViewModel from 'matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel.js';
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 

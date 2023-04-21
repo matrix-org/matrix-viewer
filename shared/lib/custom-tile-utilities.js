@@ -2,10 +2,10 @@
 
 import { tileClassForEntry, viewClassForTile } from 'hydrogen-view-sdk';
 
-import JumpToPreviousActivitySummaryTileViewModel from 'matrix-public-archive-shared/viewmodels/JumpToPreviousActivitySummaryTileViewModel';
-import JumpToPreviousActivitySummaryTileView from 'matrix-public-archive-shared/views/JumpToPreviousActivitySummaryTileView';
-import JumpToNextActivitySummaryTileViewModel from 'matrix-public-archive-shared/viewmodels/JumpToNextActivitySummaryTileViewModel';
-import JumpToNextActivitySummaryTileView from 'matrix-public-archive-shared/views/JumpToNextActivitySummaryTileView';
+import JumpToPreviousActivitySummaryTileViewModel from 'matrix-public-archive-shared/viewmodels/JumpToPreviousActivitySummaryTileViewModel.js';
+import JumpToPreviousActivitySummaryTileView from 'matrix-public-archive-shared/views/JumpToPreviousActivitySummaryTileView.js';
+import JumpToNextActivitySummaryTileViewModel from 'matrix-public-archive-shared/viewmodels/JumpToNextActivitySummaryTileViewModel.js';
+import JumpToNextActivitySummaryTileView from 'matrix-public-archive-shared/views/JumpToNextActivitySummaryTileView.js';
 
 function customTileClassForEntry(entry) {
   switch (entry.eventType) {
