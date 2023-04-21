@@ -66,7 +66,7 @@ process.on('message', async (runArguments) => {
 
     // Run the module
     const moduleToRun = await import(modulePath);
-    const result = await moduleToRun(runArguments);
+    const result = await moduleToRun.default(runArguments);
 
     assert(result, `No result returned from module we ran (${modulePath}).`);
 

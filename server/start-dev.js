@@ -25,6 +25,10 @@ if (process.argv.includes('--tracing')) {
   args.push('--tracing');
 }
 
+if (process.argv.includes('--logOutputFromChildProcesses')) {
+  args.push('--logOutputFromChildProcesses');
+}
+
 // Listen for any changes to files and restart the Node.js server process
 //
 // For API docs, see

@@ -9,7 +9,6 @@
 
 import assert from 'assert';
 import { fork } from 'child_process';
-import { createRequire } from 'node:module';
 
 import RethrownError from '../lib/rethrown-error.js';
 import { traceFunction } from '../tracing/trace-utilities.js';
@@ -17,8 +16,7 @@ import { traceFunction } from '../tracing/trace-utilities.js';
 import config from '../lib/config.js';
 const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
 
-const require = createRequire(import.meta.url);
-const childForkScriptModulePath = require.resolve('./child-fork-script');
+const childForkScriptModulePath = new URL('./child-fork-script', import.meta.url);
 
 if (!logOutputFromChildProcesses) {
   console.warn(
