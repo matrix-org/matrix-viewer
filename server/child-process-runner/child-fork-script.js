@@ -63,9 +63,9 @@ process.on('message', async (runArguments) => {
       modulePath,
       'Expected `modulePath` to be passed into `child-fork-script.js` via argv[2]'
     );
-    import moduleToRun from modulePath;
 
     // Run the module
+    const moduleToRun = await import(modulePath);
     const result = await moduleToRun(runArguments);
 
     assert(result, `No result returned from module we ran (${modulePath}).`);
