@@ -2,8 +2,9 @@ import { fileURLToPath } from 'node:url';
 import assert from 'assert';
 import path from 'path';
 import fs from 'fs';
+import { readFile } from 'node:fs/promises';
 
-import packageInfo from '../../package.json';
+const packageInfo = JSON.parse(await readFile('package.json'));
 assert(packageInfo.version);
 
 const packageVersion = packageInfo.version;

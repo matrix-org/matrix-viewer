@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { readFile } from 'node:fs/promises';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
@@ -21,7 +22,7 @@ const basePath = config.get('basePath');
 assert(basePath);
 const jaegerTracesEndpoint = config.get('jaegerTracesEndpoint');
 
-import packageInfo from '../../package.json';
+const packageInfo = JSON.parse(await readFile('package.json'));
 assert(packageInfo.name);
 
 const basePathUrl = new URL(basePath);

@@ -1,7 +1,8 @@
 import assert from 'assert';
+import { readFile } from 'node:fs/promises';
 import opentelemetryApi from '@opentelemetry/api';
 
-import packageInfo from '../../package.json';
+const packageInfo = JSON.parse(await readFile('package.json'));
 assert(packageInfo.name);
 assert(packageInfo.version);
 
