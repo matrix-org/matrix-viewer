@@ -1,3 +1,5 @@
+/* eslint-disable node/no-unpublished-import */
+
 console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
 import path from 'path';

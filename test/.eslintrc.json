@@ -9,6 +9,7 @@
     "strict": [
       "error",
       "safe"
-    ]
+    ],
+    "node/no-unpublished-import": "off"
   }
 }
