@@ -9,12 +9,16 @@
 
 import assert from 'assert';
 import { fork } from 'child_process';
+import { createRequire } from 'node:module';
 
 import RethrownError from '../lib/rethrown-error.js';
 import { traceFunction } from '../tracing/trace-utilities.js';
 
 import config from '../lib/config.js';
 const logOutputFromChildProcesses = config.get('logOutputFromChildProcesses');
+
+const require = createRequire(import.meta.url);
+const childForkScriptModulePath = require.resolve('./child-fork-script');
 
 if (!logOutputFromChildProcesses) {
   console.warn(
@@ -70,7 +74,7 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     // We use a child_process because we want to be able to exit the process
     // after we receive the results. We use `fork` instead of `exec`/`spawn` so
     // that we can pass a module instead of running a command.
-    const child = fork(require.resolve('./child-fork-script'), [modulePath], {
+    const child = fork(childForkScriptModulePath, [modulePath], {
       signal,
       // Default to silencing logs from the child process. We already have
       // proper instrumentation of any errors that might occur.

@@ -4,9 +4,15 @@
 // we receive the SSR results. We don't want Hydrogen to keep running after we
 // get our initial rendered HTML.
 
+import { createRequire } from 'node:module';
 import assert from 'assert';
 import RethrownError from '../lib/rethrown-error.js';
 import runInChildProcess from '../child-process-runner/run-in-child-process.js';
+
+const require = createRequire(import.meta.url);
+const renderHydrogenToStringUnsafeModulePath = require.resolve(
+  './render-hydrogen-to-string-unsafe'
+);
 
 // The render should be fast. If it's taking more than 5 seconds, something has
 // gone really wrong.
@@ -38,7 +44,7 @@ async function renderHydrogenToString(renderOptions) {
     // we receive the SSR results. We don't want Hydrogen to keep running after we
     // get our initial rendered HTML.
     const hydrogenHtmlOutput = await runInChildProcess(
-      require.resolve('./render-hydrogen-to-string-unsafe'),
+      renderHydrogenToStringUnsafeModulePath,
       renderOptions,
       {
         timeout: RENDER_TIMEOUT,
