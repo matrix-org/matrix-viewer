@@ -28,7 +28,7 @@
     "escape-string-regexp": "^4.0.0",
     "eslint": "^8.37.0",
     "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-n": "^15.7.0",
     "eslint-plugin-prettier": "^4.2.1",
     "merge-options": "^3.0.4",
     "mocha": "^9.2.1",

@@ -81,7 +81,7 @@ describe('matrix-public-archive', () => {
   let server;
   before(async () => {
     // Start the archive server
-    server = await import('../server/server');
+    server = await import('../server/server.js');
   });
 
   after(() => {

@@ -8,7 +8,7 @@
     "sourceType": "module"
   },
   "plugins": ["node"],
-  "extends": ["eslint:recommended", "prettier", "plugin:node/recommended"],
+  "extends": ["eslint:recommended", "prettier", "plugin:n/recommended"],
   "rules": {
     "indent": "off",
     "comma-dangle": "off",
