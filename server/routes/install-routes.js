@@ -12,6 +12,9 @@ import identifyRoute from '../middleware/identify-route-middleware';
 import clientSideRoomAliasHashRedirectRoute from './client-side-room-alias-hash-redirect-route';
 import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware';
 
+import roomDirectoryRoutes from './room-directory-routes';
+import roomRoutes from './room-routes';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function installRoutes(app) {
@@ -66,10 +69,10 @@ function installRoutes(app) {
   app.use('/img', express.static(path.join(__dirname, '../../public/img')));
   app.use('/js', express.static(path.join(__dirname, '../../dist/')));
 
-  app.use('/', require('./room-directory-routes'));
+  app.use('/', roomDirectoryRoutes);
 
   // For room aliases (/r) or room ID's (/roomid)
-  app.use('/:entityDescriptor(r|roomid)/:roomIdOrAliasDirty', require('./room-routes'));
+  app.use('/:entityDescriptor(r|roomid)/:roomIdOrAliasDirty', roomRoutes);
 
   // Since everything after the hash (`#`) won't make it to the server, let's serve a 404
   // page that will potentially redirect them to the correct place if they tried
