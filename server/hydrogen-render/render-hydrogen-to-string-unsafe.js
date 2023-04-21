@@ -12,7 +12,7 @@
 import assert from 'assert';
 import vm from 'vm';
 import path from 'path';
-const { readFile } = require('fs').promises;
+import { readFile } from 'node:fs/promises';
 import crypto from 'crypto';
 import { parseHTML } from 'linkedom';
 

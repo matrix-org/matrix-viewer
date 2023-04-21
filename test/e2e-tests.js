@@ -7,7 +7,7 @@ import http from 'http';
 import urlJoin from 'url-join';
 import escapeStringRegexp from 'escape-string-regexp';
 import { parseHTML } from 'linkedom';
-const { readFile } = require('fs').promises;
+import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
 
 import RethrownError from '../server/lib/rethrown-error';

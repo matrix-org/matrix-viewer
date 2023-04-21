@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import path from 'path';
-const { mkdir, writeFile } = require('fs').promises;
+import { mkdir, writeFile } from 'node:fs/promises';
 import util from 'util';
 const exec = util.promisify(require('child_process').exec);
 
