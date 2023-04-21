@@ -1,14 +1,12 @@
-const {
+import {
   TemplateView,
   AvatarView,
   TimelineView,
   RightPanelView,
   LightboxView,
-} = require('hydrogen-view-sdk');
+} from 'hydrogen-view-sdk';
 
-const {
-  customViewClassForTile,
-} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
+import { customViewClassForTile } from 'matrix-public-archive-shared/lib/custom-tile-utilities';
 
 import DeveloperOptionsContentView from 'matrix-public-archive-shared/views/DeveloperOptionsContentView';
 import ModalView from 'matrix-public-archive-shared/views/ModalView';

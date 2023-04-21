@@ -14,14 +14,14 @@ import RethrownError from '../server/lib/rethrown-error';
 import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
 import { fetchEndpointAsText, fetchEndpointAsJson } from '../server/lib/fetch-endpoint';
 import config from '../server/lib/config';
-const {
+import {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
-} = require('matrix-public-archive-shared/lib/reference-values');
+} from 'matrix-public-archive-shared/lib/reference-values';
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
-const {
+import {
   getTestClientForAs,
   getTestClientForHs,
   createTestRoom,
@@ -34,7 +34,7 @@ const {
   getMessagesInRoom,
   updateProfile,
   uploadContent,
-} = require('./test-utils/client-utils');
+} from './test-utils/client-utils';
 import TestError from './test-utils/test-error';
 import parseRoomDayMessageStructure from './test-utils/parse-room-day-message-structure';
 import parseArchiveUrlForRoom from './test-utils/parse-archive-url-for-room';
@@ -79,9 +79,9 @@ function assertExpectedTimePrecisionAgainstUrl(expectedTimePrecision, url) {
 
 describe('matrix-public-archive', () => {
   let server;
-  before(() => {
+  before(async () => {
     // Start the archive server
-    server = require('../server/server');
+    server = await import('../server/server');
   });
 
   after(() => {

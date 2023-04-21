@@ -1,7 +1,7 @@
-const {
+import {
   hrTimeToMilliseconds,
   //hrTimeToMicroseconds
-} = require('@opentelemetry/core');
+} from '@opentelemetry/core';
 
 const SAFE_ATTRIBUTES = ['http.method', 'http.url', 'http.status_code', 'http.target'];
 

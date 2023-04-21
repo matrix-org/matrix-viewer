@@ -12,11 +12,11 @@ import identifyRoute from '../middleware/identify-route-middleware';
 
 import { HTTPResponseError } from '../lib/fetch-endpoint';
 import parseViaServersFromUserInput from '../lib/parse-via-servers-from-user-input';
-const {
+import {
   fetchRoomData,
   fetchPredecessorInfo,
   fetchSuccessorInfo,
-} = require('../lib/matrix-utils/fetch-room-data');
+} from '../lib/matrix-utils/fetch-room-data';
 import fetchEventsFromTimestampBackwards from '../lib/matrix-utils/fetch-events-from-timestamp-backwards';
 import ensureRoomJoined from '../lib/matrix-utils/ensure-room-joined';
 import timestampToEvent from '../lib/matrix-utils/timestamp-to-event';
@@ -25,14 +25,14 @@ import getMessagesResponseFromEventId from '../lib/matrix-utils/get-messages-res
 import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html';
 import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets';
 import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-const {
+import {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
   VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
-} = require('matrix-public-archive-shared/lib/reference-values');
+} from 'matrix-public-archive-shared/lib/reference-values';
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
-const {
+import {
   roundUpTimestampToUtcDay,
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,
@@ -45,7 +45,7 @@ const {
   areTimestampsFromSameUtcHour,
   areTimestampsFromSameUtcMinute,
   areTimestampsFromSameUtcSecond,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+} from 'matrix-public-archive-shared/lib/timestamp-utilities';
 
 import config from '../lib/config';
 const basePath = config.get('basePath');

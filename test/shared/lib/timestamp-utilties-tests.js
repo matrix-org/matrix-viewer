@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-const {
+import {
   roundUpTimestampToUtcDay,
   roundUpTimestampToUtcHour,
   roundUpTimestampToUtcMinute,
@@ -13,7 +13,7 @@ const {
   areTimestampsFromSameUtcHour,
   areTimestampsFromSameUtcMinute,
   areTimestampsFromSameUtcSecond,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+} from 'matrix-public-archive-shared/lib/timestamp-utilities';
 
 describe('timestamp-utilities', () => {
   describe('roundUpTimestampToUtcX', () => {

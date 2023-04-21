@@ -1,4 +1,4 @@
-const {
+import {
   ViewModel,
   setupLightboxNavigation,
   TilesCollection,
@@ -7,7 +7,7 @@ const {
   EventEntry,
   encodeKey,
   encodeEventIdKey,
-} = require('hydrogen-view-sdk');
+} from 'hydrogen-view-sdk';
 
 import assert from 'matrix-public-archive-shared/lib/assert';
 
@@ -18,14 +18,10 @@ import TimeSelectorViewModel from 'matrix-public-archive-shared/viewmodels/TimeS
 import DeveloperOptionsContentViewModel from 'matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel';
 import RightPanelContentView from 'matrix-public-archive-shared/views/RightPanelContentView';
 import AvatarViewModel from 'matrix-public-archive-shared/viewmodels/AvatarViewModel';
-const {
-  customTileClassForEntry,
-} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
+import { customTileClassForEntry } from 'matrix-public-archive-shared/lib/custom-tile-utilities';
 import stubPowerLevelsObservable from 'matrix-public-archive-shared/lib/stub-powerlevels-observable';
 import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
-const {
-  areTimestampsFromSameUtcDay,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+import { areTimestampsFromSameUtcDay } from 'matrix-public-archive-shared/lib/timestamp-utilities';
 
 let txnCount = 0;
 function getFakeEventId() {

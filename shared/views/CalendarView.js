@@ -1,9 +1,7 @@
 // Be mindful to do all date operations in UTC (the archive is all in UTC date/times)
 
 import { TemplateView } from 'hydrogen-view-sdk';
-const {
-  areTimestampsFromSameUtcDay,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+import { areTimestampsFromSameUtcDay } from 'matrix-public-archive-shared/lib/timestamp-utilities';
 
 // Get the number of days in the given month where the `inputDate` lies.
 //

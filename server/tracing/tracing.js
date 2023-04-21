@@ -3,12 +3,12 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
-const {
+import {
   BasicTracerProvider,
   // ConsoleSpanExporter,
   // SimpleSpanProcessor,
   BatchSpanProcessor,
-} = require('@opentelemetry/sdk-trace-base');
+} from '@opentelemetry/sdk-trace-base';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { OTTracePropagator } from '@opentelemetry/propagator-ot-trace';
 import { Resource } from '@opentelemetry/resources';

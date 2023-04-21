@@ -1,4 +1,4 @@
-var http = require('http');
+import http from 'http';
 
 /* Create an error as per http://bluebirdjs.com/docs/api/catch.html */
 function StatusError(status, inputMessage) {
