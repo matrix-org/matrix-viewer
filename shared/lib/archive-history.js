@@ -1,5 +1,3 @@
-'use strict';
-
 const { History } = require('hydrogen-view-sdk');
 const assert = require('./assert');
 

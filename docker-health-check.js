@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 
 const { fetchEndpointAsJson } = require('./server/lib/fetch-endpoint');

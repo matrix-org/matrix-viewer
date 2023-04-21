@@ -1,5 +1,3 @@
-'use strict';
-
 // Simple middleware for handling exceptions inside of async express routes and
 // passing them to your express error handlers.
 //

@@ -1,5 +1,3 @@
-'use strict';
-
 // Extending the Hydrogen utilities to add our custom tiles
 
 const { tileClassForEntry, viewClassForTile } = require('hydrogen-view-sdk');

@@ -1,5 +1,3 @@
-'use strict';
-
 var http = require('http');
 
 /* Create an error as per http://bluebirdjs.com/docs/api/catch.html */

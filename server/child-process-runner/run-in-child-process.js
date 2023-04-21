@@ -1,5 +1,3 @@
-'use strict';
-
 // Generic `child_process` runner that handles running the given module with the
 // given `runArguments` and returning the async result. Handles the complexity
 // error handling, passing large argument objects, and timeouts.

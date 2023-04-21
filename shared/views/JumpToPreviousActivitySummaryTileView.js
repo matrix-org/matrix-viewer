@@ -1,5 +1,3 @@
-'use strict';
-
 const { TemplateView } = require('hydrogen-view-sdk');
 
 class JumpToPreviousActivitySummaryTileView extends TemplateView {

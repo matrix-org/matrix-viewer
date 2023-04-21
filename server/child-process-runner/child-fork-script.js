@@ -1,5 +1,3 @@
-'use strict';
-
 // Called by `child_process` `fork` in `run-in-child-process.js` so we can
 // get the data and exit the process cleanly.
 

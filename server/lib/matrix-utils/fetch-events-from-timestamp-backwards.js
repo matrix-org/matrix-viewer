@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 const { traceFunction } = require('../../tracing/trace-utilities');
 

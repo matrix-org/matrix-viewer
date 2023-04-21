@@ -1,5 +1,3 @@
-'use strict';
-
 const { TemplateView } = require('hydrogen-view-sdk');
 
 class DeveloperOptionsContentView extends TemplateView {

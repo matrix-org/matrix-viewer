@@ -1,5 +1,3 @@
-'use strict';
-
 // For any `<a href="">` (anchor with a blank href), instead of reloading the
 // page just remove the hash. Also cleanup whenever the hash changes for
 // whatever reason.

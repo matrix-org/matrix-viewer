@@ -1,5 +1,3 @@
-'use strict';
-
 const {
   VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
 } = require('matrix-public-archive-shared/lib/reference-values');

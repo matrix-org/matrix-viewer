@@ -1,5 +1,3 @@
-'use strict';
-
 const { RetainedObservableValue, PowerLevels } = require('hydrogen-view-sdk');
 
 // Fake power levels for viewing the room anonymously

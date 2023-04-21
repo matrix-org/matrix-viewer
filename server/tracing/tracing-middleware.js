@@ -1,5 +1,3 @@
-'use strict';
-
 const opentelemetryApi = require('@opentelemetry/api');
 
 const asyncHandler = require('../lib/express-async-handler');

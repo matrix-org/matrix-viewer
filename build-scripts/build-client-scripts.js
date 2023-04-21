@@ -1,5 +1,3 @@
-'use strict';
-
 // A way to build multiple Vite entrypoints
 
 // We can remove this once Vite supports multiple entrypoints and

@@ -15,7 +15,6 @@
     "comma-dangle": "off",
     "quotes": "off",
     "eqeqeq": ["warn", "allow-null"],
-    "strict": ["error", "safe"],
     "no-unused-vars": ["error", { "destructuredArrayIgnorePattern": "^_" }],
     "no-extra-boolean-cast": ["warn"],
     "complexity": [

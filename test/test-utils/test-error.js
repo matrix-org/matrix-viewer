@@ -1,5 +1,3 @@
-'use strict';
-
 // This is used to distinguish between an `AssertionError` within our app code from an
 // `AssertionError` in the tests
 class TestError extends Error {

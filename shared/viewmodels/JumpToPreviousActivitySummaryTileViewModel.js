@@ -1,5 +1,3 @@
-'use strict';
-
 const { SimpleTile } = require('hydrogen-view-sdk');
 
 const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');

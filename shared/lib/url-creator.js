@@ -1,5 +1,3 @@
-'use strict';
-
 const urlJoin = require('url-join');
 
 const assert = require('matrix-public-archive-shared/lib/assert');

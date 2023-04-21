@@ -1,5 +1,3 @@
-'use strict';
-
 const MS_LOOKUP = {
   ONE_DAY_IN_MS: 24 * 60 * 60 * 1000,
   ONE_HOUR_IN_MS: 60 * 60 * 1000,

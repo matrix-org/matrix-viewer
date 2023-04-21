@@ -1,5 +1,3 @@
-'use strict';
-
 // This file is based off the Gitter config,
 // https://gitlab.com/gitlab-org/gitter/env/blob/master/lib/config.js
 

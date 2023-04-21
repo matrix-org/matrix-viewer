@@ -1,5 +1,3 @@
-'use strict';
-
 // via https://stackoverflow.com/a/42755876/796832
 
 // Standard error extender from @deployable/errors

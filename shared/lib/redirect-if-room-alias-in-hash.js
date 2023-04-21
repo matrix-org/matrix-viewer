@@ -1,5 +1,3 @@
-'use strict';
-
 // https://spec.matrix.org/v1.1/appendices/#room-aliases
 // - `#room_alias:domain`
 // - `#room-alias:server/date/2022/10/27`

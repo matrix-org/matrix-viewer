@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 const { registerInstrumentations } = require('@opentelemetry/instrumentation');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');

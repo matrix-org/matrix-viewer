@@ -1,5 +1,3 @@
-'use strict';
-
 const buildClientScripts = require('./build-client-scripts');
 const writeVersionFiles = require('./write-version-files');
 

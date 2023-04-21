@@ -1,5 +1,3 @@
-'use strict';
-
 // Isomorphic script that runs in the browser and on the server for SSR (needs
 // browser context) that renders Hydrogen to the `document.body`.
 //

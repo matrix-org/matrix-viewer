@@ -1,5 +1,3 @@
-'use strict';
-
 // Server-side render Hydrogen to a string using a browser-like context thanks
 // to `linkedom`. We use a VM so we can put all of the browser-like globals in
 // place.

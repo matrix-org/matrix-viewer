@@ -1,5 +1,3 @@
-'use strict';
-
 const { TemplateView, ListView, text } = require('hydrogen-view-sdk');
 
 const ModalView = require('matrix-public-archive-shared/views/ModalView');

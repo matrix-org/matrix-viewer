@@ -1,5 +1,3 @@
-'use strict';
-
 const path = require('path');
 const { mkdir, writeFile } = require('fs').promises;
 const util = require('util');

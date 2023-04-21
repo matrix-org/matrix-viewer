@@ -1,5 +1,3 @@
-'use strict';
-
 const { ViewModel } = require('hydrogen-view-sdk');
 
 const DEBUG_ACTIVE_DATE_INTERSECTION_OBSERVER_LOCAL_STORAGE_KEY =

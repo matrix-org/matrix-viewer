@@ -1,5 +1,3 @@
-'use strict';
-
 const StatusError = require('../lib/status-error');
 
 function parseViaServersFromUserInput(rawViaServers) {

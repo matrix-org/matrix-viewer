@@ -1,5 +1,3 @@
-'use strict';
-
 const { TemplateView, AvatarView } = require('hydrogen-view-sdk');
 const AvatarViewModel = require('../viewmodels/AvatarViewModel');
 

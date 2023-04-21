@@ -1,5 +1,3 @@
-'use strict';
-
 //const { SpanProcessor } = require('@opentelemetry/sdk-trace-base');
 const { suppressTracing } = require('@opentelemetry/core');
 const { context } = require('@opentelemetry/api');

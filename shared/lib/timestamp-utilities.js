@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('matrix-public-archive-shared/lib/assert');
 const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;

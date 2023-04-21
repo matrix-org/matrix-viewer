@@ -1,5 +1,3 @@
-'use strict';
-
 // Server-side render Hydrogen to a string.
 //
 // We use a `child_process` because we want to be able to exit the process after

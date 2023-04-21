@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 
 function assertSequentialNumbersStartingFromOne(numbers) {

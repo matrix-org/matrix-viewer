@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 const urlJoin = require('url-join');
 const asyncHandler = require('../lib/express-async-handler');

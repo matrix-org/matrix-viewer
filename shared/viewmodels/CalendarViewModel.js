@@ -1,5 +1,3 @@
-'use strict';
-
 const { ViewModel } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');

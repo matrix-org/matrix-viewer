@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 
 const getServerNameFromMatrixRoomIdOrAlias = require('../../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias');

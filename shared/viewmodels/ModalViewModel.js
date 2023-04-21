@@ -1,5 +1,3 @@
-'use strict';
-
 const { ViewModel } = require('hydrogen-view-sdk');
 
 class ModalViewModel extends ViewModel {

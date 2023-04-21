@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 
 // See https://spec.matrix.org/v1.5/appendices/#server-name

@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('./assert');
 
 // Based off of https://github.com/matrix-org/matrix-bifrost/blob/c7161dd998c4fe968dba4d5da668dc914248f260/src/MessageFormatter.ts#L45-L60
