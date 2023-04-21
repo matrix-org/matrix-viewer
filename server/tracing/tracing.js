@@ -14,9 +14,9 @@ import { OTTracePropagator } from '@opentelemetry/propagator-ot-trace';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
-import CaptureSpanProcessor from './capture-span-processor';
+import CaptureSpanProcessor from './capture-span-processor.js';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const basePath = config.get('basePath');
 assert(basePath);
 const jaegerTracesEndpoint = config.get('jaegerTracesEndpoint');

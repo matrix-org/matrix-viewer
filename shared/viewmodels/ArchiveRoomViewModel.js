@@ -9,19 +9,19 @@ import {
   encodeEventIdKey,
 } from 'hydrogen-view-sdk';
 
-import assert from 'matrix-public-archive-shared/lib/assert';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
 
-import ModalViewModel from 'matrix-public-archive-shared/viewmodels/ModalViewModel';
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-import CalendarViewModel from 'matrix-public-archive-shared/viewmodels/CalendarViewModel';
-import TimeSelectorViewModel from 'matrix-public-archive-shared/viewmodels/TimeSelectorViewModel';
-import DeveloperOptionsContentViewModel from 'matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel';
-import RightPanelContentView from 'matrix-public-archive-shared/views/RightPanelContentView';
-import AvatarViewModel from 'matrix-public-archive-shared/viewmodels/AvatarViewModel';
-import { customTileClassForEntry } from 'matrix-public-archive-shared/lib/custom-tile-utilities';
-import stubPowerLevelsObservable from 'matrix-public-archive-shared/lib/stub-powerlevels-observable';
-import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values';
-import { areTimestampsFromSameUtcDay } from 'matrix-public-archive-shared/lib/timestamp-utilities';
+import ModalViewModel from 'matrix-public-archive-shared/viewmodels/ModalViewModel.js';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
+import CalendarViewModel from 'matrix-public-archive-shared/viewmodels/CalendarViewModel.js';
+import TimeSelectorViewModel from 'matrix-public-archive-shared/viewmodels/TimeSelectorViewModel.js';
+import DeveloperOptionsContentViewModel from 'matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel.js';
+import RightPanelContentView from 'matrix-public-archive-shared/views/RightPanelContentView.js';
+import AvatarViewModel from 'matrix-public-archive-shared/viewmodels/AvatarViewModel.js';
+import { customTileClassForEntry } from 'matrix-public-archive-shared/lib/custom-tile-utilities.js';
+import stubPowerLevelsObservable from 'matrix-public-archive-shared/lib/stub-powerlevels-observable.js';
+import { TIME_PRECISION_VALUES } from 'matrix-public-archive-shared/lib/reference-values.js';
+import { areTimestampsFromSameUtcDay } from 'matrix-public-archive-shared/lib/timestamp-utilities.js';
 
 let txnCount = 0;
 function getFakeEventId() {

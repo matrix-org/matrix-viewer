@@ -1,11 +1,11 @@
-import assert from 'matrix-public-archive-shared/lib/assert';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
 import { TemplateView } from 'hydrogen-view-sdk';
 import {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
-} from 'matrix-public-archive-shared/lib/reference-values';
+} from 'matrix-public-archive-shared/lib/reference-values.js';
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
-import { getUtcStartOfDayTs } from 'matrix-public-archive-shared/lib/timestamp-utilities';
+import { getUtcStartOfDayTs } from 'matrix-public-archive-shared/lib/timestamp-utilities.js';
 
 function clamp(input, min, max) {
   assert(input !== undefined);

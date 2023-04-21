@@ -1,10 +1,10 @@
 import assert from 'assert';
 import escapeStringRegexp from 'escape-string-regexp';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const basePath = config.get('basePath');
 assert(basePath);
-import { VALID_SIGIL_TO_ENTITY_DESCRIPTOR_MAP } from 'matrix-public-archive-shared/lib/reference-values';
+import { VALID_SIGIL_TO_ENTITY_DESCRIPTOR_MAP } from 'matrix-public-archive-shared/lib/reference-values.js';
 
 // Create a regex string that will match a normal string or the URI encoded string or
 // any combination of some characters being URI encoded. Only worries about characters

@@ -13,7 +13,7 @@ import path from 'path';
 import vite from 'vite';
 import mergeOptions from 'merge-options';
 
-import generateViteConfigForEntryPoint from './generate-vite-config-for-entry-point';
+import generateViteConfigForEntryPoint from './generate-vite-config-for-entry-point.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const entryPoints = [

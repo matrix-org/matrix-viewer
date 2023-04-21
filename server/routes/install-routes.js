@@ -2,18 +2,18 @@ import { fileURLToPath } from 'node:url';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
-import asyncHandler from '../lib/express-async-handler';
+import asyncHandler from '../lib/express-async-handler.js';
 
-import { handleTracingMiddleware } from '../tracing/tracing-middleware';
-import getVersionTags from '../lib/get-version-tags';
-import preventClickjackingMiddleware from '../middleware/prevent-clickjacking-middleware';
-import contentSecurityPolicyMiddleware from '../middleware/content-security-policy-middleware';
-import identifyRoute from '../middleware/identify-route-middleware';
-import clientSideRoomAliasHashRedirectRoute from './client-side-room-alias-hash-redirect-route';
-import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware';
+import { handleTracingMiddleware } from '../tracing/tracing-middleware.js';
+import getVersionTags from '../lib/get-version-tags.js';
+import preventClickjackingMiddleware from '../middleware/prevent-clickjacking-middleware.js';
+import contentSecurityPolicyMiddleware from '../middleware/content-security-policy-middleware.js';
+import identifyRoute from '../middleware/identify-route-middleware.js';
+import clientSideRoomAliasHashRedirectRoute from './client-side-room-alias-hash-redirect-route.js';
+import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware.js';
 
-import roomDirectoryRoutes from './room-directory-routes';
-import roomRoutes from './room-routes';
+import roomDirectoryRoutes from './room-directory-routes.js';
+import roomRoutes from './room-routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

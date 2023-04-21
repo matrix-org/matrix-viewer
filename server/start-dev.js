@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'path';
 import nodemon from 'nodemon';
 
-import buildClient from '../build-scripts/build-client';
+import buildClient from '../build-scripts/build-client.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

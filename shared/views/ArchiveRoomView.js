@@ -6,10 +6,10 @@ import {
   LightboxView,
 } from 'hydrogen-view-sdk';
 
-import { customViewClassForTile } from 'matrix-public-archive-shared/lib/custom-tile-utilities';
+import { customViewClassForTile } from 'matrix-public-archive-shared/lib/custom-tile-utilities.js';
 
-import DeveloperOptionsContentView from 'matrix-public-archive-shared/views/DeveloperOptionsContentView';
-import ModalView from 'matrix-public-archive-shared/views/ModalView';
+import DeveloperOptionsContentView from 'matrix-public-archive-shared/views/DeveloperOptionsContentView.js';
+import ModalView from 'matrix-public-archive-shared/views/ModalView.js';
 
 class RoomHeaderView extends TemplateView {
   render(t, vm) {

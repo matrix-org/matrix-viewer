@@ -3,34 +3,34 @@ import { fileURLToPath } from 'node:url';
 import path from 'path';
 import urlJoin from 'url-join';
 import express from 'express';
-import asyncHandler from '../lib/express-async-handler';
-import StatusError from '../lib/status-error';
+import asyncHandler from '../lib/express-async-handler.js';
+import StatusError from '../lib/status-error.js';
 
-import timeoutMiddleware from '../middleware/timeout-middleware';
-import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware';
-import identifyRoute from '../middleware/identify-route-middleware';
+import timeoutMiddleware from '../middleware/timeout-middleware.js';
+import redirectToCorrectArchiveUrlIfBadSigil from '../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware.js';
+import identifyRoute from '../middleware/identify-route-middleware.js';
 
-import { HTTPResponseError } from '../lib/fetch-endpoint';
-import parseViaServersFromUserInput from '../lib/parse-via-servers-from-user-input';
+import { HTTPResponseError } from '../lib/fetch-endpoint.js';
+import parseViaServersFromUserInput from '../lib/parse-via-servers-from-user-input.js';
 import {
   fetchRoomData,
   fetchPredecessorInfo,
   fetchSuccessorInfo,
-} from '../lib/matrix-utils/fetch-room-data';
-import fetchEventsFromTimestampBackwards from '../lib/matrix-utils/fetch-events-from-timestamp-backwards';
-import ensureRoomJoined from '../lib/matrix-utils/ensure-room-joined';
-import timestampToEvent from '../lib/matrix-utils/timestamp-to-event';
-import { removeMe_fetchRoomCreateEventId } from '../lib/matrix-utils/fetch-room-data';
-import getMessagesResponseFromEventId from '../lib/matrix-utils/get-messages-response-from-event-id';
-import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html';
-import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets';
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
+} from '../lib/matrix-utils/fetch-room-data.js';
+import fetchEventsFromTimestampBackwards from '../lib/matrix-utils/fetch-events-from-timestamp-backwards.js';
+import ensureRoomJoined from '../lib/matrix-utils/ensure-room-joined.js';
+import timestampToEvent from '../lib/matrix-utils/timestamp-to-event.js';
+import { removeMe_fetchRoomCreateEventId } from '../lib/matrix-utils/fetch-room-data.js';
+import getMessagesResponseFromEventId from '../lib/matrix-utils/get-messages-response-from-event-id.js';
+import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html.js';
+import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets.js';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
 import {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
   VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
-} from 'matrix-public-archive-shared/lib/reference-values';
+} from 'matrix-public-archive-shared/lib/reference-values.js';
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 import {
   roundUpTimestampToUtcDay,
@@ -45,9 +45,9 @@ import {
   areTimestampsFromSameUtcHour,
   areTimestampsFromSameUtcMinute,
   areTimestampsFromSameUtcSecond,
-} from 'matrix-public-archive-shared/lib/timestamp-utilities';
+} from 'matrix-public-archive-shared/lib/timestamp-utilities.js';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const basePath = config.get('basePath');
 assert(basePath);
 const matrixServerUrl = config.get('matrixServerUrl');

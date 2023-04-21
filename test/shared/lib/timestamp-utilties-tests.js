@@ -13,7 +13,7 @@ import {
   areTimestampsFromSameUtcHour,
   areTimestampsFromSameUtcMinute,
   areTimestampsFromSameUtcSecond,
-} from 'matrix-public-archive-shared/lib/timestamp-utilities';
+} from 'matrix-public-archive-shared/lib/timestamp-utilities.js';
 
 describe('timestamp-utilities', () => {
   describe('roundUpTimestampToUtcX', () => {

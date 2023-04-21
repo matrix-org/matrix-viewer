@@ -3,14 +3,14 @@ import assert from 'assert';
 import path from 'path';
 import urlJoin from 'url-join';
 import express from 'express';
-import asyncHandler from '../lib/express-async-handler';
+import asyncHandler from '../lib/express-async-handler.js';
 
-import identifyRoute from '../middleware/identify-route-middleware';
-import fetchPublicRooms from '../lib/matrix-utils/fetch-public-rooms';
-import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html';
-import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets';
+import identifyRoute from '../middleware/identify-route-middleware.js';
+import fetchPublicRooms from '../lib/matrix-utils/fetch-public-rooms.js';
+import renderHydrogenVmRenderScriptToPageHtml from '../hydrogen-render/render-hydrogen-vm-render-script-to-page-html.js';
+import setHeadersToPreloadAssets from '../lib/set-headers-to-preload-assets.js';
 
-import config from '../lib/config';
+import config from '../lib/config.js';
 const basePath = config.get('basePath');
 assert(basePath);
 const matrixServerUrl = config.get('matrixServerUrl');

@@ -10,15 +10,15 @@ import { parseHTML } from 'linkedom';
 import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
 
-import RethrownError from '../server/lib/rethrown-error';
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-import { fetchEndpointAsText, fetchEndpointAsJson } from '../server/lib/fetch-endpoint';
-import config from '../server/lib/config';
+import RethrownError from '../server/lib/rethrown-error.js';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
+import { fetchEndpointAsText, fetchEndpointAsJson } from '../server/lib/fetch-endpoint.js';
+import config from '../server/lib/config.js';
 import {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
-} from 'matrix-public-archive-shared/lib/reference-values';
+} from 'matrix-public-archive-shared/lib/reference-values.js';
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 import {
@@ -34,10 +34,10 @@ import {
   getMessagesInRoom,
   updateProfile,
   uploadContent,
-} from './test-utils/client-utils';
-import TestError from './test-utils/test-error';
-import parseRoomDayMessageStructure from './test-utils/parse-room-day-message-structure';
-import parseArchiveUrlForRoom from './test-utils/parse-archive-url-for-room';
+} from './test-utils/client-utils.js';
+import TestError from './test-utils/test-error.js';
+import parseRoomDayMessageStructure from './test-utils/parse-room-day-message-structure.js';
+import parseArchiveUrlForRoom from './test-utils/parse-archive-url-for-room.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
