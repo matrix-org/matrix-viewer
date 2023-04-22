@@ -64,7 +64,7 @@ module.exports = defineConfig({
     //
     // ssrManifest: true,
 
-    // Since we're build other things to `dist/`, we don't want it to get wiped out
+    // Since we build other things to `dist/` with Gulp, we don't want it to get wiped out
     emptyOutDir: false,
 
     // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see

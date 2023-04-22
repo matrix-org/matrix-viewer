@@ -11,38 +11,38 @@ const revRewrite = require('gulp-rev-rewrite');
 const writeVersionFiles = require('./build-scripts/write-version-files');
 const buildClientScripts = require('./build-scripts/build-client-scripts');
 
+// This has to be different from the `manifest.json` that Vite uses because Vite doesn't
+// have a merge option. Related to https://github.com/vitejs/vite/issues/9636
+const REV_MANIFEST_NAME = 'rev-manifest.json';
+
 const config = {
   paths: {
     styles: {
       src: 'client/css/**/*.css',
       dest: 'dist/css/',
     },
-    scripts: {
-      src: 'client/scripts/**/*.js',
-      dest: 'dist/scripts/',
-    },
     staticAssetPaths: ['client/img/**/*'],
   },
 };
 
-function clean() {
+async function clean() {
   // Essentially `rm -rf ./dist`
   return rm('./dist/', { recursive: true, force: true });
 }
 
-async function staticAssets() {
+function staticAssets() {
   // Copy static assets to build dir
   return (
     gulp
       .src(config.paths.staticAssetPaths, { base: 'client', since: gulp.lastRun(staticAssets) })
-      // Copy original assets to build dir
-      .pipe(gulp.dest('dist/'))
+      // // Copy original assets to build dir
+      // .pipe(gulp.dest('dist/'))
       .pipe(rev())
       // Write rev'd (cache busting hashes in filenames) assets to build dir
       .pipe(gulp.dest('dist/'))
       // Write manifest to build dir
       .pipe(
-        rev.manifest('manifest.json', {
+        rev.manifest(REV_MANIFEST_NAME, {
           // Merge with the existing manifest if one exists
           merge: true,
         })
@@ -52,27 +52,30 @@ async function staticAssets() {
 }
 
 async function styles() {
-  const manifest = await readFile('dist/manifest.json');
+  const manifest = await readFile(`dist/${REV_MANIFEST_NAME}`);
 
-  return (
-    gulp
-      .src(config.paths.styles.src, { since: gulp.lastRun(styles) })
-      // Replace any references to fonts/images in CSS with rev'd filenames
-      .pipe(revRewrite({ manifest }))
-      // Copy original assets to build dir
-      .pipe(gulp.dest(config.paths.styles.dest))
-      .pipe(rev())
-      // Write rev'd (cache busting hashes in filenames) assets to build dir
-      .pipe(gulp.dest(config.paths.styles.dest))
-      // Write manifest to build dir
-      .pipe(
-        rev.manifest('manifest.json', {
-          // Merge with the existing manifest if one exists
-          merge: true,
-        })
-      )
-      .pipe(gulp.dest(config.paths.styles.dest))
-  );
+  await new Promise((resolve) => {
+    return (
+      gulp
+        .src(config.paths.styles.src, { base: 'client', since: gulp.lastRun(styles) })
+        // Replace any references to fonts/images in CSS with rev'd filenames
+        .pipe(revRewrite({ manifest }))
+        // // Copy original assets to build dir
+        // .pipe(gulp.dest(config.paths.styles.dest))
+        .pipe(rev())
+        // Write rev'd (cache busting hashes in filenames) assets to build dir
+        .pipe(gulp.dest(config.paths.styles.dest))
+        // Write manifest to build dir
+        .pipe(
+          rev.manifest(REV_MANIFEST_NAME, {
+            // Merge with the existing manifest if one exists
+            merge: true,
+          })
+        )
+        .pipe(gulp.dest('dist/'))
+        .on('end', resolve)
+    );
+  });
 }
 
 const assets = gulp.series(
@@ -83,17 +86,17 @@ const assets = gulp.series(
   styles
 );
 
-async function scripts(extraConfig) {
-  await buildClientScripts(extraConfig);
+async function clientScripts() {
+  await buildClientScripts();
 
   // TODO: Compress the client-side JavaScript
 }
 
-const build = gulp.series(clean, gulp.parallel(writeVersionFiles, assets, scripts));
+const build = gulp.series(clean, gulp.parallel(writeVersionFiles, assets, clientScripts));
 
-function processWatchScripts() {
+function watchClientScripts() {
   // Build the client-side JavaScript bundle when we see any changes
-  return scripts({
+  return buildClientScripts({
     build: {
       // Rebuild when we see changes
       // https://rollupjs.org/guide/en/#watch-options
@@ -102,11 +105,23 @@ function processWatchScripts() {
   });
 }
 
-function processWatchServer() {
+function watchServer() {
+  const nodeArgs = [];
+  if (process.argv.inspectNode) {
+    nodeArgs.push('--inspect');
+  }
+  if (process.argv.traceWarningsNode) {
+    nodeArgs.push('--trace-warnings');
+  }
+
   // Pass through some args
   const args = [];
-  if (process.argv.includes('--tracing')) {
+  if (process.argv.tracing) {
     args.push('--tracing');
+  }
+
+  if (process.argv.logOutputFromChildProcesses) {
+    args.push('--logOutputFromChildProcesses');
   }
 
   // Listen for any changes to files and restart the Node.js server process
@@ -119,6 +134,7 @@ function processWatchServer() {
     ignoreRoot: ['.git'],
     ignore: [path.join(__dirname, './dist/*')],
     args,
+    nodeArgs,
   });
 
   nodemon
@@ -143,9 +159,9 @@ function processWatchServer() {
     });
 }
 
-function watch() {
-  processWatchServer();
-  processWatchScripts();
+async function watch() {
+  watchServer();
+  watchClientScripts();
 
   gulp.watch(config.paths.staticAssetPaths, assets);
   gulp.watch(config.paths.styles.src, assets);
@@ -153,8 +169,10 @@ function watch() {
 
 module.exports = {
   clean,
-  styles,
-  scripts,
+  _staticAssets: staticAssets,
+  _styles: styles,
+  assets,
+  clientScripts,
   watch,
   build,
 };
