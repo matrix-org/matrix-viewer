@@ -40,7 +40,7 @@ module.exports = defineConfig({
         path.resolve(__dirname, '../client/js/entry-client-room-directory.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-alias-hash-redirect.js'),
       ],
-      fileName: (format) => `[name].${format}.js`,
+      fileName: (format) => `[name]-[hash].${format}.js`,
       //fileName: '[name]',
       formats: [
         'es',
