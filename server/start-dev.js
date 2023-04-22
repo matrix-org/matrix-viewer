@@ -19,6 +19,17 @@ buildClient({
   },
 });
 
+const nodeArgs = [
+  // This is necessary for `new vm.SourceTextModule(code[, options])` to be available
+  '--experimental-vm-modules',
+];
+if (process.argv.inspectNode) {
+  nodeArgs.push('--inspect');
+}
+if (process.argv.traceWarningsNode) {
+  nodeArgs.push('--trace-warnings');
+}
+
 // Pass through some args
 const args = [];
 if (process.argv.includes('--tracing')) {
@@ -39,6 +50,7 @@ nodemon({
   ignoreRoot: ['.git'],
   ignore: [path.join(__dirname, '../dist/*')],
   args,
+  nodeArgs,
 });
 
 nodemon

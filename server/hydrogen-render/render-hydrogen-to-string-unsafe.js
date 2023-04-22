@@ -51,8 +51,6 @@ function createDomAndSetupVmContext() {
     vmContext.global.crypto = crypto.webcrypto;
   }
 
-  // So require(...) works in the vm
-  vmContext.global.require = require;
   // So we can see logs from the underlying vm
   vmContext.global.console = console;
 
@@ -100,15 +98,39 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
 
   const vmRenderScriptFilePath = renderOptions.vmRenderScriptFilePath;
   const hydrogenRenderScriptCode = await readFile(vmRenderScriptFilePath, 'utf8');
-  const hydrogenRenderScript = new vm.Script(hydrogenRenderScriptCode, {
-    filename: path.basename(vmRenderScriptFilePath),
+  const hydrogenRenderModule = new vm.SourceTextModule(hydrogenRenderScriptCode, {
+    identifier: path.basename(vmRenderScriptFilePath),
+    context: vmContext,
   });
-  // Note: The VM does not exit after the result is returned here and is why
-  // this should be run in a `child_process` that we can exit.
-  const vmResult = hydrogenRenderScript.runInContext(vmContext);
-  // Wait for everything to render
-  // (waiting on the promise returned from the VM render script)
-  await vmResult;
+  // TODO: This is crazy compared to the normal `vm.Script(...)` API and this doesn't
+  // work at the moment because it only handles ESM imports or exports, idk. Too much BS
+  // if I just want the behavior that Node.js already provides by default.
+  //
+  // And the only reason we need to use `vm.SourceTextModule` is because we need see
+  // `SyntaxError: Cannot use import statement outside a module` in the script we try to
+  // run with `vm.Script(...)` and `vm.runInContext(vmContext);`.
+  //
+  // XXX: This is crazy to handle on our own!
+  // https://github.com/nodejs/node/issues/31234 Also see
+  // https://github.com/nodejs/node/issues/35848
+  await hydrogenRenderModule.link((specifier, referencingModule) => {
+    return new Promise(async function (resolve, reject) {
+      const mod = await import(specifier);
+      resolve(
+        new vm.SyntheticModule(['default'], function () {
+          this.setExport('default', mod.default);
+        })
+      );
+    });
+  });
+  await hydrogenRenderModule.evaluate();
+
+  // // Note: The VM does not exit after the result is returned here and is why
+  // // this should be run in a `child_process` that we can exit.
+  // const vmResult = hydrogenRenderScript.runInContext(vmContext);
+  // // Wait for everything to render
+  // // (waiting on the promise returned from the VM render script)
+  // await vmResult;
 
   const documentString = dom.document.body.toString();
   assert(documentString, 'Document body should not be empty after we rendered Hydrogen');
