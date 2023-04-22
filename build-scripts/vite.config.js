@@ -22,7 +22,6 @@ module.exports = defineConfig({
 
   //root: './',
   //base: './',
-  outDir: './dist',
   // optimizeDeps: {
   //   include: ['matrix-public-archive-shared'],
   // },
@@ -34,6 +33,7 @@ module.exports = defineConfig({
     },
   },
   build: {
+    outDir: './dist/js',
     lib: {
       entry: [
         path.resolve(__dirname, '../client/js/entry-client-hydrogen.js'),
