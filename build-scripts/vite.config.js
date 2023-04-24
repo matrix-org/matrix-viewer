@@ -34,20 +34,15 @@ module.exports = defineConfig({
   },
   build: {
     outDir: './dist/js',
-    lib: {
-      entry: [
+    rollupOptions: {
+      // Overwrite default `index.html` entry
+      // (https://vitejs.dev/guide/backend-integration.html#backend-integration)
+      input: [
         path.resolve(__dirname, '../client/js/entry-client-hydrogen.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-directory.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-alias-hash-redirect.js'),
       ],
-      fileName: (format) => `[name]-[hash].${format}.js`,
-      //fileName: '[name]',
-      formats: [
-        'es',
-        //'cjs',
-      ],
     },
-    rollupOptions: {},
 
     // We want to know how the transformed source relates back to the original source
     // for easier debugging

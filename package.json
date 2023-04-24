@@ -8,9 +8,9 @@
   },
   "scripts": {
     "lint": "eslint **/*.js",
-    "build": "npm run gulp -- build",
+    "build": "node ./build-scripts/do-client-build.js",
     "start": "node server/server.js",
-    "start-dev": "npm run gulp -- watch",
+    "start-dev": "node server/start-dev.js",
     "test": "npm run mocha -- test/**/*-tests.js --timeout 15000",
     "test-e2e-interactive": "npm run mocha -- test/e2e-tests.js --timeout 15000 --bail --interactive",
     "nodemon": "nodemon",
