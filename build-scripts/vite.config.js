@@ -69,10 +69,8 @@ module.exports = defineConfig({
     //
     // ssrManifest: true,
 
-    // Since we build other things to `dist/` like the version tags, we don't want to
-    // wipe those out.
-    // TODO: Maybe we build somewhere else and have Vite copy them in
-    emptyOutDir: false,
+    // We copy things like the version files from `public/` to `dist/`
+    copyPublicDir: true,
 
     // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see
     // https://github.com/vitejs/vite/issues/2679 and docs:

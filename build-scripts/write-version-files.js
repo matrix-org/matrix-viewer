@@ -38,10 +38,10 @@ async function writeVersionFiles() {
     );
   }
 
-  await mkdirp(path.join(__dirname, '../dist/'));
-  await writeFile(path.join(__dirname, '../dist/GIT_COMMIT'), commit);
-  await writeFile(path.join(__dirname, '../dist/VERSION'), branch);
-  await writeFile(path.join(__dirname, '../dist/VERSION_DATE'), new Date().toISOString());
+  await mkdirp(path.join(__dirname, '../public/'));
+  await writeFile(path.join(__dirname, '../public/GIT_COMMIT'), commit);
+  await writeFile(path.join(__dirname, '../public/VERSION'), branch);
+  await writeFile(path.join(__dirname, '../public/VERSION_DATE'), new Date().toISOString());
 }
 
 module.exports = writeVersionFiles;

@@ -1,7 +1,7 @@
 node_modules
 .DS_Store
 dist
-dist-ssr
+public
 *.local
 
 config.user-overrides.json
