@@ -5,10 +5,10 @@ console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 const path = require('path');
 const nodemon = require('nodemon');
 
-const buildClient = require('../build-scripts/build-client');
+const buildClientScripts = require('../build-scripts/build-client-scripts');
 
 // Build the client-side JavaScript bundle when we see any changes
-buildClient({
+buildClientScripts({
   build: {
     // Rebuild when we see changes
     // https://rollupjs.org/guide/en/#watch-options
