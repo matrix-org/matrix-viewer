@@ -33,7 +33,7 @@ module.exports = defineConfig({
     },
   },
   build: {
-    outDir: './dist/js',
+    outDir: './dist',
     rollupOptions: {
       // Overwrite default `index.html` entry
       // (https://vitejs.dev/guide/backend-integration.html#backend-integration)
@@ -42,6 +42,16 @@ module.exports = defineConfig({
         path.resolve(__dirname, '../client/js/entry-client-room-directory.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-alias-hash-redirect.js'),
       ],
+      output: {
+        assetFileNames: (chunkInfo) => {
+          const { name } = path.parse(chunkInfo.name);
+          // Some of the Hydrogen assets already have hashes in the name so let's remove
+          // that in favor of our new hash.
+          const nameWithoutHash = name.replace(/-[a-z0-9]+$/, '');
+
+          return `assets/${nameWithoutHash}-[hash][extname]`;
+        },
+      },
     },
 
     // We want to know how the transformed source relates back to the original source
@@ -59,7 +69,9 @@ module.exports = defineConfig({
     //
     // ssrManifest: true,
 
-    // Since we build other things to `dist/` with Gulp, we don't want it to get wiped out
+    // Since we build other things to `dist/` like the version tags, we don't want to
+    // wipe those out.
+    // TODO: Maybe we build somewhere else and have Vite copy them in
     emptyOutDir: false,
 
     // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see

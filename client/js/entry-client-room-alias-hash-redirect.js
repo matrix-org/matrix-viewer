@@ -2,6 +2,10 @@ import assert from 'matrix-public-archive-shared/lib/assert';
 import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
 import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash';
 
+// Assets
+import 'hydrogen-view-sdk/assets/theme-element-light.css';
+import '../css/styles.css';
+
 const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.basePath);

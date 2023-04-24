@@ -38,28 +38,6 @@ function installRoutes(app) {
     })
   );
 
-  // We have to disable no-missing-require lint because it doesn't take into
-  // account `package.json`. `exports`, see
-  // https://github.com/mysticatea/eslint-plugin-node/issues/255
-  app.use(
-    '/hydrogen-assets',
-    // eslint-disable-next-line node/no-missing-require
-    express.static(path.dirname(require.resolve('hydrogen-view-sdk/assets/main.js')))
-  );
-
-  app.get(
-    // This has to be at the root so that the font URL references resolve correctly
-    '/hydrogen-assets/hydrogen-styles.css',
-    asyncHandler(async function (req, res) {
-      res.set('Content-Type', 'text/css');
-      // We have to disable no-missing-require lint because it doesn't take into
-      // account `package.json`. `exports`, see
-      // https://github.com/mysticatea/eslint-plugin-node/issues/255
-      // eslint-disable-next-line node/no-missing-require
-      res.sendFile(require.resolve('hydrogen-view-sdk/assets/theme-element-light.css'));
-    })
-  );
-
   // Our own archive app styles and scripts
   app.use('/css', express.static(path.join(__dirname, '../../dist/css')));
   app.use('/img', express.static(path.join(__dirname, '../../dist/img')));
