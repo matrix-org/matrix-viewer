@@ -22,9 +22,6 @@ module.exports = defineConfig({
 
   optimizeDeps: {
     include: [
-      // CommonJS only gets supported when it's pre-bundled and we `require('hydrogen-view-sdk')`
-      'hydrogen-view-sdk',
-
       // This doesn't seem to be necessary for the this package to work (ref
       // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies)
       //
@@ -79,10 +76,27 @@ module.exports = defineConfig({
     copyPublicDir: true,
 
     commonjsOptions: {
-      // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see
-      // https://github.com/vitejs/vite/issues/2679 and docs:
-      // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies
-      include: [/shared\//, /hydrogen-view-sdk/, /another-json/, /base64-arraybuffer/, /off-color/],
+      include: [
+        // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see
+        // https://github.com/vitejs/vite/issues/2679 and docs:
+        // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies
+        /shared\//,
+
+        // Our own depdencies that are CommonJS. Having to maintain this list is very icky
+        //
+        // TODO: How can we improve this? Related to the below list as well
+        /url-join/,
+
+        // Fix CommonJS problems with `require('hydrogen-view-sdk')` otherwise we see
+        // problems like "ReferenceError: exports is not defined" when it tries to run
+        // in the browser.
+        //
+        // TODO: Could we read the deps from the Hydrogen package.json?
+        /hydrogen-view-sdk/,
+        /another-json/,
+        /base64-arraybuffer/,
+        /off-color/,
+      ],
     },
   },
 });
