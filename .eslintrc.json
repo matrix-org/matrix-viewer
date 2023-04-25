@@ -8,8 +8,7 @@
     "ecmaVersion": 2022,
     "sourceType": "script"
   },
-  "plugins": ["node"],
-  "extends": ["eslint:recommended", "prettier"],
+  "extends": ["eslint:recommended", "prettier", "plugin:n/recommended"],
   "rules": {
     "indent": "off",
     "comma-dangle": "off",
@@ -77,9 +76,8 @@
         }
       }
     ],
-    "node/no-missing-require": "error",
-    "node/no-missing-import": "error",
-    "node/no-unsupported-features/es-syntax": "error",
-    "node/no-unsupported-features/es-builtins": "error"
+    "n/no-process-exit": "off",
+    "n/no-unsupported-features/es-syntax": "error",
+    "n/no-unsupported-features/es-builtins": "error"
   }
 }

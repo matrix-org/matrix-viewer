@@ -3,6 +3,7 @@
 console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
 const path = require('path');
+// eslint-disable-next-line n/no-unpublished-require
 const nodemon = require('nodemon');
 
 const buildClient = require('../build-scripts/build-client');

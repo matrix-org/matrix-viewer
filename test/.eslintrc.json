@@ -9,6 +9,7 @@
     "strict": [
       "error",
       "safe"
-    ]
+    ],
+    "n/no-unpublished-require": "off"
   }
 }
