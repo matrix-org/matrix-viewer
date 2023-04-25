@@ -10,6 +10,7 @@ function getManifest() {
   if (_manifest) {
     return _manifest;
   }
+
   // We have to disable this because it's built via the Vite client build.
   // eslint-disable-next-line n/no-missing-require, n/no-unpublished-require
   _manifest = require('../../dist/manifest.json');
@@ -33,16 +34,19 @@ function recurseManifestEntryName(entryName) {
   const manifest = getManifest();
   const entry = manifest[entryName];
 
+  const entryFilePath = path.join('/', entry.file);
+
   // css
   const styles = [];
   // imports
-  const scripts = [];
+  const scripts = [entryFilePath];
   // imports, dynamicImports
-  const preloadScripts = [];
+  const preloadScripts = [entryFilePath];
 
   for (const importName of entry.imports || []) {
-    scripts.push(path.join('/', importName));
-    preloadScripts.push(path.join('/', importName));
+    const importFilePath = path.join('/', manifest[importName].file);
+    scripts.push(importFilePath);
+    preloadScripts.push(importFilePath);
 
     const {
       styles: moreStyles,
@@ -56,7 +60,8 @@ function recurseManifestEntryName(entryName) {
   }
 
   for (const dynamicImportName of entry.dynamicImports || []) {
-    preloadScripts.push(path.join('/', dynamicImportName));
+    const dynamicImportFilePath = path.join('/', manifest[dynamicImportName].file);
+    preloadScripts.push(dynamicImportFilePath);
 
     const {
       styles: moreStyles,
