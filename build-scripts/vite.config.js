@@ -82,20 +82,9 @@ module.exports = defineConfig({
         // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies
         /shared\//,
 
-        // Our own depdencies that are CommonJS. Having to maintain this list is very icky
-        //
-        // TODO: How can we improve this? Related to the below list as well
-        /url-join/,
-
-        // Fix CommonJS problems with `require('hydrogen-view-sdk')` otherwise we see
-        // problems like "ReferenceError: exports is not defined" when it tries to run
-        // in the browser.
-        //
-        // TODO: Could we read the deps from the Hydrogen package.json?
-        /hydrogen-view-sdk/,
-        /another-json/,
-        /base64-arraybuffer/,
-        /off-color/,
+        // Make all of our `require()` CommonJS calls compatible in the ESM client build.
+        // See https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies
+        /node_modules/,
       ],
     },
   },
