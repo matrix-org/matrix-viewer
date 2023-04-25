@@ -4,7 +4,8 @@
 #  - https://github.com/npm/cli/issues/4769
 FROM node:16.14.2-buster-slim
 
-# Pass through some GitHub CI variables which we use in the build
+# Pass through some GitHub CI variables which we use in the build (for version
+# files/tags)
 ARG GITHUB_SHA
 ENV GITHUB_SHA=$GITHUB_SHA
 ARG GITHUB_REF
