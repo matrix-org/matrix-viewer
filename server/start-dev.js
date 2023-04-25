@@ -16,10 +16,22 @@ buildClient({
   },
 });
 
+const nodeArgs = [];
+if (process.argv.inspectNode) {
+  nodeArgs.push('--inspect');
+}
+if (process.argv.traceWarningsNode) {
+  nodeArgs.push('--trace-warnings');
+}
+
 // Pass through some args
 const args = [];
-if (process.argv.includes('--tracing')) {
+if (process.argv.tracing) {
   args.push('--tracing');
+}
+
+if (process.argv.logOutputFromChildProcesses) {
+  args.push('--logOutputFromChildProcesses');
 }
 
 // Listen for any changes to files and restart the Node.js server process
@@ -32,6 +44,7 @@ nodemon({
   ignoreRoot: ['.git'],
   ignore: [path.join(__dirname, '../dist/*')],
   args,
+  nodeArgs,
 });
 
 nodemon

@@ -870,14 +870,9 @@ router.get(
       shouldIndex = roomData?.historyVisibility === `world_readable`;
     }
 
-    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-assets/hydrogen-styles.css');
-    const stylesUrl = urlJoin(basePath, '/css/styles.css');
-    const jsBundleUrl = urlJoin(basePath, '/js/entry-client-hydrogen.es.js');
-
     const pageOptions = {
       title: `${roomData.name} - Matrix Public Archive`,
-      styles: [hydrogenStylesUrl, stylesUrl],
-      scripts: [jsBundleUrl],
+      entryPoint: 'client/js/entry-client-hydrogen.js',
       locationHref: urlJoin(basePath, req.originalUrl),
       shouldIndex,
       cspNonce: res.locals.cspNonce,

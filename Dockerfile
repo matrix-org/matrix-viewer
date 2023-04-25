@@ -4,7 +4,8 @@
 #  - https://github.com/npm/cli/issues/4769
 FROM node:16.14.2-buster-slim
 
-# Pass through some GitHub CI variables which we use in the build
+# Pass through some GitHub CI variables which we use in the build (for version
+# files/tags)
 ARG GITHUB_SHA
 ENV GITHUB_SHA=$GITHUB_SHA
 ARG GITHUB_REF
@@ -25,13 +26,12 @@ RUN npm install
 # Copy what we need for the client-side build
 COPY config /app/config/
 COPY build-scripts /app/build-scripts/
-COPY public /app/public/
+COPY client /app/client/
 COPY shared /app/shared/
+# Also copy the server stuff (we reference the config from the `build-client.js`)
+COPY server /app/server/
 # Build the client-side bundle
 RUN npm run build
-
-# Copy the rest of the app
-COPY server /app/server/
 
 HEALTHCHECK CMD node docker-health-check.js
 

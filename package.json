@@ -14,6 +14,7 @@
     "test": "npm run mocha -- test/**/*-tests.js --timeout 15000",
     "test-e2e-interactive": "npm run mocha -- test/e2e-tests.js --timeout 15000 --bail --interactive",
     "nodemon": "nodemon",
+    "gulp": "gulp",
     "vite": "vite",
     "mocha": "mocha",
     "eslint": "eslint",
@@ -33,7 +34,7 @@
     "mocha": "^9.2.1",
     "nodemon": "^2.0.15",
     "prettier": "^2.8.7",
-    "vite": "^2.9.6"
+    "vite": "^4.3.1"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.1.0",
