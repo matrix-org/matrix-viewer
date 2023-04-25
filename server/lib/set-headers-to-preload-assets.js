@@ -2,6 +2,8 @@
 
 const assert = require('assert');
 
+const getDependenciesForEntryPointName = require('../lib/get-dependencies-for-entry-point-name');
+
 // Set some preload link headers which we can use with Cloudflare to turn into 103 early
 // hints, https://developers.cloudflare.com/cache/about/early-hints/
 //
@@ -12,14 +14,15 @@ const assert = require('assert');
 function setHeadersToPreloadAssets(res, pageOptions) {
   assert(res);
   assert(pageOptions);
+  assert(pageOptions.entryPoint);
 
-  const { styles, scripts } = pageOptions;
+  const { styles, preloadScripts } = getDependenciesForEntryPointName(pageOptions.entryPoint);
 
   const styleLinks = styles.map((styleUrl) => {
     return `<${styleUrl}>; rel=preload; as=style`;
   });
 
-  const scriptLinks = scripts.map((scriptUrl) => {
+  const scriptLinks = preloadScripts.map((scriptUrl) => {
     return `<${scriptUrl}>; rel=preload; as=script`;
   });
 

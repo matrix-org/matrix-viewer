@@ -69,7 +69,7 @@ module.exports = defineConfig({
     //
     // ssrManifest: true,
 
-    // We copy things like the version files from `public/` to `dist/`
+    // Copy things like the version files from `public/` to `dist/`
     copyPublicDir: true,
 
     // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see
