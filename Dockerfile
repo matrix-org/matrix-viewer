@@ -28,11 +28,10 @@ COPY config /app/config/
 COPY build-scripts /app/build-scripts/
 COPY client /app/client/
 COPY shared /app/shared/
+# Also copy the server stuff (we reference the config from the `build-client.js`)
+COPY server /app/server/
 # Build the client-side bundle
 RUN npm run build
-
-# Copy the rest of the app
-COPY server /app/server/
 
 HEALTHCHECK CMD node docker-health-check.js
 

@@ -83,6 +83,7 @@ function recurseManifestEntryName(entryName) {
   };
 }
 
+// Look through the Vite manifest.json and return the dependencies for a given entry
 function getDependenciesForEntryPointName(entryPointName) {
   assert(entryPointName);
   const manifest = getManifest();
