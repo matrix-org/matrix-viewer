@@ -13,7 +13,9 @@ buildClient({
   build: {
     // Rebuild when we see changes
     // https://rollupjs.org/guide/en/#watch-options
-    watch: true,
+    watch: {
+      exclude: ['server/**/*'],
+    },
   },
 });
 
@@ -43,7 +45,14 @@ nodemon({
   script: path.join(__dirname, './server.js'),
   ext: 'js json',
   ignoreRoot: ['.git'],
-  ignore: [path.join(__dirname, '../dist/*')],
+  ignore: [
+    // Ignore everything in `dist/` except changes to the `manifest.json` because we read it on the
+    // server and we should always have an up to date copy.
+    //
+    // TODO: I don't think this actually works. When `manifest.json` updates, the server
+    // should restart.
+    path.join(__dirname, '../dist/**/!(manifest.json)'),
+  ],
   args,
   nodeArgs,
 });
