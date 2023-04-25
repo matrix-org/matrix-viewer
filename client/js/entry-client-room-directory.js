@@ -1,5 +1,4 @@
-// eslint-disable-next-line n/no-missing-import -- see https://github.com/eslint-community/eslint-plugin-n/issues/75
-import 'matrix-public-archive-shared/room-directory-vm-render-script';
+import 'matrix-public-archive-shared/room-directory-vm-render-script.js';
 
 // Assets
 import 'hydrogen-view-sdk/assets/theme-element-light.css';

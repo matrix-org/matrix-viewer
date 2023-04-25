@@ -1,9 +1,6 @@
-// eslint-disable-next-line n/no-missing-import -- see https://github.com/eslint-community/eslint-plugin-n/issues/75
-import assert from 'matrix-public-archive-shared/lib/assert';
-// eslint-disable-next-line n/no-missing-import -- see https://github.com/eslint-community/eslint-plugin-n/issues/75
-import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator';
-// eslint-disable-next-line n/no-missing-import -- see https://github.com/eslint-community/eslint-plugin-n/issues/75
-import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash';
+import assert from 'matrix-public-archive-shared/lib/assert.js';
+import MatrixPublicArchiveURLCreator from 'matrix-public-archive-shared/lib/url-creator.js';
+import redirectIfRoomAliasInHash from 'matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash.js';
 
 // Assets
 import 'hydrogen-view-sdk/assets/theme-element-light.css';
