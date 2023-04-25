@@ -24,6 +24,8 @@ if (!logOutputFromChildProcesses) {
   );
 }
 
+const resolvedChildForkScriptPath = require.resolve('./child-fork-script');
+
 function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors) {
   assert(childErrors);
 
@@ -72,7 +74,7 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     // We use a child_process because we want to be able to exit the process
     // after we receive the results. We use `fork` instead of `exec`/`spawn` so
     // that we can pass a module instead of running a command.
-    const child = fork(require.resolve('./child-fork-script'), [modulePath], {
+    const child = fork(resolvedChildForkScriptPath, [modulePath], {
       signal,
       // Default to silencing logs from the child process. We already have
       // proper instrumentation of any errors that might occur.
