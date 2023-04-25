@@ -3,13 +3,31 @@
 const assert = require('assert');
 const path = require('path').posix;
 
-const manifest = require('../../dist/manifest.json');
+// Lazy-load the manifest so we only require it on first call hopefully after the Vite
+// client build completes.
+let _manifest;
+function getManifest() {
+  if (_manifest) {
+    return _manifest;
+  }
+  _manifest = require('../../dist/manifest.json');
+}
 
-const entryPoints = Object.keys(manifest).filter((name) => {
-  return manifest[name].isEntry;
-});
+let _entryPoints;
+function getEntryPoints() {
+  if (_entryPoints) {
+    return _entryPoints;
+  }
+
+  const manifest = getManifest();
+
+  _entryPoints = Object.keys(manifest).filter((name) => {
+    return manifest[name].isEntry;
+  });
+}
 
 function recurseManifestEntryName(entryName) {
+  const manifest = getManifest();
   const entry = manifest[entryName];
   console.log('entry', entryName, entry);
 
@@ -65,12 +83,13 @@ function recurseManifestEntryName(entryName) {
 
 function getDependenciesForEntryPointName(entryPointName) {
   assert(entryPointName);
+  const manifest = getManifest();
 
   const entry = manifest[entryPointName];
   assert(
     entry.isEntry,
     `You must start with a valid entry point from the Vite manifest.json. Saw ${entryPointName} but the only entry points available are ${JSON.stringify(
-      entryPoints,
+      getEntryPoints(),
       null,
       2
     )}`
