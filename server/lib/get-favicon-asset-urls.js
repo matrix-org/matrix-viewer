@@ -12,6 +12,7 @@ function getManifest() {
   // We have to disable this because it's built via the Vite client build.
   // eslint-disable-next-line node/no-missing-require
   _manifest = require('../../dist/manifest.json');
+  return _manifest;
 }
 
 function getFaviconAssetUrls() {

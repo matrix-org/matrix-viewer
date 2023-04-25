@@ -13,6 +13,7 @@ function getManifest() {
   // We have to disable this because it's built via the Vite client build.
   // eslint-disable-next-line node/no-missing-require
   _manifest = require('../../dist/manifest.json');
+  return _manifest;
 }
 
 let _entryPoints;
@@ -22,16 +23,15 @@ function getEntryPoints() {
   }
 
   const manifest = getManifest();
-
   _entryPoints = Object.keys(manifest).filter((name) => {
     return manifest[name].isEntry;
   });
+  return _entryPoints;
 }
 
 function recurseManifestEntryName(entryName) {
   const manifest = getManifest();
   const entry = manifest[entryName];
-  console.log('entry', entryName, entry);
 
   // css
   const styles = [];
