@@ -10,6 +10,7 @@ function getManifest() {
   if (_manifest) {
     return _manifest;
   }
+
   // We have to disable this because it's built via the Vite client build.
   // eslint-disable-next-line n/no-missing-require, n/no-unpublished-require
   _manifest = require('../../dist/manifest.json');
