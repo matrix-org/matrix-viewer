@@ -23,8 +23,6 @@ async function renderPageHtml({
   assert(pageOptions.cspNonce);
 
   const { styles, scripts } = getDependenciesForEntryPointName(pageOptions.entryPoint);
-  console.log('styles', styles);
-  console.log('scripts', scripts);
 
   // Serialize the state for when we run the Hydrogen render again client-side to
   // re-hydrate the DOM
