@@ -88,7 +88,7 @@ if (atEventId) {
           ${scripts
             .map(
               (scriptUrl) =>
-                `<script type="text/javascript" src="${scriptUrl}" nonce="${pageOptions.cspNonce}"></script>`
+                `<script type="module" src="${scriptUrl}" nonce="${pageOptions.cspNonce}"></script>`
             )
             .join('\n')}
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
