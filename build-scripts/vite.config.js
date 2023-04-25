@@ -20,11 +20,17 @@ module.exports = defineConfig({
     // splitVendorChunkPlugin(),
   ],
 
-  //root: './',
-  //base: './',
-  // optimizeDeps: {
-  //   include: ['matrix-public-archive-shared'],
-  // },
+  optimizeDeps: {
+    include: [
+      // CommonJS only gets supported when it's pre-bundled and we `require('hydrogen-view-sdk')`
+      'hydrogen-view-sdk',
+
+      // This doesn't seem to be necessary for the this package to work (ref
+      // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies)
+      //
+      //'matrix-public-archive-shared'
+    ],
+  },
   resolve: {
     alias: {
       // The `file:` packages don't seem resolve correctly so let's add an alias as well
@@ -72,9 +78,11 @@ module.exports = defineConfig({
     // Copy things like the version files from `public/` to `dist/`
     copyPublicDir: true,
 
-    // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see
-    // https://github.com/vitejs/vite/issues/2679 and docs:
-    // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies
-    commonjsOptions: { include: [/shared/] },
+    commonjsOptions: {
+      // Fix `Error: 'default' is not exported by ...` when importing CommonJS files, see
+      // https://github.com/vitejs/vite/issues/2679 and docs:
+      // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies
+      include: [/shared\//, /hydrogen-view-sdk/, /another-json/, /base64-arraybuffer/, /off-color/],
+    },
   },
 });
