@@ -64,7 +64,10 @@ async function mountHydrogen() {
   const navigation = createNavigation();
   platform.setNavigation(navigation);
 
-  const archiveHistory = new ArchiveHistory(`#/session/123/room/${roomData.id}`);
+  const archiveHistory = new ArchiveHistory(
+    // We just have to match what Hydrogen is doing here.
+    `#/session/123/room/${encodeURIComponent(roomData.id)}`
+  );
   const urlRouter = createRouter({
     navigation: navigation,
     // We use our own history because we want the hash to be relative to the
