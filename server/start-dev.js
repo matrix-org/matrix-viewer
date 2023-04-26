@@ -13,9 +13,7 @@ buildClient({
   build: {
     // Rebuild when we see changes
     // https://rollupjs.org/guide/en/#watch-options
-    watch: {
-      exclude: ['server/**/*'],
-    },
+    watch: true,
   },
 });
 
