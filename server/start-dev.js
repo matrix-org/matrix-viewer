@@ -2,6 +2,11 @@
 
 console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
+// Using the `posix` version to always use forward slashes in the glob patterns for
+// the nodemon `ignore` option. It wasn't matching properly otherwise.
+// Ex.
+// Before: `.\dist\**\!(manifest.json)`
+// After: `dist/**/!(manifest.json)`
 const path = require('path').posix;
 // eslint-disable-next-line n/no-unpublished-require
 const nodemon = require('nodemon');
