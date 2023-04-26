@@ -113,8 +113,6 @@ function recurseManifestEntryName(entryName) {
     }
   }
 
-  console.log('qwer images', entryName, images);
-
   return {
     // css
     styles,
@@ -145,7 +143,6 @@ function getDependenciesForEntryPointName(entryPointName) {
   const { styles, fonts, images, scripts, preloadScripts } =
     recurseManifestEntryName(entryPointName);
 
-  console.log('asdf images', images);
   return {
     // De-duplicate assets
     styles: Array.from(new Set(styles)),

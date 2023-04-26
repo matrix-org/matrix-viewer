@@ -46,7 +46,6 @@ function setHeadersToPreloadAssets(res, pageOptions) {
     return `<${fontUrl}>; rel=preload; as=font; crossorigin`;
   });
 
-  console.log('images', images);
   const imageLinks = images.map((imageUrl) => {
     return `<${imageUrl}>; rel=preload; as=image`;
   });
