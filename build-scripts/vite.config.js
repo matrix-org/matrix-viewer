@@ -78,7 +78,8 @@ module.exports = defineConfig({
     //
     // ssrManifest: true,
 
-    // Copy things like the version files from `public/` to `dist/`
+    // Copy things like the version files from `public/` to `dist/`. Things in `public/`
+    // are copied as-is with no transformations.
     copyPublicDir: true,
 
     commonjsOptions: {
