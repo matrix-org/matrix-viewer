@@ -18,6 +18,11 @@ function setHeadersToPreloadAssets(res, pageOptions) {
 
   const { styles, preloadScripts } = getDependenciesForEntryPointName(pageOptions.entryPoint);
 
+  // Note: Any docs for the `<link>` element apply to the `Link` header. "The `Link`
+  // header contains parameters [that] are equivalent to attributes of the `<link>`
+  // element."
+  // (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link#parameters)
+
   // XXX: Should we add `nopush` to the `Link` headers here? Many servers initiate an
   // HTTP/2 Server Push when they encounter a preload link in HTTP header form
   // otherwise. Do we want/care about that (or maybe we don't)? (mentioned in
