@@ -30,6 +30,7 @@ function getEntryPoints() {
   return _entryPoints;
 }
 
+// eslint-disable-next-line max-statements
 function recurseManifestEntryName(entryName) {
   const manifest = getManifest();
   const entry = manifest[entryName];
@@ -38,6 +39,9 @@ function recurseManifestEntryName(entryName) {
 
   // css
   const styles = [];
+  // assets
+  const fonts = [];
+  const images = [];
   // imports
   const scripts = [entryFilePath];
   // imports, dynamicImports
@@ -50,11 +54,15 @@ function recurseManifestEntryName(entryName) {
 
     const {
       styles: moreStyles,
+      fonts: moreFonts,
+      images: moreImages,
       scripts: moreScripts,
       preloadScripts: morePreloadScripts,
     } = recurseManifestEntryName(importName);
 
     styles.push(...moreStyles);
+    fonts.push(...moreFonts);
+    images.push(...moreImages);
     scripts.push(...moreScripts);
     preloadScripts.push(...morePreloadScripts);
   }
@@ -65,11 +73,15 @@ function recurseManifestEntryName(entryName) {
 
     const {
       styles: moreStyles,
+      fonts: moreFonts,
+      images: moreImages,
       scripts: moreScripts,
       preloadScripts: morePreloadScripts,
     } = recurseManifestEntryName(dynamicImportName);
 
     styles.push(...moreStyles);
+    fonts.push(...moreFonts);
+    images.push(...moreImages);
     scripts.push(...moreScripts);
     preloadScripts.push(...morePreloadScripts);
   }
@@ -78,9 +90,36 @@ function recurseManifestEntryName(entryName) {
     styles.push(path.join('/', cssName));
   }
 
+  for (const assetName of entry.assets || []) {
+    const assetFileExtension = path.extname(assetName);
+    const assetFilePath = path.join('/', assetName);
+
+    if (
+      // We only care about preloading `.woff2` fonts since that is all of the major
+      // browsers support them.
+      ['.woff2'].includes(assetFileExtension) &&
+      // We only care about a few variants that we will actually likely use on the page
+      // (this may need to change over time).
+      ['-Regular-', '-Bold-', '-SemiBold-'].some((variant) => assetName.includes(variant))
+    ) {
+      fonts.push(path.join('/', assetFilePath));
+    } else if (
+      // Preload a specific file we use on the room directory homepage
+      assetName.includes('matrix-lines-hero')
+      // We don't care about preloading *all* images at the moment
+      //['.jpg', '.png', '.svg'].includes(assetFileExtension)
+    ) {
+      images.push(path.join('/', assetFilePath));
+    }
+  }
+
+  console.log('qwer images', entryName, images);
+
   return {
     // css
     styles,
+    fonts,
+    images,
     // imports
     scripts,
     // dynamicImports
@@ -103,11 +142,15 @@ function getDependenciesForEntryPointName(entryPointName) {
     )}`
   );
 
-  const { styles, scripts, preloadScripts } = recurseManifestEntryName(entryPointName);
+  const { styles, fonts, images, scripts, preloadScripts } =
+    recurseManifestEntryName(entryPointName);
 
+  console.log('asdf images', images);
   return {
     // De-duplicate assets
     styles: Array.from(new Set(styles)),
+    fonts: Array.from(new Set(fonts)),
+    images: Array.from(new Set(images)),
     scripts: Array.from(new Set(scripts)),
     preloadScripts: Array.from(new Set(preloadScripts)),
   };

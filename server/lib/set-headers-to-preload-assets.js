@@ -16,13 +16,17 @@ function setHeadersToPreloadAssets(res, pageOptions) {
   assert(pageOptions);
   assert(pageOptions.entryPoint);
 
-  const { styles, preloadScripts } = getDependenciesForEntryPointName(pageOptions.entryPoint);
+  const { styles, fonts, images, preloadScripts } = getDependenciesForEntryPointName(
+    pageOptions.entryPoint
+  );
 
+  // Work on assembling the `Link` headers
+  //
   // Note: Any docs for the `<link>` element apply to the `Link` header. "The `Link`
   // header contains parameters [that] are equivalent to attributes of the `<link>`
   // element."
   // (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link#parameters)
-
+  //
   // XXX: Should we add `nopush` to the `Link` headers here? Many servers initiate an
   // HTTP/2 Server Push when they encounter a preload link in HTTP header form
   // otherwise. Do we want/care about that (or maybe we don't)? (mentioned in
@@ -32,16 +36,20 @@ function setHeadersToPreloadAssets(res, pageOptions) {
     return `<${styleUrl}>; rel=preload; as=style`;
   });
 
-  // TODO: We should preload fonts as well.
-  //
   // We use `crossorigin` because fonts are fetched with anonymous mode "cors" and
   // "same-origin" credentials mode (see
   // https://drafts.csswg.org/css-fonts/#font-fetching-requirements). `crossorigin` is
   // just short-hand for `crossorigin=anonymous` (see
   // https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/crossorigin and
   // https://html.spec.whatwg.org/multipage/infrastructure.html#cors-settings-attribute).
-  //
-  // `Link: <font_to_load.woff2>; rel=preload; as=font; crossorigin`
+  const fontLinks = fonts.map((fontUrl) => {
+    return `<${fontUrl}>; rel=preload; as=font; crossorigin`;
+  });
+
+  console.log('images', images);
+  const imageLinks = images.map((imageUrl) => {
+    return `<${imageUrl}>; rel=preload; as=image`;
+  });
 
   // We use `rel=modulepreload` instead of `rel=preload` for the JavaScript modules
   // because it's a nice dedicated thing to handle ESM modules that not only downloads
@@ -63,7 +71,7 @@ function setHeadersToPreloadAssets(res, pageOptions) {
     return `<${scriptUrl}>; rel=modulepreload`;
   });
 
-  res.append('Link', [].concat(styleLinks, scriptLinks).join(', '));
+  res.append('Link', [].concat(styleLinks, fontLinks, imageLinks, scriptLinks).join(', '));
 }
 
 module.exports = setHeadersToPreloadAssets;
