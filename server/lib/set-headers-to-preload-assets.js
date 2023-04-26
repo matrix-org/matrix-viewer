@@ -18,12 +18,15 @@ function setHeadersToPreloadAssets(res, pageOptions) {
 
   const { styles, preloadScripts } = getDependenciesForEntryPointName(pageOptions.entryPoint);
 
+  // We use `nopush` because many servers initiate an HTTP/2 Server Push when they
+  // encounter a preload link in HTTP header form otherwise. And we don't want HTTP/2
+  // because idk.
   const styleLinks = styles.map((styleUrl) => {
-    return `<${styleUrl}>; rel=preload; as=style`;
+    return `<${styleUrl}>; rel=preload; as=style; nopush`;
   });
 
   const scriptLinks = preloadScripts.map((scriptUrl) => {
-    return `<${scriptUrl}>; rel=preload; as=script`;
+    return `<${scriptUrl}>; rel=preload; as=script; nopush`;
   });
 
   res.append('Link', [].concat(styleLinks, scriptLinks).join(', '));
