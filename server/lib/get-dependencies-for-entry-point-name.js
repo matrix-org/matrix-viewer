@@ -3,27 +3,21 @@
 const assert = require('assert');
 const path = require('path').posix;
 
-// Lazy-load the manifest so we only require it on first call hopefully after the Vite
-// client build completes.
-let _manifest;
-function getManifest() {
-  if (_manifest) {
-    return _manifest;
-  }
-
-  // We have to disable this because it's built via the Vite client build.
-  // eslint-disable-next-line n/no-missing-require, n/no-unpublished-require
-  _manifest = require('../../dist/manifest.json');
-  return _manifest;
-}
-
 let _entryPoints;
 function getEntryPoints() {
+  // Probably not that much overhead but only calculate this once
   if (_entryPoints) {
     return _entryPoints;
   }
 
-  const manifest = getManifest();
+  // Lazy-load the manifest so we only require it on first call hopefully after the Vite
+  // client build completes. `require(...)` calls are cached so it should be fine to
+  // look this up over and over.
+  //
+  // We have to disable this because it's built via the Vite client build.
+  // eslint-disable-next-line n/no-missing-require, n/no-unpublished-require
+  const manifest = require('../../dist/manifest.json');
+
   _entryPoints = Object.keys(manifest).filter((name) => {
     return manifest[name].isEntry;
   });
@@ -32,9 +26,15 @@ function getEntryPoints() {
 
 // eslint-disable-next-line max-statements
 function recurseManifestEntryName(entryName) {
-  const manifest = getManifest();
-  const entry = manifest[entryName];
+  // Lazy-load the manifest so we only require it on first call hopefully after the Vite
+  // client build completes. `require(...)` calls are cached so it should be fine to
+  // look this up over and over.
+  //
+  // We have to disable this because it's built via the Vite client build.
+  // eslint-disable-next-line n/no-missing-require, n/no-unpublished-require
+  const manifest = require('../../dist/manifest.json');
 
+  const entry = manifest[entryName];
   const entryFilePath = path.join('/', entry.file);
 
   // css
@@ -130,7 +130,14 @@ function recurseManifestEntryName(entryName) {
 // Look through the Vite manifest.json and return the dependencies for a given entry
 function getDependenciesForEntryPointName(entryPointName) {
   assert(entryPointName);
-  const manifest = getManifest();
+
+  // Lazy-load the manifest so we only require it on first call hopefully after the Vite
+  // client build completes. `require(...)` calls are cached so it should be fine to
+  // look this up over and over.
+  //
+  // We have to disable this because it's built via the Vite client build.
+  // eslint-disable-next-line n/no-missing-require, n/no-unpublished-require
+  const manifest = require('../../dist/manifest.json');
 
   const entry = manifest[entryPointName];
   assert(

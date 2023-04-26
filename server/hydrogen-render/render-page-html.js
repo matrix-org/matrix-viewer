@@ -8,8 +8,6 @@ const safeJson = require('../lib/safe-json');
 const getDependenciesForEntryPointName = require('../lib/get-dependencies-for-entry-point-name');
 const getFaviconAssetUrls = require('../lib/get-favicon-asset-urls');
 
-const faviconMap = getFaviconAssetUrls();
-
 async function renderPageHtml({
   pageOptions,
   // Make sure you sanitize this before passing it to us
@@ -39,6 +37,7 @@ async function renderPageHtml({
     maybeNoIndexHtml = `<meta name="robots" content="noindex, nofollow" />`;
   }
 
+  const faviconMap = getFaviconAssetUrls();
   const pageHtml = `
       <!doctype html>
       <html lang="en">
