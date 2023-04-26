@@ -29,16 +29,10 @@ function setHeadersToPreloadAssets(res, pageOptions) {
 
   // TODO: We should preload fonts as well.
   //
-  // We use `cors` because fonts are fetched with "CORS mode 'cors'" (see
+  // We use `crossorigin` because fonts are fetched with anonymous mode "cors" (see
   // https://drafts.csswg.org/css-fonts/#font-fetching-requirements)
   //
-  // TODO: Should this be `cors` or `crossorigin`?
-  // https://www.smashingmagazine.com/2016/02/preload-what-is-it-good-for/#headers shows
-  // `crossorigin` but
-  // https://html.spec.whatwg.org/multipage/links.html#link-type-preload (the spec) says
-  // `cors` so I'm not sure.
-  //
-  // `Link: <font_to_load.woff2>; rel=preload; as=font; cors`
+  // `Link: <font_to_load.woff2>; rel=preload; as=font; crossorigin`
 
   // We use `rel=modulepreload` instead of `rel=preload` for the JavaScript modules
   // because it's a nice dedicated thing to handle ESM modules that not only downloads
@@ -47,14 +41,12 @@ function setHeadersToPreloadAssets(res, pageOptions) {
   //
   // Also as a note: `<script type="module">` with no `crossorigin` attribute indicates
   // a credentials mode of `omit` so you will run into CORS issues with a naive `Link:
-  // <thing_to_load.js>; rel=preload; as=script;` because it defaults to `same-origin` and there
-  // is a mismatch (see
-  // https://html.spec.whatwg.org/multipage/links.html#link-type-preload ->
-  // https://fetch.spec.whatwg.org/#concept-request-credentials-mode). We could set the
-  // credentials mode to match using `rel=preload; as=script; omit` but then we lose the
-  // extra parse/compile step that `rel=modulepreload` gives.
+  // <thing_to_load.js>; rel=preload; as=script;` because it defaults to `same-origin`
+  // and there is a mismatch. (see
+  // https://developer.chrome.com/blog/modulepreload/#ok-so-why-doesnt-link-relpreload-work-for-modules)
+  // (and spec: https://html.spec.whatwg.org/multipage/links.html#link-type-preload ->
+  // https://fetch.spec.whatwg.org/#concept-request-credentials-mode).
   //
-  // See https://developer.chrome.com/blog/modulepreload/#ok-so-why-doesnt-link-relpreload-work-for-modules
   // Spec: https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload
   const scriptLinks = preloadScripts.map((scriptUrl) => {
     return `<${scriptUrl}>; rel=modulepreload`;
