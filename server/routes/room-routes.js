@@ -772,7 +772,10 @@ router.get(
     //
     // XXX: It would be better if we just tried fetching first and assume that we are
     // already joined and only join after we see a 403 Forbidden error (we should do
-    // this for all places we `ensureRoomJoined`)
+    // this for all places we `ensureRoomJoined`). But we need the `roomId` for use with
+    // the various Matrix API's anyway and `/join/{roomIdOrAlias}` -> `{ room_id }` is a
+    // great way to get it (see
+    // https://github.com/matrix-org/matrix-public-archive/issues/50).
     const viaServers = parseViaServersFromUserInput(req.query.via);
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, viaServers);
 
