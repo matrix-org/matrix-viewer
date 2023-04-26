@@ -2,7 +2,12 @@
 
 console.log('start-dev process.env.NODE_ENV', process.env.NODE_ENV);
 
-const path = require('path');
+// Using the `posix` version to always use forward slashes in the glob patterns for
+// the nodemon `ignore` option. It wasn't matching properly otherwise.
+// Ex.
+// Before: `.\dist\**\!(manifest.json)`
+// After: `dist/**/!(manifest.json)`
+const path = require('path').posix;
 // eslint-disable-next-line n/no-unpublished-require
 const nodemon = require('nodemon');
 
@@ -42,10 +47,20 @@ if (process.argv.logOutputFromChildProcesses) {
 nodemon({
   script: path.join(__dirname, './server.js'),
   ext: 'js json',
+  // We override `ignoreRoot` which includes `node_modules` by default because we we
+  // want to watch `node_modules` for changes whenever we symlink `hydrogen-view-sdk`
+  // in, see
+  // https://github.com/remy/nodemon/blob/master/faq.md#overriding-the-underlying-default-ignore-rules
   ignoreRoot: ['.git'],
-  ignore: [path.join(__dirname, '../dist/*')],
+  ignore: [
+    // Ignore everything in `dist/` except changes to the `manifest.json` because we
+    // read it on the server and we should always have an up to date copy.
+    path.join(__dirname, '../dist/**/!(manifest.json)'),
+  ],
   args,
   nodeArgs,
+  // Helpful for debugging why things aren't watched or ignored
+  //verbose: true,
 });
 
 nodemon
@@ -63,7 +78,7 @@ nodemon
     console.log('Nodemon: script crashed for some reason');
   })
   // .on('watching', (file) => {
-  //   console.log('watching');
+  //   console.log('watching', file);
   // })
   .on('log', function (data) {
     console.log(`Nodemon logs: ${data.type}: ${data.message}`);
