@@ -128,8 +128,14 @@ function recurseManifestEntryName(entryName) {
 }
 
 // Look through the Vite manifest.json and return the dependencies for a given entry
+const entryPointNameToDependencies = new Map();
 function getDependenciesForEntryPointName(entryPointName) {
   assert(entryPointName);
+
+  // Try our cache shortcut first
+  if (entryPointNameToDependencies.has(entryPointName)) {
+    return entryPointNameToDependencies.get(entryPointName);
+  }
 
   // Lazy-load the manifest so we only require it on first call hopefully after the Vite
   // client build completes. `require(...)` calls are cached so it should be fine to
@@ -152,7 +158,7 @@ function getDependenciesForEntryPointName(entryPointName) {
   const { styles, fonts, images, scripts, preloadScripts } =
     recurseManifestEntryName(entryPointName);
 
-  return {
+  const deduplicatedDependencies = {
     // De-duplicate assets
     styles: Array.from(new Set(styles)),
     fonts: Array.from(new Set(fonts)),
@@ -160,6 +166,9 @@ function getDependenciesForEntryPointName(entryPointName) {
     scripts: Array.from(new Set(scripts)),
     preloadScripts: Array.from(new Set(preloadScripts)),
   };
+
+  entryPointNameToDependencies.set(entryPointName, deduplicatedDependencies);
+  return deduplicatedDependencies;
 }
 
 module.exports = getDependenciesForEntryPointName;
