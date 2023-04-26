@@ -30,12 +30,15 @@ function setHeadersToPreloadAssets(res, pageOptions) {
   // TODO: We should preload fonts as well.
   //
   // We use `cors` because fonts are fetched with "CORS mode 'cors'" (see
-  // https://drafts.csswg.org/css-fonts/#font-fetching-requirements) TODO: Should this
-  // be `cors` or `crossorigin`?
-  // https://www.smashingmagazine.com/2016/02/preload-what-is-it-good-for/#headers shows
-  // `crossorigin` but the spec says `cors` so I'm not sure.
+  // https://drafts.csswg.org/css-fonts/#font-fetching-requirements)
   //
-  // `Link: </foo-url>; rel=preload; as=font; cors`
+  // TODO: Should this be `cors` or `crossorigin`?
+  // https://www.smashingmagazine.com/2016/02/preload-what-is-it-good-for/#headers shows
+  // `crossorigin` but
+  // https://html.spec.whatwg.org/multipage/links.html#link-type-preload (the spec) says
+  // `cors` so I'm not sure.
+  //
+  // `Link: <font_to_load.woff2>; rel=preload; as=font; cors`
 
   // We use `rel=modulepreload` instead of `rel=preload` for the JavaScript modules
   // because it's a nice dedicated thing to handle ESM modules that not only downloads
@@ -44,7 +47,7 @@ function setHeadersToPreloadAssets(res, pageOptions) {
   //
   // Also as a note: `<script type="module">` with no `crossorigin` attribute indicates
   // a credentials mode of `omit` so you will run into CORS issues with a naive `Link:
-  // </foo-url>; rel=preload; as=script;` because it defaults to `same-origin` and there
+  // <thing_to_load.js>; rel=preload; as=script;` because it defaults to `same-origin` and there
   // is a mismatch (see
   // https://html.spec.whatwg.org/multipage/links.html#link-type-preload ->
   // https://fetch.spec.whatwg.org/#concept-request-credentials-mode). We could set the
