@@ -29,8 +29,12 @@ function setHeadersToPreloadAssets(res, pageOptions) {
 
   // TODO: We should preload fonts as well.
   //
-  // We use `crossorigin` because fonts are fetched with anonymous mode "cors" (see
-  // https://drafts.csswg.org/css-fonts/#font-fetching-requirements)
+  // We use `crossorigin` because fonts are fetched with anonymous mode "cors" and
+  // "same-origin" credentials mode (see
+  // https://drafts.csswg.org/css-fonts/#font-fetching-requirements). `crossorigin` is
+  // just short-hand for `crossorigin=anonymous` (see
+  // https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/crossorigin and
+  // https://html.spec.whatwg.org/multipage/infrastructure.html#cors-settings-attribute).
   //
   // `Link: <font_to_load.woff2>; rel=preload; as=font; crossorigin`
 
@@ -39,13 +43,15 @@ function setHeadersToPreloadAssets(res, pageOptions) {
   // and puts it in the cache like a normal `rel=preload` but the browser also knows
   // it's a JavaScript module now and can parse/compile it so it's ready to go.
   //
-  // Also as a note: `<script type="module">` with no `crossorigin` attribute indicates
-  // a credentials mode of `omit` so you will run into CORS issues with a naive `Link:
-  // <thing_to_load.js>; rel=preload; as=script;` because it defaults to `same-origin`
-  // and there is a mismatch. (see
+  // Also as a note: `<script type="module">` with no `crossorigin` attribute
+  // indicates a credentials mode of `omit` so you will run into CORS issues with a
+  // naive `Link: <thing_to_load.js>; rel=preload; as=script;` because it defaults to
+  // `same-origin` and there is a mismatch. (see
   // https://developer.chrome.com/blog/modulepreload/#ok-so-why-doesnt-link-relpreload-work-for-modules)
   // (and spec: https://html.spec.whatwg.org/multipage/links.html#link-type-preload ->
-  // https://fetch.spec.whatwg.org/#concept-request-credentials-mode).
+  // https://fetch.spec.whatwg.org/#concept-request-credentials-mode). There isn't a way
+  // to make the link match `omit`. You could update both the link and `<script
+  // type="module">` to one of the other `crossorigin` values though.
   //
   // Spec: https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload
   const scriptLinks = preloadScripts.map((scriptUrl) => {
