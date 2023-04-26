@@ -106,7 +106,9 @@ function recurseManifestEntryName(entryName) {
     } else if (
       // Preload a specific file we use on the room directory homepage
       assetName.includes('matrix-lines-hero')
-      // We don't care about preloading *all* images at the moment
+      // We don't care about preloading *all* images at the moment because there are a
+      // lot that we just don't use even though they are bundled because they are
+      // referened in the CSS.
       //['.jpg', '.png', '.svg'].includes(assetFileExtension)
     ) {
       images.push(path.join('/', assetFilePath));
