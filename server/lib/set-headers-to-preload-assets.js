@@ -27,7 +27,15 @@ function setHeadersToPreloadAssets(res, pageOptions) {
     return `<${styleUrl}>; rel=preload; as=style`;
   });
 
-  // TODO: We should preload fonts as well
+  // TODO: We should preload fonts as well.
+  //
+  // We use `cors` because fonts are fetched with "CORS mode 'cors'" (see
+  // https://drafts.csswg.org/css-fonts/#font-fetching-requirements) TODO: Should this
+  // be `cors` or `crossorigin`?
+  // https://www.smashingmagazine.com/2016/02/preload-what-is-it-good-for/#headers shows
+  // `crossorigin` but the spec says `cors` so I'm not sure.
+  //
+  // `Link: </foo-url>; rel=preload; as=font; cors`
 
   // We use `rel=modulepreload` instead of `rel=preload` for the JavaScript modules
   // because it's a nice dedicated thing to handle ESM modules that not only downloads
