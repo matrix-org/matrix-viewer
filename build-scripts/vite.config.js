@@ -34,11 +34,11 @@ module.exports = defineConfig({
       // See https://css-tricks.com/adding-vite-to-your-existing-web-app/#aa-aliases
       'matrix-public-archive-shared': path.resolve(__dirname, '../shared'),
     },
-    // This will make sure Rollup matches the original file path (i.e. the path without
-    // following symlinks) instead of the real file path (i.e. the path after following
-    // symlinks). This is useful when symlinking `hydrogen-view-sdk`, so it still
-    // matches our `/node_modules/` pattern in the `build.commonjsOptions.include`
-    // config below and gets converted to CommonJS to ESM as expected.
+    // This will make sure Vite/Rollup matches the original file path (i.e. the path
+    // without following symlinks) instead of the real file path (i.e. the path after
+    // following symlinks). This is useful when symlinking `hydrogen-view-sdk`, so it
+    // still matches our `/node_modules/` pattern in the `build.commonjsOptions.include`
+    // config below and gets converted from CommonJS to ESM as expected.
     preserveSymlinks: true,
   },
   build: {
