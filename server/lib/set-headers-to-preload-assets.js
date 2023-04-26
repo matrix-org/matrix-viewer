@@ -18,15 +18,35 @@ function setHeadersToPreloadAssets(res, pageOptions) {
 
   const { styles, preloadScripts } = getDependenciesForEntryPointName(pageOptions.entryPoint);
 
-  // We use `nopush` because many servers initiate an HTTP/2 Server Push when they
-  // encounter a preload link in HTTP header form otherwise. And we don't want HTTP/2
-  // because idk.
+  // XXX: Should we add `nopush` to the `Link` headers here? Many servers initiate an
+  // HTTP/2 Server Push when they encounter a preload link in HTTP header form
+  // otherwise. Do we want/care about that (or maybe we don't)? (mentioned in
+  // https://medium.com/reloading/preload-prefetch-and-priorities-in-chrome-776165961bbf#6f54)
+
   const styleLinks = styles.map((styleUrl) => {
-    return `<${styleUrl}>; rel=preload; as=style; nopush`;
+    return `<${styleUrl}>; rel=preload; as=style`;
   });
 
+  // TODO: We should preload fonts as well
+
+  // We use `rel=modulepreload` instead of `rel=preload` for the JavaScript modules
+  // because it's a nice dedicated thing to handle ESM modules that not only downloads
+  // and puts it in the cache like a normal `rel=preload` but the browser also knows
+  // it's a JavaScript module now and can parse/compile it so it's ready to go.
+  //
+  // Also as a note: `<script type="module">` with no `crossorigin` attribute indicates
+  // a credentials mode of `omit` so you will run into CORS issues with a naive `Link:
+  // </foo-url>; rel=preload; as=script;` because it defaults to `same-origin` and there
+  // is a mismatch (see
+  // https://html.spec.whatwg.org/multipage/links.html#link-type-preload ->
+  // https://fetch.spec.whatwg.org/#concept-request-credentials-mode). We could set the
+  // credentials mode to match using `rel=preload; as=script; omit` but then we lose the
+  // extra parse/compile step that `rel=modulepreload` gives.
+  //
+  // See https://developer.chrome.com/blog/modulepreload/#ok-so-why-doesnt-link-relpreload-work-for-modules
+  // Spec: https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload
   const scriptLinks = preloadScripts.map((scriptUrl) => {
-    return `<${scriptUrl}>; rel=preload; as=script; nopush`;
+    return `<${scriptUrl}>; rel=modulepreload`;
   });
 
   res.append('Link', [].concat(styleLinks, scriptLinks).join(', '));
