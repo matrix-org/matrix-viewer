@@ -4,7 +4,7 @@
 
 If you haven't setup `matrix-public-archive` yet, see the [_Setup_ section in the root `README.md`](../README.md#setup)
 
-Then we need to setup the federation cluster of homservers that we will test with.
+Then we need to setup the federation cluster of homeservers that we will test with.
 Sorry, this isn't automated yet when you run the tests 🙇
 
 ```sh
