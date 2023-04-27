@@ -9,7 +9,7 @@ const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 
-const ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY = 'addedHomservers';
+const ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY = 'addedHomeservers';
 
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
@@ -47,7 +47,7 @@ class RoomDirectoryViewModel extends ViewModel {
     this._homeserverSelection = pageSearchParameters.homeserver || this._availableHomeserverList[0];
     // The homeservers that the user added themselves (pulled from LocalStorage)
     this._addedHomeserversList = [];
-    this.loadAddedHomserversListFromPersistence();
+    this.loadAddedHomeserversListFromPersistence();
     // The default list of homeservers to select from
     this._calculateAvailableHomeserverList();
 
@@ -166,7 +166,7 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._homeserverSelection;
   }
 
-  loadAddedHomserversListFromPersistence() {
+  loadAddedHomeserversListFromPersistence() {
     if (window.localStorage) {
       let addedHomeserversFromPersistence = [];
       try {
