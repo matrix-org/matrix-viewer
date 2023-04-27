@@ -6,12 +6,8 @@ In the vein of [feature parity with
 Gitter](https://github.com/vector-im/roadmap/issues/26), the goal is to make a
 public archive site for `world_readable` Matrix rooms like Gitter's archives
 which search engines can index and keep all of the content accessible/available.
-There is already https://view.matrix.org/
-(https://github.com/matrix-org/matrix-static) but there is some desire to make
-something with more Element-feeling polish and loading faster (avoid the slow
-502's errors that are frequent on `view.matrix.org`).
 
-![](https://user-images.githubusercontent.com/558581/179578263-e224ed59-dbba-464e-8b34-89a72ee0ae71.png)
+![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
 
 ## Demo videos
 
@@ -31,17 +27,21 @@ messages from a Matrix homeserver.
 Re-using Hydrogen gets us pretty and native(to Element) looking styles and keeps
 the maintenance burden of supporting more event types in Hydrogen.
 
+## FAQ
+
+See the [FAQ page](docs/faq.md).
+
 ## Setup
 
 ### Prerequisites
 
-- Node.js v16
+- [Node.js](https://nodejs.org/) v16
   - We only need v16 because it includes
     [`require('crypto').webcrypto.subtle`](https://nodejs.org/docs/latest-v16.x/api/webcrypto.html#cryptosubtle)
     for [Matrix encryption (olm) which can't be disabled in
     Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
 - A Matrix homeserver that supports [MSC3030's](https://github.com/matrix-org/matrix-spec-proposals/pull/3030) `/timestamp_to_event` endpoint
-  - Synapse 1.73.0+
+  - [Synapse](https://matrix.org/docs/projects/server/synapse) 1.73.0+
 
 ### Get the app running
 
@@ -53,8 +53,6 @@ $ npm install
 $ cp config/config.default.json config/config.user-overrides.json
 
 $ npm run start
-# To enable tracing, add the `--tracing` flag
-$ npm run start -- --tracing
 ```
 
 ## Development
@@ -71,7 +69,8 @@ $ cp config/config.default.json config/config.user-overrides.json
 
 # This will watch for changes, rebuild bundles and restart the server
 $ npm run start-dev
-# To enable tracing, add the `--tracing` flag
+# To enable tracing, add the `--tracing` flag (you will also need setup a
+# Jaeger instance and set the `jaegerTracesEndpoint` config option)
 $ npm run start-dev -- --tracing
 ```
 
@@ -96,4 +95,8 @@ $ npm link hydrogen-view-sdk
 
 ### Running tests
 
-See the [testing readme](./test/README.md).
+See the [testing documentation](./docs/testing.md).
+
+### Tracing
+
+See the [tracing documentation](./docs/tracing.md).
