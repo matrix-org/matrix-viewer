@@ -7,7 +7,7 @@ Gitter](https://github.com/vector-im/roadmap/issues/26), the goal is to make a
 public archive site for `world_readable` Matrix rooms like Gitter's archives
 which search engines can index and keep all of the content accessible/available.
 
-![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
+![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
 
 ## Demo videos
 
