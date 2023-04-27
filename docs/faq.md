@@ -6,7 +6,7 @@ Yes! We host a public canonical version of the Matrix Public Archive at
 [archive.matrix.org](https://archive.matrix.org/) that everyone can use but feel free to
 also run your own instance (setup instructions in the [readme](../README.md)).
 
-## How is this different from [`view.matrix.org`(https://view.matrix.org/)?
+## How is this different from [`view.matrix.org`](https://view.matrix.org/)?
 
 https://view.matrix.org/ (https://github.com/matrix-org/matrix-static) already existed
 before Matrix Public Archive but there was some desire to make something with more
