@@ -22,7 +22,7 @@ $ docker-compose --project-name matrix_public_archive_test -f test/docker-compos
 $ npm run test
 ```
 
-Or if you want to keep Matrix Public Archive server running after the tests run and
+Or if you want to keep the Matrix Public Archive server running after the tests run and
 explore the UI from the interactive URL's printed on the screen to better debug, use:
 
 ```sh

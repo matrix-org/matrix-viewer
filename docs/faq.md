@@ -9,7 +9,7 @@ also run your own instance (setup instructions in the [readme](../README.md)).
 ## How is this different from [`view.matrix.org`](https://view.matrix.org/)?
 
 https://view.matrix.org/ (https://github.com/matrix-org/matrix-static) already existed
-before Matrix Public Archive but there was some desire to make something with more
+before the Matrix Public Archive but there was some desire to make something with more
 Element-feeling polish and loading faster (avoid the slow 502's errors that are frequent
 on `view.matrix.org`).
 
@@ -25,7 +25,7 @@ Also see https://github.com/matrix-org/matrix-public-archive/issues/47
 The main readme has an [technical overview](../README.md#technical-overview) of the
 project. Here are a few more details.
 
-### How do I figure out what version of Matrix Public Archive is running?
+### How do I figure out what version of the Matrix Public Archive is running?
 
 Just visit the `/health-check` endpoint which will return information like the following:
 
