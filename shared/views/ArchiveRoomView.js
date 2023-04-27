@@ -185,7 +185,11 @@ class ArchiveRoomView extends TemplateView {
             if (entry.isIntersecting) {
               const eventId = entry.target.getAttribute('data-event-id');
               const eventEntry = vm.eventEntriesByEventId[eventId];
-              vm.setCurrentTopPositionEventEntry(eventEntry);
+
+              // Ignore events which appear in the future
+              if (eventEntry.timestamp <= vm.dayTimestampTo) {
+                vm.setCurrentTopPositionEventEntry(eventEntry);
+              }
             }
           });
         },
