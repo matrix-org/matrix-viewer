@@ -69,9 +69,6 @@ $ cp config/config.default.json config/config.user-overrides.json
 
 # This will watch for changes, rebuild bundles and restart the server
 $ npm run start-dev
-# To enable tracing, add the `--tracing` flag (you will also need setup a
-# Jaeger instance and set the `jaegerTracesEndpoint` config option)
-$ npm run start-dev -- --tracing
 ```
 
 If you want to make changes to the underlying Hydrogen SDK as well, you can locally link
