@@ -6,13 +6,6 @@ Yes! We host a public canonical version of the Matrix Public Archive at
 [archive.matrix.org](https://archive.matrix.org/) that everyone can use but feel free to
 also run your own instance (setup instructions in the [readme](../README.md)).
 
-## How do I provide via servers to join from?
-
-Just add `?via=foo.bar` to the end of the URL.
-
-Most of the time, you don't need to worry about this though. And you can always just use
-room aliases (`#matrix:matrix.org`) which are routable on their own.
-
 ## How is this different from [`view.matrix.org`(https://view.matrix.org/)?
 
 https://view.matrix.org/ (https://github.com/matrix-org/matrix-static) already existed
