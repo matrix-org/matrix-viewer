@@ -13,6 +13,10 @@ before the Matrix Public Archive but there was some desire to make something wit
 Element-feeling polish and loading faster (avoid the slow 502's errors that are frequent
 on `view.matrix.org`).
 
+And with the introduction of the jump to date API via
+[MSC3030](https://github.com/matrix-org/matrix-spec-proposals/pull/3030), we could show
+messages from any given date and day-by-day navigation.
+
 ## How do I opt out and keep my room from being indexed by search engines?
 
 All public Matrix rooms are accessible to view in the Matrix Public Archive. But only
