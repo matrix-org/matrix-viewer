@@ -14,8 +14,8 @@ Element-feeling polish and loading faster (avoid the slow 502's errors that are 
 on `view.matrix.org`).
 
 And with the introduction of the jump to date API via
-[MSC3030](https://github.com/matrix-org/matrix-spec-proposals/pull/3030), we could do
-day-by-day navigation.
+[MSC3030](https://github.com/matrix-org/matrix-spec-proposals/pull/3030), we could show
+messages from any given date and day-by-day navigation.
 
 ## How do I opt out and keep my room from being indexed by search engines?
 
