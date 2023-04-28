@@ -82,7 +82,8 @@ async function mountHydrogen() {
   urlRouter.attach();
 
   const mediaRepository = new MediaRepository({
-    homeserver: config.matrixServerUrl,
+    // Strip the trailing slash from the URL
+    homeserver: config.matrixServerUrl.replace(/\/$/, ''),
   });
 
   const room = {
