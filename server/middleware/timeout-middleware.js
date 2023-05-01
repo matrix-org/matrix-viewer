@@ -100,7 +100,17 @@ async function timeoutMiddleware(req, res, next) {
   }, requestTimeoutMs);
 
   res.on('finish', function () {
+    // Clear the timeout if the response finishes naturally
     clearTimeout(timeoutId);
+  });
+
+  req.on('close', function () {
+    // Signal to downstream middlewares/routes that they should stop processing/fetching
+    // things since the user closed the connection before we sent a response (downstream
+    // consumers need to respect `req.abortSignal`)
+    //
+    // This is a bit adjacent to "timeouts" but fits easily enough here.
+    req.abortController.abort();
   });
 
   next();
