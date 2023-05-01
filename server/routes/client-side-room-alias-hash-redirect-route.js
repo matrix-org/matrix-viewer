@@ -24,16 +24,19 @@ function clientSideRoomAliasHashRedirectRoute(req, res) {
   };
 
   const bodyHtml = `
-    <h1>
-      404: Page not found.
-      <span class="js-try-redirect-message" style="display: none">One sec while we try to redirect you to the right place.</span>
-    </h1>
-    <p>If there was a #room_alias:server hash in the URL, we tried redirecting  you to the right place.</p>
-    <p>
-      Otherwise, you're simply in a place that does not exist.
-      You can ${sanitizeHtml(`<a href="${basePath}">go back to the homepage</a>.`)}
-    </p>
-    `;
+    ${/* We add the .hydrogen class here just to get normal body styles */ ''}
+    <div class="hydrogen">
+      <h1>
+        404: Page not found.
+        <span class="js-try-redirect-message" style="display: none">One sec while we try to redirect you to the right place.</span>
+      </h1>
+      <p>If there was a #room_alias:server hash in the URL, we tried redirecting  you to the right place.</p>
+      <p>
+        Otherwise, you're simply in a place that does not exist.
+        You can ${sanitizeHtml(`<a href="${basePath}">go back to the homepage</a>.`)}
+      </p>
+    </div>
+  `;
 
   const pageHtml = renderPageHtml({
     pageOptions,
