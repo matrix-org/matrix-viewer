@@ -5,6 +5,7 @@ const path = require('path');
 const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
+const { AbortError } = require('node-fetch');
 
 const identifyRoute = require('../middleware/identify-route-middleware');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
@@ -54,10 +55,15 @@ router.get(
           searchTerm,
           paginationToken,
           limit,
+          abortSignal: req.abortSignal,
         }
       ));
     } catch (err) {
-      roomFetchError = err;
+      if (err instanceof AbortError) {
+        throw err;
+      } else {
+        roomFetchError = err;
+      }
     }
 
     // We index the room directory unless the config says we shouldn't index anything
@@ -98,6 +104,7 @@ router.get(
           matrixServerName,
         },
       },
+      abortSignal: req.abortSignal,
     });
 
     setHeadersToPreloadAssets(res, pageOptions);

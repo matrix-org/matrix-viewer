@@ -16,7 +16,14 @@ assert(requestTimeoutMs);
 // Based off of the `connect-timeout` middleware,
 // https://github.com/expressjs/timeout/blob/f2f520f335f2f2ae255d4778e908e8d38e3a4e68/index.js
 async function timeoutMiddleware(req, res, next) {
+  req.abortController = new AbortController();
+  req.abortSignal = req.abortController.signal;
+
   const timeoutId = setTimeout(() => {
+    // Signal to downstream middlewares/routes that they should stop processing/fetching
+    // things since we timed out (downstream consumers need to respect `req.abortSignal`)
+    req.abortController.abort();
+
     const traceId = getActiveTraceId();
     const serializableSpans = getSerializableSpans();
 

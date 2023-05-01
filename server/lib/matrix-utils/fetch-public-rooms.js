@@ -10,7 +10,10 @@ const config = require('../config');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
-async function fetchPublicRooms(accessToken, { server, searchTerm, paginationToken, limit } = {}) {
+async function fetchPublicRooms(
+  accessToken,
+  { server, searchTerm, paginationToken, limit, abortSignal } = {}
+) {
   assert(accessToken);
 
   let qs = new URLSearchParams();
@@ -34,6 +37,7 @@ async function fetchPublicRooms(accessToken, { server, searchTerm, paginationTok
       limit,
     },
     accessToken,
+    abortSignal,
   });
 
   // We only want to see public rooms in the archive

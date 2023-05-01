@@ -9,6 +9,7 @@ async function renderHydrogenVmRenderScriptToPageHtml({
   pageOptions,
   vmRenderScriptFilePath,
   vmRenderContext,
+  abortSignal,
 }) {
   assert(vmRenderScriptFilePath);
   assert(vmRenderContext);
@@ -18,6 +19,7 @@ async function renderHydrogenVmRenderScriptToPageHtml({
     vmRenderScriptFilePath,
     vmRenderContext,
     pageOptions,
+    abortSignal,
   });
 
   const pageHtml = renderPageHtml({

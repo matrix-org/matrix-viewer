@@ -1,5 +1,6 @@
 'use strict';
 
+const assert = require('assert');
 const fetch = require('node-fetch');
 
 class HTTPResponseError extends Error {
@@ -23,6 +24,7 @@ const checkResponseStatus = async (response) => {
 };
 
 async function fetchEndpoint(endpoint, options = {}) {
+  assert(!options.signal, 'Use `options.abortSignal` instead of `options.signal`');
   const { method, accessToken } = options;
   const headers = options.headers || {};
 
@@ -34,6 +36,8 @@ async function fetchEndpoint(endpoint, options = {}) {
     method,
     headers,
     body: options.body,
+    // Abort signal to cancel the request
+    signal: options.abortSignal,
   });
   await checkResponseStatus(res);
 

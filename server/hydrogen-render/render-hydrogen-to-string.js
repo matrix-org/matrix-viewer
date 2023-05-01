@@ -29,6 +29,8 @@ async function renderHydrogenToString(renderOptions) {
     'We should not be leaking the `config.matrixAccessToken` to the Hydrogen render function because this will reach the client!'
   );
 
+  // TODO: Handle renderOptions.abortSignal
+
   try {
     // In development, if you're running into a hard to track down error with
     // the render hydrogen stack and fighting against the multiple layers of

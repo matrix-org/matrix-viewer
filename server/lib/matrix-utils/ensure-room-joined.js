@@ -11,7 +11,11 @@ const StatusError = require('../status-error');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
-async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = new Set()) {
+async function ensureRoomJoined(
+  accessToken,
+  roomIdOrAlias,
+  { viaServers = new Set(), abortSignal } = {}
+) {
   // We use a `Set` to ensure that we don't have duplicate servers in the list
   assert(viaServers instanceof Set);
 
@@ -38,6 +42,7 @@ async function ensureRoomJoined(accessToken, roomIdOrAlias, viaServers = new Set
     const { data: joinData } = await fetchEndpointAsJson(joinEndpoint, {
       method: 'POST',
       accessToken,
+      abortSignal,
     });
     assert(
       joinData.room_id,
