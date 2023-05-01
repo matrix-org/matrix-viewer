@@ -5,7 +5,7 @@ const urlJoin = require('url-join');
 const asyncHandler = require('../lib/express-async-handler');
 const { getSerializableSpans, getActiveTraceId } = require('../tracing/tracing-middleware');
 const sanitizeHtml = require('../lib/sanitize-html');
-const safeJson = require('../lib/safe-json');
+const renderPageHtml = require('../hydrogen-render/render-page-html');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -19,7 +19,6 @@ async function timeoutMiddleware(req, res, next) {
   const timeoutId = setTimeout(() => {
     const traceId = getActiveTraceId();
     const serializableSpans = getSerializableSpans();
-    const serializedSpans = JSON.stringify(serializableSpans);
 
     let humanReadableSpans;
     if (serializableSpans.length > 0) {
@@ -48,22 +47,9 @@ async function timeoutMiddleware(req, res, next) {
       humanReadableSpans = [noTracingDataAvailableItem];
     }
 
-    const cspNonce = res.locals.cspNonce;
-
-    const hydrogenStylesUrl = urlJoin(basePath, '/hydrogen-assets/hydrogen-styles.css');
-    const stylesUrl = urlJoin(basePath, '/css/styles.css');
-
-    const pageHtml = `
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Server timeout - Matrix Public Archive</title>
-        <link href="${hydrogenStylesUrl}" rel="stylesheet" nonce="${cspNonce}">
-        <link href="${stylesUrl}" rel="stylesheet" nonce="${cspNonce}">
-      </head>
+    const bodyHtml = `
       ${/* We add the .hydrogen class here just to get normal body styles */ ''}
-      <body class="hydrogen">
+      <div class="hydrogen">
         <h1>504: Server timeout</h1>
         <p>Server was unable to respond in time (${requestTimeoutMs / 1000}s)</p>
         <h3>These are the external API requests that made it slow:</h3>
@@ -76,13 +62,28 @@ async function timeoutMiddleware(req, res, next) {
             traceId ?? `none (tracing is probably not enabled)`
           }</span></h2>`
         )}
-
-        <script type="text/javascript" nonce="${cspNonce}">
-          window.tracingSpansForRequest = ${safeJson(serializedSpans)};
-        </script>
-      </body>
-    </html>
+      </div>
     `;
+
+    const pageOptions = {
+      title: `Server timeout - Matrix Public Archive`,
+      entryPoint: 'client/js/entry-client-timeout.js',
+      locationHref: urlJoin(basePath, req.originalUrl),
+      // We don't have a Matrix room so we don't know whether or not to index. Just choose
+      // a safe-default of false.
+      shouldIndex: false,
+      cspNonce: res.locals.cspNonce,
+    };
+
+    const pageHtml = renderPageHtml({
+      pageOptions,
+      bodyHtml,
+      vmRenderContext: {
+        config: {
+          basePath,
+        },
+      },
+    });
 
     // 504 Gateway timeout
     res.status(504);

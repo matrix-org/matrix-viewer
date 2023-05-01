@@ -8,7 +8,7 @@ const safeJson = require('../lib/safe-json');
 const getDependenciesForEntryPointName = require('../lib/get-dependencies-for-entry-point-name');
 const getFaviconAssetUrls = require('../lib/get-favicon-asset-urls');
 
-async function renderPageHtml({
+function renderPageHtml({
   pageOptions,
   // Make sure you sanitize this before passing it to us
   bodyHtml,

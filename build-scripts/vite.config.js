@@ -50,6 +50,7 @@ module.exports = defineConfig({
         path.resolve(__dirname, '../client/js/entry-client-hydrogen.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-directory.js'),
         path.resolve(__dirname, '../client/js/entry-client-room-alias-hash-redirect.js'),
+        path.resolve(__dirname, '../client/js/entry-client-timeout.js'),
       ],
       output: {
         assetFileNames: (chunkInfo) => {
