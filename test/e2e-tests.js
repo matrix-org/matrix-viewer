@@ -11,7 +11,7 @@ const { parseHTML } = require('linkedom');
 const { readFile } = require('fs').promises;
 const chalk = require('chalk');
 
-const RethrownError = require('../server/lib/rethrown-error');
+const RethrownError = require('../server/lib/errors/rethrown-error');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const config = require('../server/lib/config');

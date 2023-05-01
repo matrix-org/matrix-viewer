@@ -7,7 +7,7 @@
 // get our initial rendered HTML.
 
 const assert = require('assert');
-const RethrownError = require('../lib/rethrown-error');
+const RethrownError = require('../lib/errors/rethrown-error');
 const runInChildProcess = require('../child-process-runner/run-in-child-process');
 
 const resolvedRenderHydrogenToStringUnsafeScriptPath = require.resolve(

@@ -5,7 +5,6 @@ const path = require('path');
 const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
-const { AbortError } = require('node-fetch');
 
 const identifyRoute = require('../middleware/identify-route-middleware');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
@@ -59,7 +58,8 @@ router.get(
         }
       ));
     } catch (err) {
-      if (err instanceof AbortError) {
+      // We can't use `err instanceof AbortError` because we don't have access to that error type
+      if (err.name === 'AbortError') {
         // Throw and error so we stop processing and assembling the page after we abort
         // (probably a timeout, see `timeout-middleware.js`)
         throw err;

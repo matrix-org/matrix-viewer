@@ -3,6 +3,8 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 const asyncHandler = require('../lib/express-async-handler');
+const TimeoutAbortError = require('../lib/errors/timeout-abort-error');
+const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const { getSerializableSpans, getActiveTraceId } = require('../tracing/tracing-middleware');
 const sanitizeHtml = require('../lib/sanitize-html');
 const renderPageHtml = require('../hydrogen-render/render-page-html');
@@ -22,7 +24,9 @@ async function timeoutMiddleware(req, res, next) {
   const timeoutId = setTimeout(() => {
     // Signal to downstream middlewares/routes that they should stop processing/fetching
     // things since we timed out (downstream consumers need to respect `req.abortSignal`)
-    req.abortController.abort();
+    req.abortController.abort(
+      new TimeoutAbortError(`Request timed out after ${requestTimeoutMs}ms`)
+    );
 
     const traceId = getActiveTraceId();
     const serializableSpans = getSerializableSpans();
@@ -109,8 +113,11 @@ async function timeoutMiddleware(req, res, next) {
     // things since the user closed the connection before we sent a response (downstream
     // consumers need to respect `req.abortSignal`)
     //
-    // This is a bit adjacent to "timeouts" but fits easily enough here.
-    req.abortController.abort();
+    // This is a bit adjacent to "timeouts" but fits easily enough here (this could be a
+    // separate middleware).
+    req.abortController.abort(
+      new UserClosedConnectionAbortError(`User closed connection before we could respond`)
+    );
   });
 
   next();

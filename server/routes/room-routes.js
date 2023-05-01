@@ -5,7 +5,7 @@ const path = require('path');
 const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
-const StatusError = require('../lib/status-error');
+const StatusError = require('../lib/errors/status-error');
 
 const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
 const identifyRoute = require('../middleware/identify-route-middleware');

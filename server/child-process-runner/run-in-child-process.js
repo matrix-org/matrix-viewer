@@ -12,7 +12,7 @@
 const assert = require('assert');
 const { fork } = require('child_process');
 
-const RethrownError = require('../lib/rethrown-error');
+const RethrownError = require('../lib/errors/rethrown-error');
 const { traceFunction } = require('../tracing/trace-utilities');
 
 const config = require('../lib/config');
@@ -69,13 +69,12 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     let childErrors = [];
     let childExitCode = '(not set yet)';
 
-    const controller = new AbortController();
-    const { signal } = controller;
+    const abortController = new AbortController();
     // We use a child_process because we want to be able to exit the process
     // after we receive the results. We use `fork` instead of `exec`/`spawn` so
     // that we can pass a module instead of running a command.
     const child = fork(resolvedChildForkScriptPath, [modulePath], {
-      signal,
+      signal: abortController.signal,
       // Default to silencing logs from the child process. We already have
       // proper instrumentation of any errors that might occur.
       //
@@ -104,7 +103,7 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     // Stops the child process if it takes too long
     if (timeout) {
       abortTimeoutId = setTimeout(() => {
-        controller.abort();
+        abortController.abort();
       }, timeout);
     }
 

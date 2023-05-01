@@ -7,7 +7,7 @@ const { fetchEndpointAsJson } = require('../fetch-endpoint');
 const getServerNameFromMatrixRoomIdOrAlias = require('./get-server-name-from-matrix-room-id-or-alias');
 
 const config = require('../config');
-const StatusError = require('../status-error');
+const StatusError = require('../errors/status-error');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const StatusError = require('../lib/status-error');
+const StatusError = require('./errors/status-error');
 
 function parseViaServersFromUserInput(rawViaServers) {
   // `rawViaServers` could be an array, a single string, or undefined. Turn it into an
