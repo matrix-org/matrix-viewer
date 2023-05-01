@@ -60,6 +60,8 @@ router.get(
       ));
     } catch (err) {
       if (err instanceof AbortError) {
+        // Throw and error so we stop processing and assembling the page after we abort
+        // (probably a timeout, see `timeout-middleware.js`)
         throw err;
       } else {
         roomFetchError = err;
