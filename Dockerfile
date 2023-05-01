@@ -2,7 +2,7 @@
 # with error 243 issues are solved:
 #  - https://github.com/npm/cli/issues/4996
 #  - https://github.com/npm/cli/issues/4769
-FROM node:16.14.2-buster-slim
+FROM node:18.16.0-buster-slim
 
 # Pass through some GitHub CI variables which we use in the build (for version
 # files/tags)

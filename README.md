@@ -35,11 +35,16 @@ See the [FAQ page](docs/faq.md).
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v16
-  - We only need v16 because it includes
+- [Node.js](https://nodejs.org/) v18
+  - We need v18 because it includes `fetch` by default. And [`node-fetch` doesn't
+    support `abortSignal.reason`](https://github.com/node-fetch/node-fetch/issues/1462)
+    yet.
+  - We need v16 because it includes
     [`require('crypto').webcrypto.subtle`](https://nodejs.org/docs/latest-v16.x/api/webcrypto.html#cryptosubtle)
     for [Matrix encryption (olm) which can't be disabled in
-    Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet.
+    Hydrogen](https://github.com/vector-im/hydrogen-web/issues/579) yet. And
+    [`abortSignal.reason` was introduced in
+    v16.14.0](https://nodejs.org/dist/latest-v18.x/docs/api/globals.html#abortsignalreason) (although we use `node-fetch` for now).
 - A Matrix homeserver that supports [MSC3030's](https://github.com/matrix-org/matrix-spec-proposals/pull/3030) `/timestamp_to_event` endpoint
   - [Synapse](https://matrix.org/docs/projects/server/synapse) 1.73.0+
 

@@ -1,7 +1,6 @@
 'use strict';
 
 const assert = require('assert');
-const fetch = require('node-fetch');
 
 class HTTPResponseError extends Error {
   constructor(response, responseText, ...args) {
