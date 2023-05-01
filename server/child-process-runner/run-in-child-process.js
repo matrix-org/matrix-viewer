@@ -26,7 +26,7 @@ if (!logOutputFromChildProcesses) {
 
 const resolvedChildForkScriptPath = require.resolve('./child-fork-script');
 
-function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors) {
+function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors, childStdErr) {
   assert(childErrors);
 
   let extraErrorsMessage = '';
@@ -40,7 +40,9 @@ function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors) {
 
   let childErrorToDisplay;
   if (childErrors.length === 0) {
-    childErrorToDisplay = new Error('No child errors');
+    childErrorToDisplay = new Error(
+      `No child errors but there might be something in stderr=${childStdErr}`
+    );
     // Clear the stack trace part of the stack string out because this is just a
     // note about the lack of errors, not an actual error and is just noisy with
     // that extra fluff.
@@ -68,6 +70,7 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
   try {
     let childErrors = [];
     let childExitCode = '(not set yet)';
+    let childStdErr = '';
 
     const abortController = new AbortController();
     // We use a child_process because we want to be able to exit the process
@@ -84,16 +87,18 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     });
 
     // Since we have to use the `silent` option for the `stderr` stuff below, we
-    // should also print out the `stdout` to our main console.
-    if (logOutputFromChildProcesses) {
-      child.stdout.on('data', function (data) {
+    // should also print out the `stdout` to our main console if we want to see what's going on.
+    child.stdout.on('data', function (data) {
+      if (logOutputFromChildProcesses) {
         console.log('Child printed something to stdout:', String(data));
-      });
-
-      child.stderr.on('data', function (data) {
+      }
+    });
+    child.stderr.on('data', function (data) {
+      if (logOutputFromChildProcesses) {
         console.log('Child printed something to stderr:', String(data));
-      });
-    }
+      }
+      childStdErr += data;
+    });
 
     // Pass the runArguments to the child by sending instead of via argv because
     // we will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG`
@@ -136,7 +141,8 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
         } else {
           const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
             childExitCode,
-            childErrors
+            childErrors,
+            childStdErr
           );
           reject(childErrorSummary);
         }
@@ -147,7 +153,8 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
         if (err.name === 'AbortError') {
           const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
             childExitCode,
-            childErrors
+            childErrors,
+            childStdErr
           );
           reject(
             new RethrownError(
@@ -162,7 +169,11 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     });
 
     if (!returnedData) {
-      const childErrorSummary = assembleErrorAfterChildExitsWithErrors(childExitCode, childErrors);
+      const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
+        childExitCode,
+        childErrors,
+        childStdErr
+      );
       throw new RethrownError(
         `No \`returnedData\` sent from child process while running the module (${modulePath}). Any child errors? (${childErrors.length})`,
         childErrorSummary
