@@ -265,6 +265,8 @@ class RoomDirectoryViewModel extends ViewModel {
 
     if (safeSearchEnabled) {
       this._roomCardViewModelsFilterMap.setApply((roomId, vm) => {
+        // We concat the name, topic, etc together to simply do a single check against
+        // all of the text.
         const isNsfw = NSFW_REGEXES.some((regex) =>
           regex.test(vm.name + ' ---- ' + vm.canonicalAlias + ' --- ' + vm.topic)
         );
