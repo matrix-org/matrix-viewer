@@ -94,9 +94,9 @@ function startTracing() {
         },
       }),
       // We have to instrument `undici` to cover the native `fetch` API built-in to
-      // Node.js We're using `opentelemetry-instrumentation-fetch-node` because there is
-      // no official instrumentation and `opentelemetry-instrumentation-undici` doesn't
-      // seem to work.
+      // Node.js. We're using `opentelemetry-instrumentation-fetch-node` because there
+      // is no official instrumentation and `opentelemetry-instrumentation-undici`
+      // doesn't seem to work.
       new FetchInstrumentation({}),
     ],
   });
