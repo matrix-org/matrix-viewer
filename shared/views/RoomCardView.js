@@ -134,7 +134,7 @@ class RoomCardView extends TemplateView {
                   if (vm.blockedBySafeSearch) {
                     // Omit the href so the link is not clickable when it's blocked by
                     // safe search
-                    return undefined;
+                    return false;
                   }
 
                   return vm.archiveRoomUrl;
