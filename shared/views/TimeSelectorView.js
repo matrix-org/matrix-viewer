@@ -130,33 +130,37 @@ class TimeSelectorView extends TemplateView {
       }
     );
 
-    // Since this lives in the right-panel which is conditionally hidden from view with
-    // `display: none;`, we have to re-evaluate the scrubber scroll position when it
-    // becomes visible because client dimensions evaluate to `0` when something is
-    // hidden in the DOM.
-    t.mapSideEffect(
-      // We do this so it only runs once. We only need to run this once to bind the
-      // `IntersectionObserver`
-      (/*vm*/) => null,
-      () => {
-        // This makes the side-effect always run after the initial `render` and after
-        // bindings evaluate.
-        //
-        // For the initial render, this does assume this view will be mounted in the
-        // parent DOM straight away. #hydrogen-assume-view-mounted-right-away -
-        // https://github.com/vector-im/hydrogen-web/issues/1069
-        requestAnimationFrame(() => {
-          // Bind IntersectionObserver to the target element
-          this._interSectionObserverForVisibility = new IntersectionObserver((entries) => {
-            const isScrubberVisible = entries[0].isIntersecting;
-            if (isScrubberVisible) {
-              this.updateScrubberScrollBasedOnActiveDate();
-            }
+    // Avoid an error when server-side rendering (SSR) because it doesn't have all the
+    // DOM API's available (and doesn't need it for this case)
+    if (typeof IntersectionObserver === 'function') {
+      // Since this lives in the right-panel which is conditionally hidden from view with
+      // `display: none;`, we have to re-evaluate the scrubber scroll position when it
+      // becomes visible because client dimensions evaluate to `0` when something is
+      // hidden in the DOM.
+      t.mapSideEffect(
+        // We do this so it only runs once. We only need to run this once to bind the
+        // `IntersectionObserver`
+        (/*vm*/) => null,
+        () => {
+          // This makes the side-effect always run after the initial `render` and after
+          // bindings evaluate.
+          //
+          // For the initial render, this does assume this view will be mounted in the
+          // parent DOM straight away. #hydrogen-assume-view-mounted-right-away -
+          // https://github.com/vector-im/hydrogen-web/issues/1069
+          requestAnimationFrame(() => {
+            // Bind IntersectionObserver to the target element
+            this._interSectionObserverForVisibility = new IntersectionObserver((entries) => {
+              const isScrubberVisible = entries[0].isIntersecting;
+              if (isScrubberVisible) {
+                this.updateScrubberScrollBasedOnActiveDate();
+              }
+            });
+            this._interSectionObserverForVisibility.observe(this.scrubberScrollNode);
           });
-          this._interSectionObserverForVisibility.observe(this.scrubberScrollNode);
-        });
-      }
-    );
+        }
+      );
+    }
 
     const timeInput = t.input({
       type: 'time',
