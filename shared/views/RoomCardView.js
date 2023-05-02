@@ -3,7 +3,7 @@
 const { TemplateView, AvatarView, text } = require('hydrogen-view-sdk');
 const AvatarViewModel = require('../viewmodels/AvatarViewModel');
 
-const safeSearchBlockedRoomTitle = 'Blocked by Safe Search';
+const safeSearchBlockedRoomTitle = 'Blocked by safe search';
 const safeSearchBlockedRoomDescription =
   'This room was blocked because safe search is turned on and may contain explicit content. Turn off safe search to see this room.';
 
