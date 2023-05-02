@@ -237,24 +237,22 @@
   color: #abb5be;
 }
 
-.RoomDirectoryView_roomList {
-  display: grid;
-  gap: 20px;
+.RoomDirectoryView_mainContentSection {
   width: 100%;
   max-width: 1180px;
   padding-left: 20px;
   padding-right: 20px;
-  margin-top: 20px;
+  margin-top: 15px;
   margin-bottom: 0;
+}
+
+.RoomDirectoryView_roomList {
+  display: grid;
+  gap: 20px;
 }
 
 .RoomDirectoryView_roomListError {
   display: block;
-  width: 100%;
-  max-width: 1180px;
-  padding-left: 20px;
-  padding-right: 20px;
-  margin-top: 20px;
 
   line-height: 1.5;
 }
@@ -269,17 +267,14 @@
 }
 
 @media (min-width: 750px) {
-  .RoomDirectoryView_roomList {
-    grid-template-columns: repeat(2, 1fr);
-    margin-top: 40px;
+  .RoomDirectoryView_mainContentSection {
+    margin-top: 30px;
     padding-left: 40px;
     padding-right: 40px;
   }
 
-  .RoomDirectoryView_roomListError {
-    margin-top: 40px;
-    padding-left: 40px;
-    padding-right: 40px;
+  .RoomDirectoryView_roomList {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -287,6 +282,40 @@
   .RoomDirectoryView_roomList {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.RoomDirectoryView_safeSearchToggleSection {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.RoomDirectoryView_safeSearchToggle {
+  display: flex;
+  align-items: center;
+}
+
+.RoomDirectoryView_safeSearchToggleLabel {
+  padding-left: 0.3em;
+}
+
+.RoomDirectoryView_safeSearchToggleCheckbox {
+  appearance: none;
+
+  position: relative;
+  width: 20px;
+  height: 10px;
+
+  background-color: #ffffff;
+  border: 2px solid rgba(200, 200, 200, 1);
+  box-shadow: inset -10px 0px 0px 0px rgba(200, 200, 200, 1);
+  border-radius: 10px;
+
+  transition: all 0.2s ease;
+}
+
+.RoomDirectoryView_safeSearchToggleCheckbox:checked {
+  border: 2px solid rgba(80, 134, 240, 1);
+  box-shadow: inset 10px 0px 0px 0px rgba(80, 134, 240, 1);
 }
 
 .RoomCardView {

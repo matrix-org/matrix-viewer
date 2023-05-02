@@ -4,7 +4,7 @@ const assert = require('./assert');
 
 const LOCAL_STORAGE_KEYS = {
   addedHomeservers: 'addedHomeservers',
-  safeSearch: 'safeSearch',
+  safeSearchEnabled: 'safeSearchEnabled',
   debugActiveDateIntersectionObserver: 'debugActiveDateIntersectionObserver',
 };
 

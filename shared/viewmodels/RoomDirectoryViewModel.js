@@ -235,7 +235,7 @@ class RoomDirectoryViewModel extends ViewModel {
 
     if (window.localStorage) {
       const safeSearchEnabledFromPersistence = window.localStorage.getItem(
-        LOCAL_STORAGE_KEYS.safeSearch
+        LOCAL_STORAGE_KEYS.safeSearchEnabled
       );
 
       if (safeSearchEnabledFromPersistence === 'false') {
@@ -243,7 +243,7 @@ class RoomDirectoryViewModel extends ViewModel {
       }
     } else {
       console.warn(
-        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearch}\` read from LocalStorage since LocalStorage is not available`
+        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearchEnabled}\` read from LocalStorage since LocalStorage is not available`
       );
     }
 
@@ -254,12 +254,12 @@ class RoomDirectoryViewModel extends ViewModel {
     this._safeSearchEnabled = safeSearchEnabled;
     if (window.localStorage) {
       window.localStorage.setItem(
-        LOCAL_STORAGE_KEYS.safeSearch,
+        LOCAL_STORAGE_KEYS.safeSearchEnabled,
         safeSearchEnabled ? 'true' : 'false'
       );
     } else {
       console.warn(
-        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearch}\` write to LocalStorage since LocalStorage is not available`
+        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearchEnabled}\` write to LocalStorage since LocalStorage is not available`
       );
     }
 

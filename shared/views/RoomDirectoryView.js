@@ -19,7 +19,7 @@ class RoomDirectoryView extends TemplateView {
 
     const roomList = new ListView(
       {
-        className: 'RoomDirectoryView_roomList',
+        className: 'RoomDirectoryView_roomList RoomDirectoryView_mainContentSection',
         list: vm.roomCardViewModels,
         parentProvidesUpdates: false,
       },
@@ -210,97 +210,115 @@ class RoomDirectoryView extends TemplateView {
           t.if(
             (vm) => vm.roomFetchError,
             (t, vm) => {
-              return t.section({ className: 'RoomDirectoryView_roomListError' }, [
-                t.h3('❗ Unable to fetch rooms from room directory'),
-                t.p({}, [
-                  `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search or select a different homeserver to look at. If this problem persists, please check the homeserver status and with a homeserver admin first, then open a `,
-                  t.a(
-                    { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
-                    'bug report'
-                  ),
-                  ` with this whole section copy-pasted into the issue.`,
-                ]),
-                t.button(
-                  {
-                    className: 'PrimaryActionButton',
-                    onClick: () => {
-                      window.location.reload();
-                    },
-                  },
-                  'Refresh page'
-                ),
-                t.p({}, `The exact error we ran into was:`),
-                t.pre(
-                  { className: 'RoomDirectoryView_codeBlock' },
-                  t.code({}, vm.roomFetchError.stack)
-                ),
-                t.p({}, `The error occured with these search parameters:`),
-                t.pre(
-                  { className: 'RoomDirectoryView_codeBlock' },
-                  t.code({}, JSON.stringify(vm.pageSearchParameters, null, 2))
-                ),
-                t.details({}, [
-                  t.summary({}, 'Why are we showing so many details?'),
+              return t.section(
+                {
+                  className: 'RoomDirectoryView_roomListError RoomDirectoryView_mainContentSection',
+                },
+                [
+                  t.h3('❗ Unable to fetch rooms from room directory'),
                   t.p({}, [
-                    `We're showing as much detail as we know so you're not frustrated by a generic message with no feedback on how to move forward. This also makes it easier for you to write a `,
+                    `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search or select a different homeserver to look at. If this problem persists, please check the homeserver status and with a homeserver admin first, then open a `,
                     t.a(
                       { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
                       'bug report'
                     ),
-                    ` with all the details necessary for us to triage it.`,
+                    ` with this whole section copy-pasted into the issue.`,
                   ]),
-                  t.p({}, t.strong(`Isn't this a security risk?`)),
-                  t.p({}, [
-                    `Not really. Usually, people are worried about returning details because it makes it easier for people to probe the system by getting better feedback about what's going wrong to craft exploits. But the `,
-                    t.a(
-                      { href: 'https://github.com/matrix-org/matrix-public-archive' },
-                      'Matrix Public Archive'
-                    ),
-                    ` is already open source so the details of the app are already public and you can run your own instance against the same homeservers that we are to find problems.`,
+                  t.button(
+                    {
+                      className: 'PrimaryActionButton',
+                      onClick: () => {
+                        window.location.reload();
+                      },
+                    },
+                    'Refresh page'
+                  ),
+                  t.p({}, `The exact error we ran into was:`),
+                  t.pre(
+                    { className: 'RoomDirectoryView_codeBlock' },
+                    t.code({}, vm.roomFetchError.stack)
+                  ),
+                  t.p({}, `The error occured with these search parameters:`),
+                  t.pre(
+                    { className: 'RoomDirectoryView_codeBlock' },
+                    t.code({}, JSON.stringify(vm.pageSearchParameters, null, 2))
+                  ),
+                  t.details({}, [
+                    t.summary({}, 'Why are we showing so many details?'),
+                    t.p({}, [
+                      `We're showing as much detail as we know so you're not frustrated by a generic message with no feedback on how to move forward. This also makes it easier for you to write a `,
+                      t.a(
+                        { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
+                        'bug report'
+                      ),
+                      ` with all the details necessary for us to triage it.`,
+                    ]),
+                    t.p({}, t.strong(`Isn't this a security risk?`)),
+                    t.p({}, [
+                      `Not really. Usually, people are worried about returning details because it makes it easier for people to probe the system by getting better feedback about what's going wrong to craft exploits. But the `,
+                      t.a(
+                        { href: 'https://github.com/matrix-org/matrix-public-archive' },
+                        'Matrix Public Archive'
+                      ),
+                      ` is already open source so the details of the app are already public and you can run your own instance against the same homeservers that we are to find problems.`,
+                    ]),
+                    t.p({}, [
+                      `If you find any security vulnerabilities, please `,
+                      t.a(
+                        { href: 'https://matrix.org/security-disclosure-policy/' },
+                        'responsibly disclose'
+                      ),
+                      ` them to us.`,
+                    ]),
+                    t.p({}, [
+                      `If you have ideas on how we can better present these errors, please `,
+                      t.a(
+                        { href: 'https://github.com/matrix-org/matrix-public-archive/issues' },
+                        'create an issue'
+                      ),
+                      `.`,
+                    ]),
                   ]),
-                  t.p({}, [
-                    `If you find any security vulnerabilities, please `,
-                    t.a(
-                      { href: 'https://matrix.org/security-disclosure-policy/' },
-                      'responsibly disclose'
-                    ),
-                    ` them to us.`,
-                  ]),
-                  t.p({}, [
-                    `If you have ideas on how we can better present these errors, please `,
-                    t.a(
-                      { href: 'https://github.com/matrix-org/matrix-public-archive/issues' },
-                      'create an issue'
-                    ),
-                    `.`,
-                  ]),
-                ]),
-              ]);
+                ]
+              );
             }
           ),
           // Otherwise, display the rooms that we fetched
-          t.section([
-            t.div({ className: 'RoomDirectoryView_safeSearchToggle' }, [
-              t.label({ for: 'safeSearchEnabled' }, [
-                t.map(
-                  (vm) => vm.safeSearchEnabled,
-                  (safeSearchEnabled /*, t, vm*/) => {
-                    if (safeSearchEnabled) {
-                      return text('Safe search is on');
-                    }
+          t.section(
+            {
+              className:
+                'RoomDirectoryView_safeSearchToggleSection RoomDirectoryView_mainContentSection',
+            },
+            [
+              t.div({ className: 'RoomDirectoryView_safeSearchToggle' }, [
+                t.input({
+                  id: 'safeSearchEnabled',
+                  className: 'RoomDirectoryView_safeSearchToggleCheckbox',
+                  type: 'checkbox',
+                  checked: (vm) => vm.safeSearchEnabled,
+                  onInput: (event) => vm.setSafeSearchEnabled(event.target.checked),
+                }),
+                t.label(
+                  {
+                    className: 'RoomDirectoryView_safeSearchToggleLabel',
+                    for: 'safeSearchEnabled',
+                  },
+                  [
+                    t.map(
+                      (vm) => vm.safeSearchEnabled,
+                      (safeSearchEnabled /*, t, vm*/) => {
+                        if (safeSearchEnabled) {
+                          return text('Safe search is on');
+                        }
 
-                    return text('Safe search is off');
-                  }
+                        return text('Safe search is off');
+                      }
+                    ),
+                  ]
                 ),
               ]),
-              t.input({
-                id: 'safeSearchEnabled',
-                type: 'checkbox',
-                checked: (vm) => vm.safeSearchEnabled,
-                onInput: (event) => vm.setSafeSearchEnabled(event.target.checked),
-              }),
-            ]),
-          ]),
+            ]
+          ),
           t.view(roomList),
           t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
             t.a(
