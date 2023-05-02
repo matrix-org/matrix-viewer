@@ -83,7 +83,8 @@ function startTracing() {
           // `@opentelemetry/instrumentation-express` but that's not the case, see
           // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/1034#issuecomment-1158435392
           ignoreIncomingRequestHook: (req) => {
-            // Ignore spans from static assets.
+            // Ignore spans from static assets. It's just noise to trace them and there
+            // is nothing special about the routes.
             const isStaticAsset = !!req.url.match(/^\/assets\//);
             return isStaticAsset;
           },
