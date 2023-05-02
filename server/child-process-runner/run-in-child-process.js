@@ -12,7 +12,6 @@
 const assert = require('assert');
 const { fork } = require('child_process');
 
-const ExtendedError = require('../lib/errors/extended-error');
 const RethrownError = require('../lib/errors/rethrown-error');
 const { traceFunction } = require('../tracing/trace-utilities');
 
