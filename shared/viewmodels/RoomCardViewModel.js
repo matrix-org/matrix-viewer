@@ -8,11 +8,11 @@ const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/
 class RoomCardViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { room, basePath, homeserverUrlToPullMediaFrom, pageSearchParameters } = options;
+    const { room, basePath, homeserverUrlToPullMediaFrom, viaServers } = options;
     assert(room);
     assert(basePath);
     assert(homeserverUrlToPullMediaFrom);
-    assert(pageSearchParameters);
+    assert(viaServers);
 
     this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
@@ -24,7 +24,9 @@ class RoomCardViewModel extends ViewModel {
     this._numJoinedMembers = room.num_joined_members;
     this._topic = room.topic;
 
-    this._pageSearchParameters = pageSearchParameters;
+    this._viaServers = viaServers;
+
+    this._blockedBySafeSearch = false;
   }
 
   get roomId() {
@@ -60,9 +62,20 @@ class RoomCardViewModel extends ViewModel {
       this._canonicalAlias || this._roomId,
       {
         // Only include via servers when we have to fallback to the room ID
-        viaServers: this._canonicalAlias ? undefined : [this._pageSearchParameters.homeserver],
+        viaServers: this._canonicalAlias ? undefined : this._viaServers,
       }
     );
+  }
+
+  get blockedBySafeSearch() {
+    return this._blockedBySafeSearch;
+  }
+
+  setBlockedBySafeSearch(blockedBySafeSearch) {
+    if (blockedBySafeSearch !== this._blockedBySafeSearch) {
+      this._blockedBySafeSearch = blockedBySafeSearch;
+      this.emitChange('blockedBySafeSearch');
+    }
   }
 }
 

@@ -20,7 +20,7 @@ class RoomDirectoryView extends TemplateView {
     const roomList = new ListView(
       {
         className: 'RoomDirectoryView_roomList',
-        list: vm.rooms,
+        list: vm.roomCardViewModels,
         parentProvidesUpdates: false,
       },
       (room) => {

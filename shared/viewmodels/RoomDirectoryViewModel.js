@@ -1,6 +1,6 @@
 'use strict';
 
-const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
+const { ViewModel, ObservableMap, ApplyMap } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
@@ -10,6 +10,9 @@ const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-
 const RoomCardViewModel = require('matrix-public-archive-shared/viewmodels/RoomCardViewModel');
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
+
+const NSFW_WORDS = ['nsfw', 'porn', 'nudes', 'sex', '18+'];
+const NSFW_REGEXES = NSFW_WORDS.map((word) => new RegExp(`\\b${word}\\b`, 'i'));
 
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
@@ -68,18 +71,32 @@ class RoomDirectoryViewModel extends ViewModel {
       })
     );
 
-    this._safeSearchEnabled = true;
-    this.loadSafeSearchEnabledFromPersistence();
-    this._rooms = new ObservableArray(
-      rooms.map((room) => {
-        return new RoomCardViewModel({
+    // This is based off of
+    // https://github.com/vector-im/hydrogen-web/blob/e77727ea5992a3ec2649edd53a42e6d75f50a0ca/src/domain/session/leftpanel/LeftPanelViewModel.js#L30-L32
+    this._roomCardViewModelsMap = new ObservableMap();
+    rooms.forEach((room) => {
+      this._roomCardViewModelsMap.set(
+        room.room_id,
+        new RoomCardViewModel({
           room,
           basePath,
           homeserverUrlToPullMediaFrom: homeserverUrl,
-          pageSearchParameters: this.pageSearchParameters,
-        });
-      })
-    );
+          viaServers: [
+            // If the room is being shown in the directory from this server, then surely
+            // we can join via this server
+            this._pageSearchParameters.homeserver,
+          ],
+        })
+      );
+    });
+    this._roomCardViewModelsFilterMap = new ApplyMap(this._roomCardViewModelsMap);
+    this._roomCardViewModels = this._roomCardViewModelsFilterMap.sortValues((/*a, b*/) => {
+      // Sort doesn't matter
+      return 1;
+    });
+
+    this._safeSearchEnabled = true;
+    this.loadSafeSearchEnabledFromPersistence();
 
     this.#setupNavigation();
   }
@@ -240,6 +257,20 @@ class RoomDirectoryViewModel extends ViewModel {
       safeSearchEnabled ? 'true' : 'false'
     );
 
+    if (safeSearchEnabled) {
+      this._roomCardViewModelsFilterMap.setApply((roomId, vm) => {
+        const isNsfw = NSFW_REGEXES.some((regex) =>
+          regex.test(vm.name + ' ---- ' + vm.canonicalAlias + ' --- ' + vm.topic)
+        );
+        vm.setBlockedBySafeSearch(isNsfw);
+      });
+    } else {
+      this._roomCardViewModelsFilterMap.setApply(null);
+      this._roomCardViewModelsFilterMap.applyOnce((roomId, vm) => {
+        vm.setBlockedBySafeSearch(false);
+      });
+    }
+
     this.emitChange('safeSearchEnabled');
   }
 
@@ -313,8 +344,8 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._availableHomeserverList;
   }
 
-  get rooms() {
-    return this._rooms;
+  get roomCardViewModels() {
+    return this._roomCardViewModels;
   }
 }
 

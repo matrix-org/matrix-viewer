@@ -3,6 +3,10 @@
 const { TemplateView, AvatarView } = require('hydrogen-view-sdk');
 const AvatarViewModel = require('../viewmodels/AvatarViewModel');
 
+const safeSearchBlockedRoomTitle = 'Blocked by Safe Search';
+const safeSearchBlockedRoomDescription =
+  'This room was filtered because safe search is turned on and may contain explicit content. Turn off safe search to see this room.';
+
 class RoomCardView extends TemplateView {
   render(t, vm) {
     const avatarViewModel = new AvatarViewModel({
@@ -31,6 +35,7 @@ class RoomCardView extends TemplateView {
       {
         className: {
           RoomCardView: true,
+          'RoomCardView--blockedBySafeSearch': (vm) => vm.blockedBySafeSearch,
         },
         'data-room-id': vm.roomId,
         'data-testid': 'room-card',
@@ -53,9 +58,23 @@ class RoomCardView extends TemplateView {
                   {
                     className: 'RoomCardView_headerTitle',
                     // We add a title so a tooltip shows the full name on hover
-                    title: displayName,
+                    title: (vm) => {
+                      if (vm.blockedBySafeSearch) {
+                        return safeSearchBlockedRoomTitle;
+                      }
+
+                      return displayName;
+                    },
                   },
-                  displayName
+                  [
+                    (vm) => {
+                      if (vm.blockedBySafeSearch) {
+                        return safeSearchBlockedRoomTitle;
+                      }
+
+                      return displayName;
+                    },
+                  ]
                 )
             ),
           ]

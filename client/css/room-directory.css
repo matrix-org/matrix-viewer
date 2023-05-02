@@ -301,6 +301,10 @@
   border-radius: 8px;
 }
 
+.RoomCardView--blockedBySafeSearch {
+  background-color: #d0d9e1;
+}
+
 .RoomCardView_header {
   display: flex;
   align-items: top;
