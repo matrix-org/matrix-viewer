@@ -4,8 +4,14 @@ const {
   hrTimeToMilliseconds,
   //hrTimeToMicroseconds
 } = require('@opentelemetry/core');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 
-const SAFE_ATTRIBUTES = ['http.method', 'http.url', 'http.status_code', 'http.target'];
+const SAFE_ATTRIBUTES = [
+  SemanticAttributes.HTTP_METHOD,
+  SemanticAttributes.HTTP_URL,
+  SemanticAttributes.HTTP_TARGET,
+  SemanticAttributes.HTTP_STATUS_CODE,
+];
 
 // Convert a `Span` object to a plain old JavaScript object with only the info
 // we care about and that is safe to share. We want something we can JSON

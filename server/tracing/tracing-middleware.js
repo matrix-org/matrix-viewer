@@ -54,7 +54,14 @@ function getSerializableSpans() {
 
     // We only care about showing the external API HTTP requests to the user
     const filteredSpans = spans.filter((span) => {
-      return span.instrumentationLibrary.name === '@opentelemetry/instrumentation-http';
+      return [
+        // `http`/`https` requests
+        '@opentelemetry/instrumentation-http',
+        // Native `fetch`
+        'opentelemetry-instrumentation-node-18-fetch',
+        // This will get `tcp.connect` calls which `fetch` does but not the full request lifecycle
+        //'@opentelemetry/instrumentation-net',
+      ].includes(span.instrumentationLibrary.name);
     });
 
     const serializableSpans = filteredSpans.map((span) => serializeSpan(span));

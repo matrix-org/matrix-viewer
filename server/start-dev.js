@@ -23,20 +23,20 @@ buildClient({
 });
 
 const nodeArgs = [];
-if (process.argv.inspectNode) {
+if (process.argv.includes('--inspectNode')) {
   nodeArgs.push('--inspect');
 }
-if (process.argv.traceWarningsNode) {
+if (process.argv.includes('--traceWarningsNode')) {
   nodeArgs.push('--trace-warnings');
 }
 
 // Pass through some args
 const args = [];
-if (process.argv.tracing) {
+if (process.argv.includes('--tracing')) {
   args.push('--tracing');
 }
 
-if (process.argv.logOutputFromChildProcesses) {
+if (process.argv.includes('--logOutputFromChildProcesses')) {
   args.push('--logOutputFromChildProcesses');
 }
 

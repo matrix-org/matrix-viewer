@@ -6,6 +6,7 @@ const asyncHandler = require('../lib/express-async-handler');
 const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const { getSerializableSpans, getActiveTraceId } = require('../tracing/tracing-middleware');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const sanitizeHtml = require('../lib/sanitize-html');
 const renderPageHtml = require('../hydrogen-render/render-page-html');
 
@@ -36,9 +37,11 @@ async function timeoutMiddleware(req, res, next) {
     let humanReadableSpans;
     if (serializableSpans.length > 0) {
       humanReadableSpans = serializableSpans.map((serializableSpan) => {
-        const method = serializableSpan.attributes['http.method'];
-        const url = serializableSpan.attributes['http.url'];
-        const statusCode = serializableSpan.attributes['http.status_code'];
+        const method = serializableSpan.attributes[SemanticAttributes.HTTP_METHOD];
+        const url =
+          serializableSpan.attributes[SemanticAttributes.HTTP_TARGET] ||
+          serializableSpan.attributes[SemanticAttributes.HTTP_URL];
+        const statusCode = serializableSpan.attributes[SemanticAttributes.HTTP_STATUS_CODE];
 
         let durationString = `request is still running (${
           Date.now() - serializableSpan.startTimeInMs
