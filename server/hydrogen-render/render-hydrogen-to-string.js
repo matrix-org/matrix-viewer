@@ -18,7 +18,7 @@ const resolvedRenderHydrogenToStringUnsafeScriptPath = require.resolve(
 // gone really wrong.
 const RENDER_TIMEOUT = 5000;
 
-async function renderHydrogenToString(renderOptions) {
+async function renderHydrogenToString({ renderOptions, abortSignal }) {
   assert(renderOptions);
 
   // We expect `config` but we should sanity check that we aren't leaking the access token
@@ -28,8 +28,6 @@ async function renderHydrogenToString(renderOptions) {
     !renderOptions.vmRenderContext.config.matrixAccessToken,
     'We should not be leaking the `config.matrixAccessToken` to the Hydrogen render function because this will reach the client!'
   );
-
-  // TODO: Handle renderOptions.abortSignal
 
   try {
     // In development, if you're running into a hard to track down error with
@@ -50,6 +48,7 @@ async function renderHydrogenToString(renderOptions) {
       renderOptions,
       {
         timeout: RENDER_TIMEOUT,
+        abortSignal,
       }
     );
 

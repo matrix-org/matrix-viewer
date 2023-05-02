@@ -6,6 +6,8 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
+const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
+const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const identifyRoute = require('../middleware/identify-route-middleware');
 const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
@@ -58,12 +60,12 @@ router.get(
         }
       ));
     } catch (err) {
-      // We can't use `err instanceof AbortError` because we don't have access to that error type
-      if (err.name === 'AbortError') {
-        // Throw and error so we stop processing and assembling the page after we abort
-        // (probably a timeout, see `timeout-middleware.js`)
+      if (err instanceof RouteTimeoutAbortError || err instanceof UserClosedConnectionAbortError) {
+        // Throw an error so we stop processing and assembling the page after we abort
         throw err;
       } else {
+        // Otherwise, this will be the error we will display on the page for the user to
+        // explain why we failed to fetch the rooms they wanted.
         roomFetchError = err;
       }
     }

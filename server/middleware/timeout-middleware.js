@@ -3,7 +3,7 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 const asyncHandler = require('../lib/express-async-handler');
-const TimeoutAbortError = require('../lib/errors/timeout-abort-error');
+const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const { getSerializableSpans, getActiveTraceId } = require('../tracing/tracing-middleware');
 const sanitizeHtml = require('../lib/sanitize-html');
@@ -25,7 +25,9 @@ async function timeoutMiddleware(req, res, next) {
     // Signal to downstream middlewares/routes that they should stop processing/fetching
     // things since we timed out (downstream consumers need to respect `req.abortSignal`)
     req.abortController.abort(
-      new TimeoutAbortError(`Request timed out after ${requestTimeoutMs}ms`)
+      new RouteTimeoutAbortError(
+        `Timed out after ${requestTimeoutMs}ms while trying to respond to route ${req.originalUrl}`
+      )
     );
 
     const traceId = getActiveTraceId();

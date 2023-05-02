@@ -16,9 +16,11 @@ async function renderHydrogenVmRenderScriptToPageHtml({
   assert(pageOptions);
 
   const hydrogenHtmlOutput = await renderHydrogenToString({
-    vmRenderScriptFilePath,
-    vmRenderContext,
-    pageOptions,
+    renderOptions: {
+      vmRenderScriptFilePath,
+      vmRenderContext,
+      pageOptions,
+    },
     abortSignal,
   });
 
