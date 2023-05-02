@@ -85,6 +85,7 @@ async function mountHydrogen() {
     urlRouter: urlRouter,
     history: archiveHistory,
     // Our options
+    basePath: config.basePath,
     homeserverUrl: config.matrixServerUrl,
     homeserverName: config.matrixServerName,
     matrixPublicArchiveURLCreator,

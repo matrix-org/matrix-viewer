@@ -205,6 +205,28 @@ class RoomDirectoryView extends TemplateView {
       },
       [
         t.header({ className: 'RoomDirectoryView_header' }, [headerForm]),
+        t.section([
+          t.div({ className: 'DeveloperOptionsContentView_settingsFlag' }, [
+            t.label({ for: 'safeSearchEnabled' }, [
+              t.map(
+                (vm) => vm.safeSearchEnabled,
+                (safeSearchEnabled /*, t, vm*/) => {
+                  if (safeSearchEnabled) {
+                    return text('Safe search is on');
+                  }
+
+                  return text('Safe search is off');
+                }
+              ),
+            ]),
+            t.input({
+              id: 'safeSearchEnabled',
+              type: 'checkbox',
+              checked: (vm) => vm.safeSearchEnabled,
+              onInput: (event) => vm.setSafeSearchEnabled(event.target.checked),
+            }),
+          ]),
+        ]),
         t.main({ className: 'RoomDirectoryView_mainContent' }, [
           // Display a nice error section when we failed to fetch rooms from the room directory
           t.if(
