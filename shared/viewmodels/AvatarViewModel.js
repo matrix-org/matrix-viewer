@@ -11,7 +11,7 @@ class AvatarViewModel extends ViewModel {
 
     const { homeserverUrlToPullMediaFrom, avatarUrl, avatarTitle, avatarLetterString, entityId } =
       options;
-    assert(homeserverUrlToPullMediaFrom);
+    assert(!avatarUrl || homeserverUrlToPullMediaFrom);
     assert(avatarTitle);
     assert(avatarLetterString);
     assert(entityId);

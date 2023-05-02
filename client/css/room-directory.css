@@ -301,7 +301,7 @@
   border-radius: 8px;
 }
 
-.RoomCardView--blockedBySafeSearch {
+.RoomCardView.blockedBySafeSearch {
   background-color: #d0d9e1;
 }
 
@@ -354,6 +354,14 @@
   text-overflow: ellipsis;
 }
 
+.RoomCardView_blockedBySafeSearchTopic {
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  line-height: 1.2em;
+  font-style: italic;
+}
+
 .RoomCardView_footer {
   display: flex;
   /**
@@ -402,14 +410,22 @@
   cursor: pointer;
 }
 
+.RoomCardView_viewButton[disabled] {
+  border-color: #2774c299;
+
+  color: #2774c299;
+
+  cursor: auto;
+}
+
 @media (max-width: 750px) {
   .RoomCardView_viewButton {
     padding: 8px 32px;
   }
 }
 
-.RoomCardView_viewButtonWrapperLink:hover > .RoomCardView_viewButton,
-.RoomCardView_viewButtonWrapperLink:focus > .RoomCardView_viewButton {
+.RoomCardView_viewButtonWrapperLink:hover > .RoomCardView_viewButton:not([disabled]),
+.RoomCardView_viewButtonWrapperLink:focus > .RoomCardView_viewButton:not([disabled]) {
   background-color: #2774c2;
   color: #ffffff;
 }
