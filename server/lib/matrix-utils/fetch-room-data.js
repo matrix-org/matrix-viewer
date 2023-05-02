@@ -25,7 +25,11 @@ function getStateEndpointForRoomIdAndEventType(roomId, eventType) {
 // https://github.com/matrix-org/synapse/issues/15454
 //
 // TODO: Remove this when we have MSC3999 (because it's the only usage)
-const removeMe_fetchRoomCreateEventId = traceFunction(async function (matrixAccessToken, roomId) {
+const removeMe_fetchRoomCreateEventId = traceFunction(async function (
+  matrixAccessToken,
+  roomId,
+  { abortSignal } = {}
+) {
   const { data } = await fetchEndpointAsJson(
     urlJoin(
       matrixServerUrl,
@@ -33,6 +37,7 @@ const removeMe_fetchRoomCreateEventId = traceFunction(async function (matrixAcce
     ),
     {
       accessToken: matrixAccessToken,
+      abortSignal,
     }
   );
 
@@ -41,10 +46,15 @@ const removeMe_fetchRoomCreateEventId = traceFunction(async function (matrixAcce
   return roomCreateEventId;
 });
 
-const fetchRoomCreationInfo = traceFunction(async function (matrixAccessToken, roomId) {
+const fetchRoomCreationInfo = traceFunction(async function (
+  matrixAccessToken,
+  roomId,
+  { abortSignal } = {}
+) {
   const [stateCreateResDataOutcome] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
       accessToken: matrixAccessToken,
+      abortSignal,
     }),
   ]);
 
@@ -61,13 +71,18 @@ const fetchRoomCreationInfo = traceFunction(async function (matrixAccessToken, r
   return { roomCreationTs, predecessorRoomId, predecessorLastKnownEventId };
 });
 
-const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, roomId) {
+const fetchPredecessorInfo = traceFunction(async function (
+  matrixAccessToken,
+  roomId,
+  { abortSignal } = {}
+) {
   const [roomCreationInfoOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
-    fetchRoomCreationInfo(matrixAccessToken, roomId),
+    fetchRoomCreationInfo(matrixAccessToken, roomId, { abortSignal }),
     fetchEndpointAsJson(
       getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
       {
         accessToken: matrixAccessToken,
+        abortSignal,
       }
     ),
   ]);
@@ -99,10 +114,15 @@ const fetchPredecessorInfo = traceFunction(async function (matrixAccessToken, ro
   };
 });
 
-const fetchSuccessorInfo = traceFunction(async function (matrixAccessToken, roomId) {
+const fetchSuccessorInfo = traceFunction(async function (
+  matrixAccessToken,
+  roomId,
+  { abortSignal } = {}
+) {
   const [stateTombstoneResDataOutcome] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.tombstone'), {
       accessToken: matrixAccessToken,
+      abortSignal,
     }),
   ]);
 
@@ -121,7 +141,11 @@ const fetchSuccessorInfo = traceFunction(async function (matrixAccessToken, room
 });
 
 // eslint-disable-next-line max-statements
-const fetchRoomData = traceFunction(async function (matrixAccessToken, roomId) {
+const fetchRoomData = traceFunction(async function (
+  matrixAccessToken,
+  roomId,
+  { abortSignal } = {}
+) {
   assert(matrixAccessToken);
   assert(roomId);
 
@@ -136,24 +160,29 @@ const fetchRoomData = traceFunction(async function (matrixAccessToken, roomId) {
   ] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.name'), {
       accessToken: matrixAccessToken,
+      abortSignal,
     }),
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.canonical_alias'), {
       accessToken: matrixAccessToken,
+      abortSignal,
     }),
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.avatar'), {
       accessToken: matrixAccessToken,
+      abortSignal,
     }),
     fetchEndpointAsJson(
       getStateEndpointForRoomIdAndEventType(roomId, 'm.room.history_visibility'),
       {
         accessToken: matrixAccessToken,
+        abortSignal,
       }
     ),
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.join_rules'), {
       accessToken: matrixAccessToken,
+      abortSignal,
     }),
-    fetchPredecessorInfo(matrixAccessToken, roomId),
-    fetchSuccessorInfo(matrixAccessToken, roomId),
+    fetchPredecessorInfo(matrixAccessToken, roomId, { abortSignal }),
+    fetchSuccessorInfo(matrixAccessToken, roomId, { abortSignal }),
   ]);
 
   let name;

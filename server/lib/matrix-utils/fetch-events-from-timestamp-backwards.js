@@ -25,7 +25,7 @@ assert(matrixServerUrl);
 //  - ❌ If we start from dayEnd and look forwards, we will find nothing
 //
 // Returns events in reverse-chronological order.
-async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limit }) {
+async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limit, abortSignal }) {
   assert(accessToken);
   assert(roomId);
   assert(ts);
@@ -42,6 +42,7 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
       roomId,
       ts,
       direction: DIRECTION.backward,
+      abortSignal,
     });
     eventIdForTimestamp = eventId;
   } catch (err) {
@@ -70,6 +71,7 @@ async function fetchEventsFromTimestampBackwards({ accessToken, roomId, ts, limi
     // doesn't backfill in the forward direction)
     dir: DIRECTION.backward,
     limit,
+    abortSignal,
   });
 
   const stateEventMap = {};

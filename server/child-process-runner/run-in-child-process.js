@@ -12,7 +12,7 @@
 const assert = require('assert');
 const { fork } = require('child_process');
 
-const RethrownError = require('../lib/rethrown-error');
+const RethrownError = require('../lib/errors/rethrown-error');
 const { traceFunction } = require('../tracing/trace-utilities');
 
 const config = require('../lib/config');
@@ -25,6 +25,10 @@ if (!logOutputFromChildProcesses) {
 }
 
 const resolvedChildForkScriptPath = require.resolve('./child-fork-script');
+
+class RunInChildProcessTimeoutAbortError extends RethrownError {
+  // ...
+}
 
 function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors, childStdErr) {
   assert(childErrors);
@@ -65,20 +69,56 @@ function assembleErrorAfterChildExitsWithErrors(exitCode, childErrors, childStdE
   return childErrorSummary;
 }
 
-async function runInChildProcess(modulePath, runArguments, { timeout }) {
+async function runInChildProcess(
+  modulePath,
+  runArguments,
+  { timeout, abortSignal: externalAbortSignal }
+) {
   let abortTimeoutId;
   try {
     let childErrors = [];
     let childExitCode = '(not set yet)';
     let childStdErr = '';
 
-    const controller = new AbortController();
-    const { signal } = controller;
+    const abortController = new AbortController();
+
+    // Stops the child process if it takes too long
+    if (timeout) {
+      abortTimeoutId = setTimeout(() => {
+        const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
+          childExitCode,
+          childErrors,
+          childStdErr
+        );
+        abortController.abort(
+          new RunInChildProcessTimeoutAbortError(
+            `Timed out while running ${modulePath} so we aborted the child process after ${timeout}ms. Any child errors? (${childErrors.length})`,
+            childErrorSummary
+          )
+        );
+      }, timeout);
+    }
+
+    // Stop the child process if we get an external signal to stop (like if the whole
+    // express route that caused this call times out)
+    if (externalAbortSignal) {
+      if (externalAbortSignal.aborted) {
+        // Abort for good measure in case we sneak past this somehow
+        abortController.abort(externalAbortSignal.reason);
+        // Throw an error and exit early if we already aborted before we even started
+        throw externalAbortSignal.reason;
+      }
+
+      externalAbortSignal.addEventListener('abort', () => {
+        abortController.abort(externalAbortSignal.reason);
+      });
+    }
+
     // We use a child_process because we want to be able to exit the process
     // after we receive the results. We use `fork` instead of `exec`/`spawn` so
     // that we can pass a module instead of running a command.
     const child = fork(resolvedChildForkScriptPath, [modulePath], {
-      signal,
+      signal: abortController.signal,
       // Default to silencing logs from the child process. We already have
       // proper instrumentation of any errors that might occur.
       //
@@ -105,13 +145,6 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
     // we will run into `Error: spawn E2BIG` and `Error: spawn ENAMETOOLONG`
     // with argv.
     child.send(runArguments);
-
-    // Stops the child process if it takes too long
-    if (timeout) {
-      abortTimeoutId = setTimeout(() => {
-        controller.abort();
-      }, timeout);
-    }
 
     const returnedData = await new Promise((resolve, reject) => {
       let data = '';
@@ -151,18 +184,12 @@ async function runInChildProcess(modulePath, runArguments, { timeout }) {
 
       // When a problem occurs when spawning the process or gets aborted
       child.on('error', (err) => {
+        // We should be able to just `reject(err)` without any special-case handling
+        // here since ideally, we expect the error to be whatever `signal.reason` we
+        // aborted with but `child_process.fork(...)` doesn't seem play nicely, see
+        // https://github.com/nodejs/node/issues/47814
         if (err.name === 'AbortError') {
-          const childErrorSummary = assembleErrorAfterChildExitsWithErrors(
-            childExitCode,
-            childErrors,
-            childStdErr
-          );
-          reject(
-            new RethrownError(
-              `Timed out while running ${modulePath} so we aborted the child process after ${timeout}ms. Any child errors? (${childErrors.length})`,
-              childErrorSummary
-            )
-          );
+          reject(abortController.signal.reason || err);
         } else {
           reject(err);
         }

@@ -5,9 +5,8 @@ const path = require('path');
 const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
-const StatusError = require('../lib/status-error');
+const StatusError = require('../lib/errors/status-error');
 
-const timeoutMiddleware = require('../middleware/timeout-middleware');
 const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
 const identifyRoute = require('../middleware/identify-route-middleware');
 
@@ -179,11 +178,10 @@ router.get(
 
     // We have to wait for the room join to happen first before we can fetch
     // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(
-      matrixAccessToken,
-      roomIdOrAlias,
-      parseViaServersFromUserInput(req.query.via)
-    );
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
+      viaServers: parseViaServersFromUserInput(req.query.via),
+      abortSignal: req.abortSignal,
+    });
 
     // Find the closest day to the current time with messages
     const { originServerTs } = await timestampToEvent({
@@ -191,6 +189,7 @@ router.get(
       roomId,
       ts: dateBeforeJoin,
       direction: DIRECTION.backward,
+      abortSignal: req.abortSignal,
     });
     if (!originServerTs) {
       throw new StatusError(404, 'Unable to find day with history');
@@ -252,7 +251,10 @@ router.get(
     // We have to wait for the room join to happen first before we can use the jump to
     // date endpoint (or any other Matrix endpoint)
     const viaServers = parseViaServersFromUserInput(req.query.via);
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, viaServers);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
+      viaServers,
+      abortSignal: req.abortSignal,
+    });
 
     let ts;
     let fromCausalEventId;
@@ -305,9 +307,14 @@ router.get(
             // currently just have this set in case some server has this implemented in
             // the future but there currently is no implementation (as of 2023-04-17) and
             // we can't have passing tests without a server implementation first.
-            'org.matrix.msc3999.event_id': fromCausalEventId,
+            //
+            // TODO: This isn't implemented yet
+            fromCausalEventId,
+            abortSignal: req.abortSignal,
           }),
-          removeMe_fetchRoomCreateEventId(matrixAccessToken, roomId),
+          removeMe_fetchRoomCreateEventId(matrixAccessToken, roomId, {
+            abortSignal: req.abortSignal,
+          }),
         ]);
 
       // Without MSC3999, we currently only detect one kind of loop where the
@@ -438,6 +445,7 @@ router.get(
           eventId: eventIdForClosestEvent,
           dir: DIRECTION.forward,
           limit: archiveMessageLimit,
+          abortSignal: req.abortSignal,
         });
 
         if (!messageResData.chunk?.length) {
@@ -571,7 +579,9 @@ router.get(
             predecessorRoomId,
             predecessorLastKnownEventId,
             predecessorViaServers,
-          } = await fetchPredecessorInfo(matrixAccessToken, roomId);
+          } = await fetchPredecessorInfo(matrixAccessToken, roomId, {
+            abortSignal: req.abortSignal,
+          });
 
           if (!predecessorRoomId) {
             throw new StatusError(
@@ -582,11 +592,16 @@ router.get(
 
           // We have to join the predecessor room before we can fetch the successor info
           // (this could be our first time seeing the room)
-          await ensureRoomJoined(matrixAccessToken, predecessorRoomId, viaServers);
+          await ensureRoomJoined(matrixAccessToken, predecessorRoomId, {
+            viaServers,
+            abortSignal: req.abortSignal,
+          });
           const {
             successorRoomId: successorRoomIdForPredecessor,
             successorSetTs: successorSetTsForPredecessor,
-          } = await fetchSuccessorInfo(matrixAccessToken, predecessorRoomId);
+          } = await fetchSuccessorInfo(matrixAccessToken, predecessorRoomId, {
+            abortSignal: req.abortSignal,
+          });
 
           let tombstoneEventId;
           if (!predecessorLastKnownEventId) {
@@ -602,6 +617,7 @@ router.get(
               roomId: predecessorRoomId,
               ts: successorSetTsForPredecessor,
               direction: DIRECTION.backward,
+              abortSignal: req.abortSignal,
             }));
           }
 
@@ -664,7 +680,9 @@ router.get(
           );
           return;
         } else if (dir === DIRECTION.forward) {
-          const { successorRoomId } = await fetchSuccessorInfo(matrixAccessToken, roomId);
+          const { successorRoomId } = await fetchSuccessorInfo(matrixAccessToken, roomId, {
+            abortSignal: req.abortSignal,
+          });
           if (successorRoomId) {
             // Jump to the successor room and continue at the first event of the room
             res.redirect(
@@ -731,7 +749,6 @@ router.get(
   // https://github.com/pillarjs/path-to-regexp/issues/287
   '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2}):time(T\\d\\d?:\\d\\d?((:\\d\\d?)?))?',
   identifyRoute('app-archive-room-date'),
-  timeoutMiddleware,
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const nowTs = Date.now();
@@ -777,12 +794,15 @@ router.get(
     // great way to get it (see
     // https://github.com/matrix-org/matrix-public-archive/issues/50).
     const viaServers = parseViaServersFromUserInput(req.query.via);
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, viaServers);
+    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
+      viaServers,
+      abortSignal: req.abortSignal,
+    });
 
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
-      fetchRoomData(matrixAccessToken, roomId),
+      fetchRoomData(matrixAccessToken, roomId, { abortSignal: req.abortSignal }),
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
@@ -800,6 +820,7 @@ router.get(
         // (for example) are from the same day, let's redirect to a smaller hour range
         // to display.
         limit: archiveMessageLimit + 1,
+        abortSignal: req.abortSignal,
       }),
     ]);
 
@@ -903,6 +924,7 @@ router.get(
           matrixServerUrl: matrixServerUrl,
         },
       },
+      abortSignal: req.abortSignal,
     });
 
     setHeadersToPreloadAssets(res, pageOptions);

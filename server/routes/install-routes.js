@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const asyncHandler = require('../lib/express-async-handler');
 
+const timeoutMiddleware = require('../middleware/timeout-middleware');
 const { handleTracingMiddleware } = require('../tracing/tracing-middleware');
 const getVersionTags = require('../lib/get-version-tags');
 const preventClickjackingMiddleware = require('../middleware/prevent-clickjacking-middleware');
@@ -41,10 +42,14 @@ function installRoutes(app) {
   // Our own archive app styles and scripts
   app.use('/assets', express.static(path.join(__dirname, '../../dist/assets')));
 
-  app.use('/', require('./room-directory-routes'));
+  app.use('/', timeoutMiddleware, require('./room-directory-routes'));
 
   // For room aliases (/r) or room ID's (/roomid)
-  app.use('/:entityDescriptor(r|roomid)/:roomIdOrAliasDirty', require('./room-routes'));
+  app.use(
+    '/:entityDescriptor(r|roomid)/:roomIdOrAliasDirty',
+    timeoutMiddleware,
+    require('./room-routes')
+  );
 
   // Since everything after the hash (`#`) won't make it to the server, let's serve a 404
   // page that will potentially redirect them to the correct place if they tried

@@ -3,7 +3,10 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 const asyncHandler = require('../lib/express-async-handler');
+const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
+const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const { getSerializableSpans, getActiveTraceId } = require('../tracing/tracing-middleware');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const sanitizeHtml = require('../lib/sanitize-html');
 const renderPageHtml = require('../hydrogen-render/render-page-html');
 
@@ -16,16 +19,29 @@ assert(requestTimeoutMs);
 // Based off of the `connect-timeout` middleware,
 // https://github.com/expressjs/timeout/blob/f2f520f335f2f2ae255d4778e908e8d38e3a4e68/index.js
 async function timeoutMiddleware(req, res, next) {
+  req.abortController = new AbortController();
+  req.abortSignal = req.abortController.signal;
+
   const timeoutId = setTimeout(() => {
+    // Signal to downstream middlewares/routes that they should stop processing/fetching
+    // things since we timed out (downstream consumers need to respect `req.abortSignal`)
+    req.abortController.abort(
+      new RouteTimeoutAbortError(
+        `Timed out after ${requestTimeoutMs}ms while trying to respond to route ${req.originalUrl}`
+      )
+    );
+
     const traceId = getActiveTraceId();
     const serializableSpans = getSerializableSpans();
 
     let humanReadableSpans;
     if (serializableSpans.length > 0) {
       humanReadableSpans = serializableSpans.map((serializableSpan) => {
-        const method = serializableSpan.attributes['http.method'];
-        const url = serializableSpan.attributes['http.url'];
-        const statusCode = serializableSpan.attributes['http.status_code'];
+        const method = serializableSpan.attributes[SemanticAttributes.HTTP_METHOD];
+        const url =
+          serializableSpan.attributes[SemanticAttributes.HTTP_TARGET] ||
+          serializableSpan.attributes[SemanticAttributes.HTTP_URL];
+        const statusCode = serializableSpan.attributes[SemanticAttributes.HTTP_STATUS_CODE];
 
         let durationString = `request is still running (${
           Date.now() - serializableSpan.startTimeInMs
@@ -93,7 +109,20 @@ async function timeoutMiddleware(req, res, next) {
   }, requestTimeoutMs);
 
   res.on('finish', function () {
+    // Clear the timeout if the response finishes naturally
     clearTimeout(timeoutId);
+  });
+
+  req.on('close', function () {
+    // Signal to downstream middlewares/routes that they should stop processing/fetching
+    // things since the user closed the connection before we sent a response (downstream
+    // consumers need to respect `req.abortSignal`)
+    //
+    // This is a bit adjacent to "timeouts" but fits easily enough here (this could be a
+    // separate middleware).
+    req.abortController.abort(
+      new UserClosedConnectionAbortError(`User closed connection before we could respond`)
+    );
   });
 
   next();

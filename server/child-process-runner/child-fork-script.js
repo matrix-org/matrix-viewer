@@ -5,7 +5,7 @@
 
 const assert = require('assert');
 
-const RethrownError = require('../lib/rethrown-error');
+const RethrownError = require('../lib/errors/rethrown-error');
 
 // Serialize the error and send it back up to the parent process so we can
 // interact with it and know what happened when the process exits.

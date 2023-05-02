@@ -1,20 +1,6 @@
 'use strict';
 
-// via https://stackoverflow.com/a/42755876/796832
-
-// Standard error extender from @deployable/errors
-class ExtendedError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = this.constructor.name;
-    this.message = message;
-    if (typeof Error.captureStackTrace === 'function') {
-      Error.captureStackTrace(this, this.constructor);
-    } else {
-      this.stack = new Error(message).stack;
-    }
-  }
-}
+const ExtendedError = require('./extended-error');
 
 // A way to create a new error with a custom message but keep the stack trace of
 // the original error. Useful to give more context and why the action was tried
@@ -27,6 +13,8 @@ class ExtendedError extends Error {
 // from the config when this error occured.
 //
 // `new RethrownError('Failed to get the ratelimit key from the config', originalError)` (failed to read the disk)
+//
+// via https://stackoverflow.com/a/42755876/796832
 class RethrownError extends ExtendedError {
   constructor(message, error) {
     super(message);

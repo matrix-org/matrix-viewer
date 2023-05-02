@@ -10,7 +10,14 @@ const config = require('../config');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
-async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, dir, limit }) {
+async function getMessagesResponseFromEventId({
+  accessToken,
+  roomId,
+  eventId,
+  dir,
+  limit,
+  abortSignal,
+}) {
   // We only use this endpoint to get a pagination token we can use with
   // `/messages`.
   //
@@ -31,6 +38,7 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
   );
   const { data: contextResData } = await fetchEndpointAsJson(contextEndpoint, {
     accessToken,
+    abortSignal,
   });
 
   // We want to re-paginte over the same event so it's included in the response.
@@ -56,6 +64,7 @@ async function getMessagesResponseFromEventId({ accessToken, roomId, eventId, di
   );
   const { data: messageResData } = await fetchEndpointAsJson(messagesEndpoint, {
     accessToken,
+    abortSignal,
   });
 
   return messageResData;

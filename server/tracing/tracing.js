@@ -3,6 +3,7 @@
 const assert = require('assert');
 const { registerInstrumentations } = require('@opentelemetry/instrumentation');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { FetchInstrumentation } = require('opentelemetry-instrumentation-fetch-node');
 const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
 const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
 const {
@@ -92,6 +93,11 @@ function startTracing() {
           },
         },
       }),
+      // We have to instrument `undici` to cover the native `fetch` API built-in to
+      // Node.js. We're using `opentelemetry-instrumentation-fetch-node` because there
+      // is no official instrumentation and `opentelemetry-instrumentation-undici`
+      // doesn't seem to work.
+      new FetchInstrumentation({}),
     ],
   });
 
