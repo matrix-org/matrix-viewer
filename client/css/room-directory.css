@@ -314,8 +314,8 @@
 }
 
 .RoomDirectoryView_safeSearchToggleCheckbox:checked {
-  border: 2px solid rgba(80, 134, 240, 1);
-  box-shadow: inset 10px 0px 0px 0px rgba(80, 134, 240, 1);
+  border: 2px solid #2774c2;
+  box-shadow: inset 10px 0px 0px 0px #2774c2;
 }
 
 .RoomCardView {
