@@ -23,7 +23,10 @@ const checkResponseStatus = async (response) => {
 };
 
 async function fetchEndpoint(endpoint, options = {}) {
+  // We chose `abortSignal` just because it's a less ambiguous name and obvious what
+  // it's used for.
   assert(!options.signal, 'Use `options.abortSignal` instead of `options.signal`');
+
   const { method, accessToken } = options;
   const headers = options.headers || {};
 
