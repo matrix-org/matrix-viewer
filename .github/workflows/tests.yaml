@@ -81,7 +81,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
 
     services:
       # We need two homeservers that federate with each other to test with
