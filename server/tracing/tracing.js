@@ -83,12 +83,9 @@ function startTracing() {
           // `@opentelemetry/instrumentation-express` but that's not the case, see
           // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/1034#issuecomment-1158435392
           ignoreIncomingRequestHook: (req) => {
-            // Ignore spans from static assets.
-            //
-            // FIXME: Ideally, all of the assets would all be served under
-            // `/static/` so we could ignore that way instead. In Hydrogen, this
-            // is tracked by https://github.com/vector-im/hydrogen-web/issues/757
-            const isStaticAsset = !!req.url.match(/\.(css|js|svg|woff2)(\?.*?)?$/);
+            // Ignore spans from static assets. It's just noise to trace them and there
+            // is nothing special about the routes.
+            const isStaticAsset = !!req.url.match(/^\/assets\//);
             return isStaticAsset;
           },
         },
