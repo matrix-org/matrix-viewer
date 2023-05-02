@@ -230,32 +230,38 @@ class RoomDirectoryViewModel extends ViewModel {
   }
 
   loadSafeSearchEnabledFromPersistence() {
+    // Safe search is enabled by default and only disabled with the correct 'false' value
+    let safeSearchEnabled = true;
+
     if (window.localStorage) {
       const safeSearchEnabledFromPersistence = window.localStorage.getItem(
         LOCAL_STORAGE_KEYS.safeSearch
       );
 
-      // Safe search is enabled by default and only disabled with the correct 'false' value
-      let safeSearchEnabled = true;
       if (safeSearchEnabledFromPersistence === 'false') {
         safeSearchEnabled = false;
       }
-
-      this.setSafeSearchEnabled(safeSearchEnabled);
-      return;
     } else {
       console.warn(
         `Skipping \`${LOCAL_STORAGE_KEYS.safeSearch}\` read from LocalStorage since LocalStorage is not available`
       );
     }
+
+    this.setSafeSearchEnabled(safeSearchEnabled);
   }
 
   setSafeSearchEnabled(safeSearchEnabled) {
     this._safeSearchEnabled = safeSearchEnabled;
-    window.localStorage.setItem(
-      LOCAL_STORAGE_KEYS.safeSearch,
-      safeSearchEnabled ? 'true' : 'false'
-    );
+    if (window.localStorage) {
+      window.localStorage.setItem(
+        LOCAL_STORAGE_KEYS.safeSearch,
+        safeSearchEnabled ? 'true' : 'false'
+      );
+    } else {
+      console.warn(
+        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearch}\` write to LocalStorage since LocalStorage is not available`
+      );
+    }
 
     if (safeSearchEnabled) {
       this._roomCardViewModelsFilterMap.setApply((roomId, vm) => {
