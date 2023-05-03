@@ -5,7 +5,7 @@ const AvatarViewModel = require('../viewmodels/AvatarViewModel');
 
 const safeSearchBlockedRoomTitle = 'Blocked by safe search';
 const safeSearchBlockedRoomDescription =
-  'This room was blocked because safe search is turned on and this room may contain explicit content. Turn off safe search to see this room.';
+  'This room was blocked because safe search is turned on and may contain explicit content. Turn off safe search to see this room.';
 
 const blockedBySafeSearchAvatarViewModel = new AvatarViewModel({
   avatarTitle: 'x',
