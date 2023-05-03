@@ -1,20 +1,24 @@
 'use strict';
 
-const { ViewModel, ObservableArray } = require('hydrogen-view-sdk');
+const { ViewModel, ObservableMap, ApplyMap } = require('hydrogen-view-sdk');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
 
+const LOCAL_STORAGE_KEYS = require('matrix-public-archive-shared/lib/local-storage-keys');
 const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
 const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel');
+const RoomCardViewModel = require('matrix-public-archive-shared/viewmodels/RoomCardViewModel');
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
 
-const ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY = 'addedHomeservers';
+const NSFW_WORDS = ['nsfw', 'porn', 'nudes', 'sex', '18+'];
+const NSFW_REGEXES = NSFW_WORDS.map((word) => new RegExp(`\\b${word}\\b`, 'i'));
 
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
     super(options);
     const {
+      basePath,
       homeserverUrl,
       homeserverName,
       matrixPublicArchiveURLCreator,
@@ -24,6 +28,7 @@ class RoomDirectoryViewModel extends ViewModel {
       nextPaginationToken,
       prevPaginationToken,
     } = options;
+    assert(basePath);
     assert(homeserverUrl);
     assert(homeserverName);
     assert(matrixPublicArchiveURLCreator);
@@ -66,26 +71,32 @@ class RoomDirectoryViewModel extends ViewModel {
       })
     );
 
-    this._rooms = new ObservableArray(
-      rooms.map((room) => {
-        return {
-          roomId: room.room_id,
-          canonicalAlias: room.canonical_alias,
-          name: room.name,
-          mxcAvatarUrl: room.avatar_url,
+    // This is based off of
+    // https://github.com/vector-im/hydrogen-web/blob/e77727ea5992a3ec2649edd53a42e6d75f50a0ca/src/domain/session/leftpanel/LeftPanelViewModel.js#L30-L32
+    this._roomCardViewModelsMap = new ObservableMap();
+    rooms.forEach((room) => {
+      this._roomCardViewModelsMap.set(
+        room.room_id,
+        new RoomCardViewModel({
+          room,
+          basePath,
           homeserverUrlToPullMediaFrom: homeserverUrl,
-          numJoinedMembers: room.num_joined_members,
-          topic: room.topic,
-          archiveRoomUrl: matrixPublicArchiveURLCreator.archiveUrlForRoom(
-            room.canonical_alias || room.room_id,
-            {
-              // Only include via servers when we have to fallback to the room ID
-              viaServers: room.canonical_alias ? undefined : [this.pageSearchParameters.homeserver],
-            }
-          ),
-        };
-      })
-    );
+          viaServers: [
+            // If the room is being shown in the directory from this server, then surely
+            // we can join via this server
+            this._pageSearchParameters.homeserver,
+          ],
+        })
+      );
+    });
+    this._roomCardViewModelsFilterMap = new ApplyMap(this._roomCardViewModelsMap);
+    this._roomCardViewModels = this._roomCardViewModelsFilterMap.sortValues((/*a, b*/) => {
+      // Sort doesn't matter
+      return 1;
+    });
+
+    this._safeSearchEnabled = true;
+    this.loadSafeSearchEnabledFromPersistence();
 
     this.#setupNavigation();
   }
@@ -171,11 +182,11 @@ class RoomDirectoryViewModel extends ViewModel {
       let addedHomeserversFromPersistence = [];
       try {
         addedHomeserversFromPersistence = JSON.parse(
-          window.localStorage.getItem(ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY)
+          window.localStorage.getItem(LOCAL_STORAGE_KEYS.addedHomeservers)
         );
       } catch (err) {
         console.warn(
-          `Resetting \`${ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY}\` stored in LocalStorage since we ran into an error parsing what was stored`,
+          `Resetting \`${LOCAL_STORAGE_KEYS.addedHomeservers}\` stored in LocalStorage since we ran into an error parsing what was stored`,
           err
         );
         this.setAddedHomeserversList([]);
@@ -184,7 +195,7 @@ class RoomDirectoryViewModel extends ViewModel {
 
       if (!Array.isArray(addedHomeserversFromPersistence)) {
         console.warn(
-          `Resetting \`${ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY}\` stored in LocalStorage since it wasn't an array as expected, addedHomeservers=${addedHomeserversFromPersistence}`
+          `Resetting \`${LOCAL_STORAGE_KEYS.addedHomeservers}\` stored in LocalStorage since it wasn't an array as expected, addedHomeservers=${addedHomeserversFromPersistence}`
         );
         this.setAddedHomeserversList([]);
         return;
@@ -194,7 +205,7 @@ class RoomDirectoryViewModel extends ViewModel {
       return;
     } else {
       console.warn(
-        `Skipping \`${ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY}\` read from LocalStorage since LocalStorage is not available`
+        `Skipping \`${LOCAL_STORAGE_KEYS.addedHomeservers}\` read from LocalStorage since LocalStorage is not available`
       );
     }
   }
@@ -202,11 +213,11 @@ class RoomDirectoryViewModel extends ViewModel {
   setAddedHomeserversList(addedHomeserversList) {
     this._addedHomeserversList = addedHomeserversList;
     window.localStorage.setItem(
-      ADDED_HOMESERVERS_LIST_LOCAL_STORAGE_KEY,
+      LOCAL_STORAGE_KEYS.addedHomeservers,
       JSON.stringify(this._addedHomeserversList)
     );
 
-    // If the added homeserver list changes, make sure the default page selected
+    // If the added homeserver list changes, make sure the default page-selected
     // homeserver is still somewhere in the list. If it's no longer in the added
     // homeserver list, we will put it in the default available list.
     this._calculateAvailableHomeserverList();
@@ -216,6 +227,63 @@ class RoomDirectoryViewModel extends ViewModel {
 
   get addedHomeserversList() {
     return this._addedHomeserversList;
+  }
+
+  loadSafeSearchEnabledFromPersistence() {
+    // Safe search is enabled by default and only disabled with the correct 'false' value
+    let safeSearchEnabled = true;
+
+    if (window.localStorage) {
+      const safeSearchEnabledFromPersistence = window.localStorage.getItem(
+        LOCAL_STORAGE_KEYS.safeSearchEnabled
+      );
+
+      if (safeSearchEnabledFromPersistence === 'false') {
+        safeSearchEnabled = false;
+      }
+    } else {
+      console.warn(
+        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearchEnabled}\` read from LocalStorage since LocalStorage is not available`
+      );
+    }
+
+    this.setSafeSearchEnabled(safeSearchEnabled);
+  }
+
+  setSafeSearchEnabled(safeSearchEnabled) {
+    this._safeSearchEnabled = safeSearchEnabled;
+    if (window.localStorage) {
+      window.localStorage.setItem(
+        LOCAL_STORAGE_KEYS.safeSearchEnabled,
+        safeSearchEnabled ? 'true' : 'false'
+      );
+    } else {
+      console.warn(
+        `Skipping \`${LOCAL_STORAGE_KEYS.safeSearchEnabled}\` write to LocalStorage since LocalStorage is not available`
+      );
+    }
+
+    if (safeSearchEnabled) {
+      this._roomCardViewModelsFilterMap.setApply((roomId, vm) => {
+        // We concat the name, topic, etc together to simply do a single check against
+        // all of the text.
+        const isNsfw = NSFW_REGEXES.some((regex) =>
+          regex.test(vm.name + ' ---- ' + vm.canonicalAlias + ' --- ' + vm.topic)
+        );
+        vm.setBlockedBySafeSearch(isNsfw);
+      });
+    } else {
+      this._roomCardViewModelsFilterMap.setApply(null);
+      this._roomCardViewModelsFilterMap.applyOnce((roomId, vm) => {
+        vm.setBlockedBySafeSearch(false);
+      });
+    }
+
+    this.emitChange('safeSearchEnabled');
+  }
+
+  get safeSearchEnabled() {
+    return this._safeSearchEnabled;
   }
 
   onNewHomeserverAdded(newHomeserver) {
@@ -284,8 +352,8 @@ class RoomDirectoryViewModel extends ViewModel {
     return this._availableHomeserverList;
   }
 
-  get rooms() {
-    return this._rooms;
+  get roomCardViewModels() {
+    return this._roomCardViewModels;
   }
 }
 
