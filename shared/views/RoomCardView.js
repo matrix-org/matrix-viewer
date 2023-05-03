@@ -50,7 +50,15 @@ class RoomCardView extends TemplateView {
         t.a(
           {
             className: 'RoomCardView_header',
-            href: vm.archiveRoomUrl,
+            href: (vm) => {
+              if (vm.blockedBySafeSearch) {
+                // Omit the href so the link is not clickable when it's blocked by
+                // safe search
+                return false;
+              }
+
+              return vm.archiveRoomUrl;
+            },
             // Since this is the same button as the "View" link, just tab to
             // that instead
             tabindex: -1,
@@ -139,7 +147,13 @@ class RoomCardView extends TemplateView {
 
                   return vm.archiveRoomUrl;
                 },
-                title: `View the ${displayName} room`,
+                title: (vm) => {
+                  if (vm.blockedBySafeSearch) {
+                    return `Turn off safe search to view this room`;
+                  }
+
+                  return `View the ${displayName} room`;
+                },
               },
               t.span(
                 {

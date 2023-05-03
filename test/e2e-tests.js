@@ -2452,6 +2452,62 @@ describe('matrix-public-archive', () => {
         // Assert that the rooms we searched for on remote hs2 are visible
         assert.deepStrictEqual(roomsOnPageWithSearch.sort(), [roomXId, roomYId].sort());
       });
+
+      it('Safe search blocks nsfw rooms by default', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        // This is just an extra room to fill out the room directory and make sure
+        // that it does not appear when searching.
+        await createTestRoom(client);
+
+        // Then create some NSFW rooms we will find with search
+        //
+        // We use a `timeToken` so that we can namespace these rooms away from other
+        // test runs against the same homeserver
+        const timeToken = Date.now();
+        const roomPlanetPrefix = `planet-${timeToken}`;
+        const roomUranusId = await createTestRoom(client, {
+          // NSFW in title
+          name: `${roomPlanetPrefix}-uranus-nsfw`,
+        });
+        const roomMarsId = await createTestRoom(client, {
+          name: `${roomPlanetPrefix}-mars`,
+          // NSFW in room topic/description
+          topic: 'Get your ass to mars (NSFW)',
+        });
+
+        // Browse the room directory searching the room directory for those NSFW rooms
+        // (narrowing down results).
+        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+          searchTerm: roomPlanetPrefix,
+        });
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
+        const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
+
+        const roomsCardsOnPageWithSearch = [
+          ...domWithSearch.document.querySelectorAll(`[data-testid="room-card"]`),
+        ];
+
+        // Assert that the rooms we searched for are on the page
+        const roomsIdsOnPageWithSearch = roomsCardsOnPageWithSearch.map((roomCardEl) => {
+          return roomCardEl.getAttribute('data-room-id');
+        });
+        assert.deepStrictEqual(roomsIdsOnPageWithSearch.sort(), [roomUranusId, roomMarsId].sort());
+
+        // Sanity check that safe search does something. Assert that it's *NOT* showing
+        // the "nsfw" content
+        roomsCardsOnPageWithSearch.forEach((roomCardEl) => {
+          assert.match(
+            roomCardEl.innerHTML,
+            /^((?!nsfw).)*$/,
+            `Expected safe search to block any nsfw rooms but saw "nsfw" in the room cards: ${roomCardEl.innerHTML.replaceAll(
+              /nsfw/gi,
+              (match) => {
+                return chalk.yellow(match);
+              }
+            )}`
+          );
+        });
+      });
     });
 
     describe('access controls', () => {
