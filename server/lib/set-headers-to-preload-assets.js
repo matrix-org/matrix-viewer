@@ -70,7 +70,7 @@ function setHeadersToPreloadAssets(res, pageOptions) {
     return `<${scriptUrl}>; rel=modulepreload`;
   });
 
-  res.append('Link', [].concat(styleLinks, fontLinks, imageLinks, scriptLinks).join(', '));
+  res.set('Link', [].concat(styleLinks, fontLinks, imageLinks, scriptLinks).join(', '));
 }
 
 module.exports = setHeadersToPreloadAssets;
