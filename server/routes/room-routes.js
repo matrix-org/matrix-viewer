@@ -24,6 +24,7 @@ const { removeMe_fetchRoomCreateEventId } = require('../lib/matrix-utils/fetch-r
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
+const setHeadersForDateTemporalContext = require('../lib/set-headers-for-date-temporal-context');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const {
   MS_LOOKUP,
@@ -764,7 +765,8 @@ router.get(
       'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
-    const { toTimestamp, timeDefined, secondsDefined } = parseArchiveRangeFromReq(req);
+    const { toTimestamp, yyyy, mm, dd, timeDefined, secondsDefined } =
+      parseArchiveRangeFromReq(req);
 
     let precisionFromUrl = TIME_PRECISION_VALUES.none;
     if (secondsDefined) {
@@ -928,6 +930,18 @@ router.get(
     });
 
     setHeadersToPreloadAssets(res, pageOptions);
+
+    // This is useful for caching purposes so you can heavily cache past content, but
+    // not present/future.
+    setHeadersForDateTemporalContext({
+      res,
+      nowTs,
+      comparedToUrlDate: {
+        yyyy,
+        mm,
+        dd,
+      },
+    });
 
     res.set('Content-Type', 'text/html');
     res.send(pageHtml);
