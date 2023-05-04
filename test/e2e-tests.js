@@ -21,6 +21,10 @@ const {
   DIRECTION,
 } = require('matrix-public-archive-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
+const {
+  roundUpTimestampToUtcDay,
+  getUtcStartOfDayTs,
+} = require('matrix-public-archive-shared/lib/timestamp-utilities');
 
 const {
   getTestClientForAs,
@@ -2358,6 +2362,78 @@ describe('matrix-public-archive', () => {
       });
     });
 
+    describe('Ensure setHeadersForDateTemporalContext(...) is being set properly (useful for caching)', async () => {
+      // We can just use `new Date()` here but this just makes it more obvious what
+      // our intention is here.
+      const nowDate = new Date(Date.now());
+
+      const testCases = [
+        {
+          testName: 'now is present',
+          archiveDate: nowDate,
+          expectedTemporalContext: 'present',
+        },
+        {
+          testName: 'start of today is present',
+          archiveDate: new Date(getUtcStartOfDayTs(nowDate)),
+          expectedTemporalContext: 'present',
+        },
+        {
+          testName: 'some time today is present',
+          archiveDate: new Date(
+            getUtcStartOfDayTs(nowDate) +
+              12 * ONE_HOUR_IN_MS +
+              30 * ONE_MINUTE_IN_MS +
+              30 * ONE_SECOND_IN_MS
+          ),
+          expectedTemporalContext: 'present',
+        },
+        {
+          testName: 'past is in the past',
+          archiveDate: new Date('2020-01-01'),
+          expectedTemporalContext: 'past',
+        },
+      ];
+
+      let roomId;
+      before(async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        roomId = await createTestRoom(client);
+      });
+
+      testCases.forEach((testCase) => {
+        assert(testCase.testName);
+        assert(testCase.archiveDate);
+        assert(testCase.expectedTemporalContext);
+
+        // Warn if it's close to the end of the UTC day. This test could be a flakey and
+        // cause a failure if `expectedTemporalContext` was created just before midnight
+        // (UTC) and we visit the archive after midnight (UTC). The
+        // `X-Date-Temporal-Context` would read as `past` when we expect `present`.
+        if (roundUpTimestampToUtcDay(nowDate) - nowDate.getTime() < 30 * 1000 /* 30 seconds */) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `Test is being run at the end of the UTC day. This could result in a flakey ` +
+              `failure if \`expectedTemporalContext\` was created just before midnight (UTC) ` +
+              `and we visit the archive after midnight (UTC). Since ` +
+              `this is an e2e test we can't control the date/time exactly.`
+          );
+        }
+
+        it(testCase.testName, async () => {
+          // Fetch the given page.
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
+            roomId,
+            testCase.archiveDate
+          );
+          const { res } = await fetchEndpointAsText(archiveUrl);
+
+          const dateTemporalContextHeader = res.headers.get('X-Date-Temporal-Context');
+          assert.strictEqual(dateTemporalContextHeader, testCase.expectedTemporalContext);
+        });
+      });
+    });
+
     describe('Room directory', () => {
       it('room search narrows down results', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
@@ -2626,12 +2702,7 @@ describe('matrix-public-archive', () => {
           // from ourselves which may be less faff than this big warning but 🤷 - that's
           // kinda like making sure `/timestamp_to_event` works by using
           // `/timestamp_to_event`.
-          const utcMidnightOfNowDay = Date.UTC(
-            nowDate.getUTCFullYear(),
-            nowDate.getUTCMonth(),
-            nowDate.getUTCDate() + 1
-          );
-          if (utcMidnightOfNowDay - nowDate.getTime() < 30 * 1000 /* 30 seconds */) {
+          if (roundUpTimestampToUtcDay(nowDate) - nowDate.getTime() < 30 * 1000 /* 30 seconds */) {
             // eslint-disable-next-line no-console
             console.warn(
               `Test is being run at the end of the UTC day. This could result in a flakey ` +
