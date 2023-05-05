@@ -26,7 +26,7 @@ Also see https://github.com/matrix-org/matrix-public-archive/issues/47
 
 ## Technical details
 
-The main readme has an [technical overview](../README.md#technical-overview) of the
+The main readme has a [technical overview](../README.md#technical-overview) of the
 project. Here are a few more details.
 
 ### How do I figure out what version of the Matrix Public Archive is running?

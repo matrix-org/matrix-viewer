@@ -7,10 +7,14 @@ Gitter](https://github.com/vector-im/roadmap/issues/26), the goal is to make a
 public archive site for `world_readable` Matrix rooms like Gitter's archives
 which search engines can index and keep all of the content accessible/available.
 
-![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
+<!-- prettier-ignore -->
+Room directory homepage | Room view
+--- | ---
+TODO | ![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
 
 ## Demo videos
 
+- [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) May 2023](https://www.youtube.com/watch?v=4KlNILNItGQ&t=1046s): Introducing [archive.matrix.org](https://archive.matrix.org/), the shiny new public instance of the Matrix Public Archive that everyone can share and link to.
 - [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) Aug 2022](https://www.youtube.com/watch?v=6KHQSeJTXm0&t=583s) ([blog post](https://matrix.org/blog/2022/08/05/this-week-in-matrix-2022-08-05#matrix-public-archive-website)): A quick intro of what the project looks like, the goals, what it accomplishes, and how it's a new portal into the Matrix ecosystem.
 - [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) Oct 2022](https://www.youtube.com/watch?v=UT6KSEqDUf8&t=548s): Showing off the room directory landing page used to browse everything available in the archive.
 
@@ -52,6 +56,7 @@ See the [FAQ page](docs/faq.md).
 
 ```sh
 $ npm install
+$ npm run build
 
 # Edit `config/config.user-overrides.json` so that `matrixServerUrl` points to
 # your homeserver and has `matrixAccessToken` defined
@@ -79,7 +84,7 @@ $ npm run start-dev
 If you want to make changes to the underlying Hydrogen SDK as well, you can locally link
 it into this project with the following instructions:
 
-```
+```sh
 # We need to use a draft branch of Hydrogen to get the custom changes needed for
 # `matrix-public-archive` to run. Hopefully soon, we can get all of the custom
 # changes mainlined so this isn't necessary.
