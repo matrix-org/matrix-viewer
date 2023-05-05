@@ -41,7 +41,7 @@ function renderPageHtml({
   // We should tell search engines that some pages are NSFW, see
   // https://developers.google.com/search/docs/crawling-indexing/safesearch
   let maybeAdultMeta = '';
-  if (pageOptions.isNsfw) {
+  if (pageOptions.blockedBySafeSearch) {
     maybeAdultMeta = `<meta name="rating" content="adult">`;
   }
 

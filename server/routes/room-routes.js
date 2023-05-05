@@ -906,7 +906,7 @@ router.get(
     const pageOptions = {
       title: `${roomData.name} - Matrix Public Archive`,
       description: `View the history of ${roomData.name} in the Matrix Public Archive`,
-      isNsfw,
+      blockedBySafeSearch: isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationHref: urlJoin(basePath, req.originalUrl),
       shouldIndex,
