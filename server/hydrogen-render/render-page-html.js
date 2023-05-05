@@ -35,7 +35,14 @@ function renderPageHtml({
   // We shouldn't let some pages be indexed by search engines
   let maybeNoIndexHtml = '';
   if (!pageOptions.shouldIndex) {
-    maybeNoIndexHtml = `<meta name="robots" content="noindex, nofollow" />`;
+    maybeNoIndexHtml = `<meta name="robots" content="noindex, nofollow">`;
+  }
+
+  // We should tell search engines that some pages are NSFW, see
+  // https://developers.google.com/search/docs/crawling-indexing/safesearch
+  let maybeAdultMeta = '';
+  if (pageOptions.blockedBySafeSearch) {
+    maybeAdultMeta = `<meta name="rating" content="adult">`;
   }
 
   const faviconMap = getFaviconAssetUrls();
@@ -45,6 +52,7 @@ function renderPageHtml({
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1">
           ${maybeNoIndexHtml}
+          ${maybeAdultMeta}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
           ${sanitizeHtml(`<meta name="description" content="${pageOptions.description}">`)}
           <link rel="icon" href="${faviconMap.ico}" sizes="any">

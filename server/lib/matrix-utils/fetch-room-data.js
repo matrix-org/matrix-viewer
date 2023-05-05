@@ -151,6 +151,7 @@ const fetchRoomData = traceFunction(async function (
 
   const [
     stateNameResDataOutcome,
+    stateTopicResDataOutcome,
     stateCanonicalAliasResDataOutcome,
     stateAvatarResDataOutcome,
     stateHistoryVisibilityResDataOutcome,
@@ -159,6 +160,10 @@ const fetchRoomData = traceFunction(async function (
     successorInfoOutcome,
   ] = await Promise.allSettled([
     fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.name'), {
+      accessToken: matrixAccessToken,
+      abortSignal,
+    }),
+    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.topic'), {
       accessToken: matrixAccessToken,
       abortSignal,
     }),
@@ -195,6 +200,12 @@ const fetchRoomData = traceFunction(async function (
   if (stateCanonicalAliasResDataOutcome.reason === undefined) {
     const { data } = stateCanonicalAliasResDataOutcome.value;
     canonicalAlias = data?.content?.alias;
+  }
+
+  let topic;
+  if (stateTopicResDataOutcome.reason === undefined) {
+    const { data } = stateTopicResDataOutcome.value;
+    topic = data?.content?.topic;
   }
 
   let avatarUrl;
@@ -236,6 +247,7 @@ const fetchRoomData = traceFunction(async function (
   return {
     id: roomId,
     name,
+    topic,
     canonicalAlias,
     avatarUrl,
     historyVisibility,

@@ -8,11 +8,9 @@ const LOCAL_STORAGE_KEYS = require('matrix-public-archive-shared/lib/local-stora
 const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
 const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel');
 const RoomCardViewModel = require('matrix-public-archive-shared/viewmodels/RoomCardViewModel');
+const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
-
-const NSFW_WORDS = ['nsfw', 'porn', 'nudes', 'sex', '18+'];
-const NSFW_REGEXES = NSFW_WORDS.map((word) => new RegExp(`\\b${word}\\b`, 'i'));
 
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
@@ -267,9 +265,7 @@ class RoomDirectoryViewModel extends ViewModel {
       this._roomCardViewModelsFilterMap.setApply((roomId, vm) => {
         // We concat the name, topic, etc together to simply do a single check against
         // all of the text.
-        const isNsfw = NSFW_REGEXES.some((regex) =>
-          regex.test(vm.name + ' ---- ' + vm.canonicalAlias + ' --- ' + vm.topic)
-        );
+        const isNsfw = checkTextForNsfw(vm.name + ' --- ' + vm.canonicalAlias + ' --- ' + vm.topic);
         vm.setBlockedBySafeSearch(isNsfw);
       });
     } else {
