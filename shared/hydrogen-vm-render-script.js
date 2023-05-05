@@ -31,6 +31,7 @@ const config = window.matrixPublicArchiveContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
+assert(config.archiveMessageLimit);
 
 function addSupportClasses() {
   const input = document.createElement('input');
@@ -108,6 +109,7 @@ async function mountHydrogen() {
     history: archiveHistory,
     // Our options
     homeserverUrl: config.matrixServerUrl,
+    archiveMessageLimit: config.archiveMessageLimit,
     room,
     // The timestamp from the URL that was originally visited
     dayTimestampTo: toTimestamp,

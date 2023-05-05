@@ -697,17 +697,23 @@ describe('matrix-public-archive', () => {
         });
 
         it('does not show time selector when all events from the same day but not over the limit', async () => {
-          // Set this low so we don't have to deal with many messages in the tests
-          config.set('archiveMessageLimit', 5);
+          // Set this low so we don't have to deal with many messages in the tests But
+          // high enough to encompass all of the primoridial room creation events +
+          // whatever messages we send in the room for this test.
+          config.set('archiveMessageLimit', 15);
 
           const client = await getTestClientForHs(testMatrixServerUrl1);
+          // FIXME: This test is flawed and needs MSC3997 to timestamp massage the
+          // `/createRoom` events otherwise the `areTimestampsFromSameUtcDay(...)` will
+          // always be false because the create room events are from today vs the
+          // timestamp massaged messages we send below.
           const roomId = await createTestRoom(client);
 
           await createMessagesInRoom({
             client,
             roomId,
             // This should be lesser than the `archiveMessageLimit`
-            numMessages: 3,
+            numMessages: 1,
             prefix: `foo`,
             timestamp: archiveDate.getTime(),
             // Just spread things out a bit so the event times are more obvious
