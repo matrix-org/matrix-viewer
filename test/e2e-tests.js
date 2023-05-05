@@ -645,7 +645,6 @@ describe('matrix-public-archive', () => {
             testName: 'nsfw words in topic',
             createRoomOptions: {
               name: `mars`,
-              // NSFW in room topic/description
               topic: 'Get your ass to mars (NSFW)',
             },
           },
