@@ -26,6 +26,7 @@ const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/rende
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 const setHeadersForDateTemporalContext = require('../lib/set-headers-for-date-temporal-context');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
@@ -896,9 +897,16 @@ router.get(
       shouldIndex = roomData?.historyVisibility === `world_readable`;
     }
 
+    const isNsfw = checkTextForNsfw(
+      // We concat the name, topic, etc together to simply do a single check against
+      // all of the text.
+      `${roomData.name} --- ${roomData.canonicalAlias} --- ${roomData.topic} `
+    );
+
     const pageOptions = {
       title: `${roomData.name} - Matrix Public Archive`,
       description: `View the history of ${roomData.name} in the Matrix Public Archive`,
+      isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationHref: urlJoin(basePath, req.originalUrl),
       shouldIndex,
