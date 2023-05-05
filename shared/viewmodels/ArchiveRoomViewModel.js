@@ -143,7 +143,6 @@ class ArchiveRoomViewModel extends ViewModel {
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
-    console.log('events.length', events.length);
     const shouldShowTimeSelector =
       // If there are no events, then it's possible the user navigated too far back
       // before the room was created and we will let them pick a new time that might make
