@@ -46,9 +46,9 @@ function renderPageHtml({
           <meta name="viewport" content="width=device-width, initial-scale=1">
           ${maybeNoIndexHtml}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
+          ${sanitizeHtml(`<meta name="description" content="${pageOptions.description}">`)}
           <link rel="icon" href="${faviconMap.ico}" sizes="any">
           <link rel="icon" href="${faviconMap.svg}" type="image/svg+xml">
-          ${sanitizeHtml(`<meta name="description" content="${pageOptions.description}">`)}
           ${styles
             .map(
               (styleUrl) =>
