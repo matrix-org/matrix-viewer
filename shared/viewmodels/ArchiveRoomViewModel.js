@@ -67,6 +67,7 @@ class ArchiveRoomViewModel extends ViewModel {
     super(options);
     const {
       homeserverUrl,
+      archiveMessageLimit,
       room,
       dayTimestampTo,
       precisionFromUrl,
@@ -77,6 +78,7 @@ class ArchiveRoomViewModel extends ViewModel {
       basePath,
     } = options;
     assert(homeserverUrl);
+    assert(archiveMessageLimit);
     assert(room);
     assert(dayTimestampTo);
     assert(Object.values(TIME_PRECISION_VALUES).includes(precisionFromUrl));
@@ -141,13 +143,15 @@ class ArchiveRoomViewModel extends ViewModel {
       matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
     });
 
+    console.log('events.length', events.length);
     const shouldShowTimeSelector =
       // If there are no events, then it's possible the user navigated too far back
       // before the room was created and we will let them pick a new time that might make
       // more sense. But only if they are worried about time precision in the URL already.
       (precisionFromUrl !== TIME_PRECISION_VALUES.none && !events.length) ||
-      // Only show the time selector when we're showing events all from the same day.
-      (events.length &&
+      // Only show the time selector when we're showing events all from the same day and
+      // there are more events than the limit
+      (events.length > archiveMessageLimit &&
         areTimestampsFromSameUtcDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp));
 
     this._timeSelectorViewModel = new TimeSelectorViewModel({

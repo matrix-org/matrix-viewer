@@ -922,8 +922,9 @@ router.get(
         stateEventMap,
         shouldIndex,
         config: {
-          basePath: basePath,
-          matrixServerUrl: matrixServerUrl,
+          basePath,
+          matrixServerUrl,
+          archiveMessageLimit,
         },
       },
       abortSignal: req.abortSignal,
