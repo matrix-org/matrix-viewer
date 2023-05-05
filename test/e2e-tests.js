@@ -633,6 +633,64 @@ describe('matrix-public-archive', () => {
         }
       });
 
+      describe('safe search', () => {
+        [
+          {
+            testName: 'nsfw words in title',
+            createRoomOptions: {
+              name: `uranus-nsfw`,
+            },
+          },
+          {
+            testName: 'nsfw words in topic',
+            createRoomOptions: {
+              name: `mars`,
+              // NSFW in room topic/description
+              topic: 'Get your ass to mars (NSFW)',
+            },
+          },
+        ].forEach((testCase) => {
+          const expectedAdultMetaElement = '<meta name="rating" content="adult">';
+
+          it(`${testCase.testName} is correctly blocked/marked by safe search`, async () => {
+            const client = await getTestClientForHs(testMatrixServerUrl1);
+            const roomId = await createTestRoom(client, testCase.createRoomOptions);
+
+            archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+            const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+            const dom = parseHTML(archivePageHtml);
+
+            // Ensure that the adult meta element is on the page which is all we need to
+            // appease search engines.
+            const metaElements = Array.from(dom.document.querySelectorAll('meta'));
+            // eslint-disable-next-line max-nested-callbacks
+            const foundAdultMetaElement = metaElements.some((metaElement) => {
+              return metaElement.outerHTML === expectedAdultMetaElement;
+            });
+            assert(
+              foundAdultMetaElement,
+              `Unable to find ${expectedAdultMetaElement} on the page. We found these meta elements though:${metaElements
+                // eslint-disable-next-line max-nested-callbacks
+                .map((metaElement) => `\n    \`${metaElement.outerHTML}\``)
+                .join('')}`
+            );
+          });
+        });
+
+        it('normal room is not blocked/marked by safe search', async () => {
+          const client = await getTestClientForHs(testMatrixServerUrl1);
+          const roomId = await createTestRoom(client);
+
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+          const dom = parseHTML(archivePageHtml);
+
+          // Make sure the `<meta name="rating" ...>` tag does NOT exist on the
+          // page telling search engines that this is an adult page.
+          assert.strictEqual(dom.document.querySelector(`meta[name="rating"]`), null);
+        });
+      });
+
       describe('time selector', () => {
         it('shows time selector when there are too many messages from the same day', async () => {
           // Set this low so it's easy to hit the limit
