@@ -12,7 +12,7 @@ which search engines can index and keep all of the content accessible/available.
 <!-- prettier-ignore -->
 Room directory homepage | Room view
 --- | ---
-<img alt="A reference for how the Matrix Public Archive homepage looks. Search bar where you can find thousands of rooms using Matrix and homeserver selector. Grid of room cards showing the results." src="https://user-images.githubusercontent.com/558581/236579462-fee0f9c0-29d2-4c3d-a695-c9eaf0f744ef.png" width="540"> | ![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
+<img alt="A reference for how the Matrix Public Archive homepage looks. Search bar where you can find thousands of rooms using Matrix and homeserver selector. Grid of room cards showing the results." src="https://user-images.githubusercontent.com/558581/236579462-fee0f9c0-29d2-4c3d-a695-c9eaf0f744ef.png" width="480"> | ![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
 
 ## Demo videos
 
