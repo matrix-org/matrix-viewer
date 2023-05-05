@@ -15,6 +15,7 @@ assert(basePath);
 function clientSideRoomAliasHashRedirectRoute(req, res) {
   const pageOptions = {
     title: `Page not found - Matrix Public Archive`,
+    description: `This page does not exist but we may be able to redirect you to the right place.`,
     entryPoint: 'client/js/entry-client-room-alias-hash-redirect.js',
     locationHref: urlJoin(basePath, req.originalUrl),
     // We don't have a Matrix room so we don't know whether or not to index. Just choose
@@ -30,7 +31,7 @@ function clientSideRoomAliasHashRedirectRoute(req, res) {
         404: Page not found.
         <span class="js-try-redirect-message" style="display: none">One sec while we try to redirect you to the right place.</span>
       </h1>
-      <p>If there was a #room_alias:server hash in the URL, we tried redirecting  you to the right place.</p>
+      <p>If there was a #room_alias:server hash in the URL, we tried redirecting you to the right place.</p>
       <p>
         Otherwise, you're simply in a place that does not exist.
         You can ${sanitizeHtml(`<a href="${basePath}">go back to the homepage</a>.`)}

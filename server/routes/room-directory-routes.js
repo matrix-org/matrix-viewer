@@ -75,6 +75,7 @@ router.get(
 
     const pageOptions = {
       title: `Matrix Public Archive`,
+      description: 'Browse thousands of rooms using Matrix...',
       entryPoint: 'client/js/entry-client-room-directory.js',
       locationHref: urlJoin(basePath, req.originalUrl),
       shouldIndex,

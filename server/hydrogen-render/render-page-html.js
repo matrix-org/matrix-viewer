@@ -17,6 +17,7 @@ function renderPageHtml({
   assert(vmRenderContext);
   assert(pageOptions);
   assert(pageOptions.title);
+  assert(pageOptions.description);
   assert(pageOptions.entryPoint);
   assert(pageOptions.cspNonce);
 
@@ -47,6 +48,7 @@ function renderPageHtml({
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
           <link rel="icon" href="${faviconMap.ico}" sizes="any">
           <link rel="icon" href="${faviconMap.svg}" type="image/svg+xml">
+          ${sanitizeHtml(`<meta name="description" content="${pageOptions.description}">`)}
           ${styles
             .map(
               (styleUrl) =>
