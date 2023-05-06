@@ -14,16 +14,24 @@ class DeveloperOptionsContentViewModel extends ViewModel {
   }
 
   loadValuesFromPersistence() {
+    // Debugging is disabled by default and only enabled with the correct 'true' value
+    let debugActiveDateIntersectionObserver = false;
+
     if (window.localStorage) {
-      this._debugActiveDateIntersectionObserver = JSON.parse(
-        window.localStorage.getItem(LOCAL_STORAGE_KEYS.debugActiveDateIntersectionObserver)
+      const debugActiveDateIntersectionObserverFromPersistence = window.localStorage.getItem(
+        LOCAL_STORAGE_KEYS.debugActiveDateIntersectionObserver
       );
-      this.emitChange('debugActiveDateIntersectionObserver');
+
+      if (debugActiveDateIntersectionObserverFromPersistence === 'true') {
+        debugActiveDateIntersectionObserver = true;
+      }
     } else {
       console.warn(
         `Skipping \`${LOCAL_STORAGE_KEYS.debugActiveDateIntersectionObserver}\` read from LocalStorage since LocalStorage is not available`
       );
     }
+
+    this.toggleDebugActiveDateIntersectionObserver(debugActiveDateIntersectionObserver);
   }
 
   get debugActiveDateIntersectionObserver() {
@@ -32,10 +40,17 @@ class DeveloperOptionsContentViewModel extends ViewModel {
 
   toggleDebugActiveDateIntersectionObserver(checkedValue) {
     this._debugActiveDateIntersectionObserver = checkedValue;
-    window.localStorage.setItem(
-      LOCAL_STORAGE_KEYS.debugActiveDateIntersectionObserver,
-      this._debugActiveDateIntersectionObserver
-    );
+    if (window.localStorage) {
+      window.localStorage.setItem(
+        LOCAL_STORAGE_KEYS.debugActiveDateIntersectionObserver,
+        this._debugActiveDateIntersectionObserver ? 'true' : 'false'
+      );
+    } else {
+      console.warn(
+        `Skipping \`${LOCAL_STORAGE_KEYS.debugActiveDateIntersectionObserver}\` write to LocalStorage since LocalStorage is not available`
+      );
+    }
+
     this.emitChange('debugActiveDateIntersectionObserver');
   }
 
