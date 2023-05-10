@@ -1,12 +1,32 @@
 'use strict';
 
 const assert = require('assert');
+const urlJoin = require('url-join');
 
 const { getSerializableSpans } = require('../tracing/tracing-middleware');
 const sanitizeHtml = require('../lib/sanitize-html');
 const safeJson = require('../lib/safe-json');
 const getDependenciesForEntryPointName = require('../lib/get-dependencies-for-entry-point-name');
-const getFaviconAssetUrls = require('../lib/get-favicon-asset-urls');
+const getAssetUrl = require('../lib/get-asset-url');
+
+const config = require('../lib/config');
+const basePath = config.get('basePath');
+assert(basePath);
+
+let _assetUrls;
+function getAssetUrls() {
+  // Probably not that much overhead but only calculate this once
+  if (_assetUrls) {
+    return _assetUrls;
+  }
+
+  _assetUrls = {
+    faviconIco: getAssetUrl('client/img/favicon.ico'),
+    faviconSvg: getAssetUrl('client/img/favicon.svg'),
+    opengraphImage: getAssetUrl('client/img/matrix-public-archive-opengraph.png'),
+  };
+  return _assetUrls;
+}
 
 function renderPageHtml({
   pageOptions,
@@ -45,7 +65,12 @@ function renderPageHtml({
     maybeAdultMeta = `<meta name="rating" content="adult">`;
   }
 
-  const faviconMap = getFaviconAssetUrls();
+  const pageAssetUrls = getAssetUrls();
+  let metaImageUrl = urlJoin(basePath, pageAssetUrls.opengraphImage);
+  if (pageOptions.imageUrl) {
+    metaImageUrl = pageOptions.imageUrl;
+  }
+
   const pageHtml = `
       <!doctype html>
       <html lang="en">
@@ -55,8 +80,9 @@ function renderPageHtml({
           ${maybeAdultMeta}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
           ${sanitizeHtml(`<meta name="description" content="${pageOptions.description}">`)}
-          <link rel="icon" href="${faviconMap.ico}" sizes="any">
-          <link rel="icon" href="${faviconMap.svg}" type="image/svg+xml">
+          ${sanitizeHtml(`<meta property="og:image" content="${metaImageUrl}">`)}
+          <link rel="icon" href="${pageAssetUrls.faviconIco}" sizes="any">
+          <link rel="icon" href="${pageAssetUrls.faviconSvg}" type="image/svg+xml">
           ${styles
             .map(
               (styleUrl) =>

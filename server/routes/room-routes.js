@@ -26,6 +26,7 @@ const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/rende
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 const setHeadersForDateTemporalContext = require('../lib/set-headers-for-date-temporal-context');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const { mxcUrlToHttpThumbnail } = require('matrix-public-archive-shared/lib/mxc-url-to-http');
 const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
 const {
   MS_LOOKUP,
@@ -906,6 +907,13 @@ router.get(
     const pageOptions = {
       title: `${roomData.name} - Matrix Public Archive`,
       description: `View the history of ${roomData.name} in the Matrix Public Archive`,
+      imageUrl:
+        roomData.avatarUrl &&
+        mxcUrlToHttpThumbnail({
+          mxcUrl: roomData.avatarUrl,
+          homeserverUrl: matrixServerUrl,
+          size: 256,
+        }),
       blockedBySafeSearch: isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationHref: urlJoin(basePath, req.originalUrl),
