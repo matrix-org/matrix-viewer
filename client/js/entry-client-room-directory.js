@@ -8,3 +8,4 @@ import '../css/room-directory.css';
 // over for all
 import '../img/favicon.ico';
 import '../img/favicon.svg';
+import '../img/matrix-public-archive-opengraph.png';
