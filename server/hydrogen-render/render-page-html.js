@@ -45,6 +45,11 @@ function renderPageHtml({
     maybeAdultMeta = `<meta name="rating" content="adult">`;
   }
 
+  let metaImageUrl = 'TODO';
+  if (pageOptions.imageUrl) {
+    metaImageUrl = pageOptions.imageUrl;
+  }
+
   const faviconMap = getFaviconAssetUrls();
   const pageHtml = `
       <!doctype html>
@@ -55,6 +60,7 @@ function renderPageHtml({
           ${maybeAdultMeta}
           ${sanitizeHtml(`<title>${pageOptions.title}</title>`)}
           ${sanitizeHtml(`<meta name="description" content="${pageOptions.description}">`)}
+          ${sanitizeHtml(`<meta property="og:image" content="${metaImageUrl}">`)}
           <link rel="icon" href="${faviconMap.ico}" sizes="any">
           <link rel="icon" href="${faviconMap.svg}" type="image/svg+xml">
           ${styles

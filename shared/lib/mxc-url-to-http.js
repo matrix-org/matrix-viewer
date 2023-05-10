@@ -13,15 +13,21 @@ function mxcUrlToHttp({ mxcUrl, homeserverUrl }) {
   )}`;
 }
 
-function mxcUrlToHttpThumbnail({ mxcUrl, homeserverUrl, size }) {
+const ALLOWED_RESIZE_METHODS = ['scale', 'crop'];
+function mxcUrlToHttpThumbnail({ mxcUrl, homeserverUrl, size, resizeMethod = 'scale' }) {
   assert(mxcUrl, '`mxcUrl` must be provided to `mxcUrlToHttp(...)`');
   assert(homeserverUrl, '`homeserverUrl` must be provided to `mxcUrlToHttp(...)`');
   assert(size, '`size` must be provided to `mxcUrlToHttp(...)`');
+  assert(
+    ALLOWED_RESIZE_METHODS.includes(resizeMethod),
+    `\`resizeMethod\` must be ${JSON.stringify(ALLOWED_RESIZE_METHODS)}`
+  );
   const [serverName, mediaId] = mxcUrl.substr('mxc://'.length).split('/');
 
   let qs = new URLSearchParams();
   qs.append('width', Math.round(size));
   qs.append('height', Math.round(size));
+  qs.append('method', resizeMethod);
 
   const url = homeserverUrl.replace(/\/$/, '');
   return `${url}/_matrix/media/r0/thumbnail/${encodeURIComponent(serverName)}/${encodeURIComponent(
