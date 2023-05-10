@@ -907,11 +907,13 @@ router.get(
     const pageOptions = {
       title: `${roomData.name} - Matrix Public Archive`,
       description: `View the history of ${roomData.name} in the Matrix Public Archive`,
-      imageUrl: mxcUrlToHttpThumbnail({
-        mxcUrl: roomData.avatarUrl,
-        homeserverUrl: matrixServerUrl,
-        size: 256,
-      }),
+      imageUrl:
+        roomData.avatarUrl &&
+        mxcUrlToHttpThumbnail({
+          mxcUrl: roomData.avatarUrl,
+          homeserverUrl: matrixServerUrl,
+          size: 256,
+        }),
       blockedBySafeSearch: isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationHref: urlJoin(basePath, req.originalUrl),
