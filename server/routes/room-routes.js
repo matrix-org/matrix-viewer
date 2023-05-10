@@ -906,7 +906,7 @@ router.get(
 
     const pageOptions = {
       title: `${roomData.name} - Matrix Public Archive`,
-      description: `View the history of ${roomData.name} in the Matrix Public Archive`,
+      description: `View the history of the ${roomData.name} room in the Matrix Public Archive`,
       imageUrl:
         roomData.avatarUrl &&
         mxcUrlToHttpThumbnail({
