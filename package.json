@@ -36,6 +36,7 @@
     "vite": "^4.3.1"
   },
   "dependencies": {
+    "@mlm/hydrogen-view-sdk": "^0.28.0-scratch",
     "@opentelemetry/api": "^1.4.1",
     "@opentelemetry/auto-instrumentations-node": "^0.36.6",
     "@opentelemetry/context-async-hooks": "^1.12.0",
