@@ -102,8 +102,17 @@ async function timeoutMiddleware(req, res, next) {
       },
     });
 
-    // 504 Gateway timeout
-    res.status(504);
+    // The most semantic HTTP status code to return here is a 504 Gateway timeout but if
+    // you use Cloudflare in front of the archive, it will serve its own
+    // Cloudflare-branded 504 page if your own origin server responds with a 504. And
+    // the only way to disable this functionality is to have an Enterprise Cloudflare
+    // plan. So to workaround this, we return a 500 instead. Relevant Cloudflare docs:
+    // https://developers.cloudflare.com/support/troubleshooting/cloudflare-errors/troubleshooting-cloudflare-5xx-errors/#502504-from-your-origin-web-server
+    //
+    // We want to show our own timeout page because it has more information about what
+    // went wrong (e.g. which external Matrix API requests were slow).
+    res.status(config.workaroundCloudflare504TimeoutErrors ? 500 : 504);
+
     res.set('Content-Type', 'text/html');
 
     res.send(pageHtml);
