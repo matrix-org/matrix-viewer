@@ -15,6 +15,7 @@ const basePath = config.get('basePath');
 assert(basePath);
 const requestTimeoutMs = config.get('requestTimeoutMs');
 assert(requestTimeoutMs);
+const workaroundCloudflare504TimeoutErrors = config.get('workaroundCloudflare504TimeoutErrors');
 
 // Based off of the `connect-timeout` middleware,
 // https://github.com/expressjs/timeout/blob/f2f520f335f2f2ae255d4778e908e8d38e3a4e68/index.js
@@ -111,7 +112,7 @@ async function timeoutMiddleware(req, res, next) {
     //
     // We want to show our own timeout page because it has more information about what
     // went wrong (e.g. which external Matrix API requests were slow).
-    res.status(config.workaroundCloudflare504TimeoutErrors ? 500 : 504);
+    res.status(workaroundCloudflare504TimeoutErrors ? 500 : 504);
 
     res.set('Content-Type', 'text/html');
 
