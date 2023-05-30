@@ -20,9 +20,28 @@ messages from any given date and day-by-day navigation.
 ## How do I opt out and keep my room from being indexed by search engines?
 
 All public Matrix rooms are accessible to view in the Matrix Public Archive. But only
-rooms with history visibility set to `world_readable` will be indexed by search engines.
+rooms with history visibility set to `world_readable` are indexable by search engines.
 
-Also see https://github.com/matrix-org/matrix-public-archive/issues/47
+Also see https://github.com/matrix-org/matrix-public-archive/issues/47 to track better
+opt out controls.
+
+For [archive.matrix.org](https://archive.matrix.org/), you can ban the
+`@archive:matrix.org` user if you don't want your room content to be shown in the
+archive at all.
+
+## Why does the archive user join rooms instead of browsing them as a guest?
+
+Guests require `m.room.guest_access` to access a room. Most public rooms do not allow
+guests because even the `public_chat` preset when creating a room does not allow guest
+access. Not being able to view most public rooms is the major blocker on being able to
+use guest access. The idea is if I can view the messages from a Matrix client as a
+random user, I should also be able to see the messages in the archive.
+
+Keep in mind that only rooms with history visibility set to `world_readable` are
+indexable by search engines. The Matrix Public Archive doesn't hold onto any data (it's
+stateless) and requests the messages from the homeserver every time. The
+[archive.matrix.org](https://archive.matrix.org/) instance has some caching in place, 5
+minutes for the current day, and 2 days for past content.
 
 ## Technical details
 
