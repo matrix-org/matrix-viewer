@@ -828,15 +828,13 @@ router.get(
       }),
     ]);
 
-    // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
-    const allowedToViewRoom =
-      roomData.historyVisibility === 'world_readable' ||
-      (roomData.historyVisibility === 'shared' && roomData.joinRule === 'public');
+    // Only `world_readable` rooms are viewable in the archive
+    const allowedToViewRoom = roomData.historyVisibility === 'world_readable';
 
     if (!allowedToViewRoom) {
       throw new StatusError(
         403,
-        `Only \`world_readable\` or \`shared\` rooms that are \`public\` can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility} m.room.join_rules=${roomData.joinRule}`
+        `Only \`world_readable\` rooms can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility} m.room.join_rules=${roomData.joinRule}`
       );
     }
 
