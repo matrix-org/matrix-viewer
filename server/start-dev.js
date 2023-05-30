@@ -18,6 +18,10 @@ buildClient({
   build: {
     // Rebuild when we see changes
     // https://rollupjs.org/guide/en/#watch-options
+    //
+    // We currently can't watch for changes in the locally linked `hydrogen-view-sdk`
+    // because of https://github.com/vitejs/vite/issues/8619 despite what
+    // https://vitejs.dev/config/server-options.html#server-watch says is possible.
     watch: true,
   },
 });
