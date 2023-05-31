@@ -2,18 +2,18 @@
 
 const { TemplateView } = require('hydrogen-view-sdk');
 
+const assert = require('matrix-public-archive-shared/lib/assert');
 const CalendarView = require('matrix-public-archive-shared/views/CalendarView');
 const TimeSelectorView = require('matrix-public-archive-shared/views/TimeSelectorView');
-const assert = require('matrix-public-archive-shared/lib/assert');
 
 class RightPanelContentView extends TemplateView {
   render(t, vm) {
     assert(vm.shouldIndex !== undefined);
     assert(vm.shouldShowTimeSelector !== undefined);
 
-    let maybeIndexedMessage = 'This room is not being indexed by search engines.';
+    let maybeIndexedMessage = 'This room is not being indexed by search engines ';
     if (vm.shouldIndex) {
-      maybeIndexedMessage = 'This room is being indexed by search engines.';
+      maybeIndexedMessage = 'This room is being indexed by search engines ';
     }
 
     return t.div(
@@ -33,7 +33,19 @@ class RightPanelContentView extends TemplateView {
             className: 'RightPanelContentView_footer',
           },
           [
-            t.p(maybeIndexedMessage),
+            t.p([
+              maybeIndexedMessage,
+              '(',
+              t.a(
+                {
+                  className: 'external-link RightPanelContentView_footerLink',
+                  href: 'https://github.com/matrix-org/matrix-public-archive/blob/main/docs/faq.md#how-do-i-opt-out-and-keep-my-room-from-being-indexed-by-search-engines',
+                  target: '_blank',
+                },
+                'more info'
+              ),
+              ').',
+            ]),
             t.div(
               {
                 className: 'RightPanelContentView_footerLinkList',
