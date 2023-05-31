@@ -1,5 +1,18 @@
 # Testing
 
+<!-- prettier-ignore-start -->
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Setup](#setup)
+- [Running the tests](#running-the-tests)
+  - [Developer utility](#developer-utility)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- prettier-ignore-end -->
+
 ## Setup
 
 If you haven't setup `matrix-public-archive` yet, see the [_Setup_ section in the root `README.md`](../README.md#setup)

@@ -5,6 +5,19 @@ taken up in functions. This is useful for debugging and performance analysis.
 
 <img src="https://user-images.githubusercontent.com/558581/180586026-ff6c653e-a54d-4cf4-abc8-a8c51971aad5.png" width="612">
 
+<!-- prettier-ignore-start -->
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Setup](#setup)
+- [Run the app with the OpenTelemetry tracing enabled](#run-the-app-with-the-opentelemetry-tracing-enabled)
+- [Viewing traces in Jaeger](#viewing-traces-in-jaeger)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- prettier-ignore-end -->
+
 ## Setup
 
 1. Get the all-in-one Jaeger Docker container running (via https://www.jaegertracing.io/docs/1.35/getting-started/)

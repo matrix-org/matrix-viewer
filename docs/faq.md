@@ -1,5 +1,23 @@
 # FAQ
 
+<!-- prettier-ignore-start -->
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Can I run my own instance?](#can-i-run-my-own-instance)
+- [How is this different from `view.matrix.org`?](#how-is-this-different-from-viewmatrixorg)
+- [How do I opt out and keep my room from being indexed by search engines?](#how-do-i-opt-out-and-keep-my-room-from-being-indexed-by-search-engines)
+- [Why does the archive user join rooms instead of browsing them as a guest?](#why-does-the-archive-user-join-rooms-instead-of-browsing-them-as-a-guest)
+- [Technical details](#technical-details)
+  - [How do I figure out what version of the Matrix Public Archive is running?](#how-do-i-figure-out-what-version-of-the-matrix-public-archive-is-running)
+  - [How does the archive room URL relate to what is displayed on the page?](#how-does-the-archive-room-url-relate-to-what-is-displayed-on-the-page)
+  - [Why does the time selector only appear for some pages?](#why-does-the-time-selector-only-appear-for-some-pages)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- prettier-ignore-end -->
+
 ## Can I run my own instance?
 
 Yes! We host a public canonical version of the Matrix Public Archive at

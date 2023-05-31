@@ -14,6 +14,25 @@ Room directory homepage | Archive room view
 --- | ---
 <img alt="A reference for how the Matrix Public Archive homepage looks. Search bar where you can find thousands of rooms using Matrix and homeserver selector. Grid of room cards showing the results." src="https://user-images.githubusercontent.com/558581/236579462-fee0f9c0-29d2-4c3d-a695-c9eaf0f744ef.png" width="440"> | ![A reference for how the Matrix Public Archive looks. Showing off a day of messages in `#gitter:matrix.org` on 2021-08-06. There is a date picker calendar in the right sidebar and a traditional chat app layout on the left.](https://user-images.githubusercontent.com/558581/234765275-28c70c49-c27f-473a-88ba-f4392ddae871.png)
 
+<!-- prettier-ignore-start -->
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Demo videos](#demo-videos)
+- [Technical overview](#technical-overview)
+- [FAQ](#faq)
+- [Setup](#setup)
+  - [Prerequisites](#prerequisites)
+  - [Get the app running](#get-the-app-running)
+- [Development](#development)
+  - [Running tests](#running-tests)
+  - [Tracing](#tracing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- prettier-ignore-end -->
+
 ## Demo videos
 
 - [![](https://user-images.githubusercontent.com/558581/206083768-d18456de-caa3-463f-a891-96eed8054686.png) May 2023](https://www.youtube.com/watch?v=4KlNILNItGQ&t=1046s): Introducing [archive.matrix.org](https://archive.matrix.org/), the shiny new public instance of the Matrix Public Archive that everyone can share and link to.
