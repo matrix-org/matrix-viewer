@@ -23,6 +23,20 @@ summary {
   cursor: pointer;
 }
 
+.external-link::after {
+  content: '';
+
+  display: inline-block;
+  width: 1.1ch;
+  height: 1.1ch;
+  margin-left: 0.3ch;
+
+  background: url('../img/external-link-icon.svg');
+  background-repeat: no-repeat;
+  background-size: contain;
+  vertical-align: baseline;
+}
+
 .PrimaryActionButton {
   display: inline-block;
   padding: 4px 16px;
