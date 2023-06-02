@@ -89,6 +89,7 @@ class RoomDirectoryViewModel extends ViewModel {
     });
     this._roomCardViewModelsFilterMap = new ApplyMap(this._roomCardViewModelsMap);
     this._roomCardViewModels = this._roomCardViewModelsFilterMap.sortValues((a, b) => {
+      // Sort by the number of joined members descending (highest to lowest)
       if (b.numJoinedMembers > a.numJoinedMembers) {
         return 1;
       } else if (b.numJoinedMembers < a.numJoinedMembers) {
