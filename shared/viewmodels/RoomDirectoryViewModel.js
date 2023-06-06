@@ -10,7 +10,7 @@ const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-
 const RoomCardViewModel = require('matrix-public-archive-shared/viewmodels/RoomCardViewModel');
 const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
 
-const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im', 'libera.chat'];
+const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im'];
 
 class RoomDirectoryViewModel extends ViewModel {
   constructor(options) {
