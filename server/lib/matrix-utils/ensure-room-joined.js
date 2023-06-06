@@ -43,6 +43,14 @@ async function ensureRoomJoined(
       method: 'POST',
       accessToken,
       abortSignal,
+      body: {
+        reason:
+          `Joining room to check history visibility. ` +
+          `If your room is public with shared or world readable history visibility, ` +
+          `it will be accessible at archive.matrix.org. ` +
+          `See the FAQ for more details: ` +
+          `https://github.com/matrix-org/matrix-public-archive/blob/main/docs/faq.md#why-did-the-archive-bot-join-my-room`,
+      },
     });
     assert(
       joinData.room_id,
