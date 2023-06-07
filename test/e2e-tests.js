@@ -14,6 +14,7 @@ const chalk = require('chalk');
 const RethrownError = require('../server/lib/errors/rethrown-error');
 const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
+const ensureRoomJoined = require('../server/lib/matrix-utils/ensure-room-joined');
 const config = require('../server/lib/config');
 const {
   MS_LOOKUP,
@@ -999,9 +1000,13 @@ describe('matrix-public-archive', () => {
               // avoid problems jumping to the latest activity since we can't control the
               // timestamp of the membership event.
               const archiveAppServiceUserClient = await getTestClientForAs();
-              await joinRoom({
-                client: archiveAppServiceUserClient,
-                roomId: roomId,
+              // We use `ensureRoomJoined` instead of `joinRoom` because we're joining
+              // the archive user here and want the same join `reason` to avoid a new
+              // state event being created (`joinRoom` -> `{ displayname, membership }`
+              // whereas `ensureRoomJoined` -> `{ reason, displayname, membership }`)
+              await ensureRoomJoined({
+                accessToken: archiveAppServiceUserClient.accessToken,
+                roomIdOrAlias: roomId,
               });
 
               // Just spread things out a bit so the event times are more obvious
