@@ -20,7 +20,7 @@ messages from any given date and day-by-day navigation.
 ## Why did the archive bot join my room?
 
 Only public Matrix rooms with `shared` or `world_readable` [history
-visibility](https://spec.matrix.org/v1.7/client-server-api/#room-history-visibility) are
+visibility](https://spec.matrix.org/latest/client-server-api/#room-history-visibility) are
 accessible in the Matrix Public Archive. In some clients like Element, the `shared`
 option equates to "Members only (since the point in time of selecting this option)" and
 `world_readable` to "Anyone" under the **room settings** -> **Security & Privacy** ->
