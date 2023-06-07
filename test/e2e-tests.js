@@ -1004,10 +1004,7 @@ describe('matrix-public-archive', () => {
               // the archive user here and want the same join `reason` to avoid a new
               // state event being created (`joinRoom` -> `{ displayname, membership }`
               // whereas `ensureRoomJoined` -> `{ reason, displayname, membership }`)
-              await ensureRoomJoined({
-                accessToken: archiveAppServiceUserClient.accessToken,
-                roomIdOrAlias: roomId,
-              });
+              await ensureRoomJoined(archiveAppServiceUserClient.accessToken, roomId);
 
               // Just spread things out a bit so the event times are more obvious
               // and stand out from each other while debugging and so we just have
