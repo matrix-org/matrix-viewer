@@ -71,6 +71,11 @@ function renderPageHtml({
     metaImageUrl = pageOptions.imageUrl;
   }
 
+  let maybeRelCanonical = '';
+  if (pageOptions.canonicalUrl) {
+    maybeRelCanonical = sanitizeHtml(`<link rel="canonical" href="${pageOptions.canonicalUrl}">`);
+  }
+
   const pageHtml = `
       <!doctype html>
       <html lang="en">
@@ -83,6 +88,7 @@ function renderPageHtml({
           ${sanitizeHtml(`<meta property="og:image" content="${metaImageUrl}">`)}
           <link rel="icon" href="${pageAssetUrls.faviconIco}" sizes="any">
           <link rel="icon" href="${pageAssetUrls.faviconSvg}" type="image/svg+xml">
+          ${maybeRelCanonical}
           ${styles
             .map(
               (styleUrl) =>

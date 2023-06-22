@@ -917,6 +917,18 @@ router.get(
       blockedBySafeSearch: isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationHref: urlJoin(basePath, req.originalUrl),
+      canonicalUrl: matrixPublicArchiveURLCreator.archiveUrlForDate(
+        roomIdOrAlias,
+        new Date(toTimestamp),
+        {
+          preferredPrecision: precisionFromUrl,
+          // We purposely omit `scrollStartEventId` here because the canonical location
+          // for any given event ID is the page it resides on.
+          //
+          // We can avoid passing along the `viaServers` because we already joined the
+          // room above (see `ensureRoomJoined`).
+        }
+      ),
       shouldIndex,
       cspNonce: res.locals.cspNonce,
     };
