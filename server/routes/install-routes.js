@@ -39,6 +39,14 @@ function installRoutes(app) {
     })
   );
 
+  app.get(
+    '/faq',
+    identifyRoute('faq'),
+    asyncHandler(async function (req, res) {
+      res.redirect('https://github.com/matrix-org/matrix-public-archive/blob/main/docs/faq.md');
+    })
+  );
+
   // Our own archive app styles and scripts
   app.use('/assets', express.static(path.join(__dirname, '../../dist/assets')));
 
