@@ -86,7 +86,7 @@ async function timeoutMiddleware(req, res, next) {
       title: `Server timeout - Matrix Public Archive`,
       description: `Unable to respond in time (${requestTimeoutMs / 1000}s)`,
       entryPoint: 'client/js/entry-client-timeout.js',
-      locationHref: urlJoin(basePath, req.originalUrl),
+      locationUrl: urlJoin(basePath, req.originalUrl),
       // We don't have a Matrix room so we don't know whether or not to index. Just choose
       // a safe-default of false.
       shouldIndex: false,

@@ -78,7 +78,7 @@ router.get(
       description:
         'Browse thousands of rooms using Matrix. The new portal into the Matrix ecosystem.',
       entryPoint: 'client/js/entry-client-room-directory.js',
-      locationHref: urlJoin(basePath, req.originalUrl),
+      locationUrl: urlJoin(basePath, req.originalUrl),
       shouldIndex,
       cspNonce: res.locals.cspNonce,
     };
