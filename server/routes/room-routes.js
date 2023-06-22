@@ -918,7 +918,7 @@ router.get(
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationUrl: urlJoin(basePath, req.originalUrl),
       canonicalUrl: matrixPublicArchiveURLCreator.archiveUrlForDate(
-        roomIdOrAlias,
+        roomData.canonicalAlias || roomIdOrAlias,
         new Date(toTimestamp),
         {
           preferredPrecision: precisionFromUrl,
