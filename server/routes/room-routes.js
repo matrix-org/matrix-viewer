@@ -916,7 +916,7 @@ router.get(
         }),
       blockedBySafeSearch: isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
-      locationHref: urlJoin(basePath, req.originalUrl),
+      locationUrl: urlJoin(basePath, req.originalUrl),
       canonicalUrl: matrixPublicArchiveURLCreator.archiveUrlForDate(
         roomIdOrAlias,
         new Date(toTimestamp),

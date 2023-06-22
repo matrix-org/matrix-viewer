@@ -17,7 +17,7 @@ function clientSideRoomAliasHashRedirectRoute(req, res) {
     title: `Page not found - Matrix Public Archive`,
     description: `This page does not exist but we may be able to redirect you to the right place.`,
     entryPoint: 'client/js/entry-client-room-alias-hash-redirect.js',
-    locationHref: urlJoin(basePath, req.originalUrl),
+    locationUrl: urlJoin(basePath, req.originalUrl),
     // We don't have a Matrix room so we don't know whether or not to index. Just choose
     // a safe-default of false.
     shouldIndex: false,
