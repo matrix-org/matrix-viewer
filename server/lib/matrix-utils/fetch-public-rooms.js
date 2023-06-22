@@ -40,11 +40,12 @@ async function fetchPublicRooms(
     abortSignal,
   });
 
-  // We only want to see public rooms in the archive
+  // We only want to see public or world_readable rooms in the archive. A room can be
+  // world_readable without being public. For example someone might have an invite only
+  // room where only privileged users are allowed to join and talk but anyone can view
+  // the room.
   const accessibleRooms = publicRoomsRes.chunk.filter((room) => {
-    // `room.world_readable` is also accessible here but we only use history
-    // `world_readable` to determine search indexing.
-    return room.join_rule === 'public';
+    return room.world_readable || room.join_rule === 'public';
   });
 
   return {
