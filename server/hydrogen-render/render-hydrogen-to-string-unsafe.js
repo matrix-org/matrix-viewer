@@ -69,14 +69,14 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
   assert(renderOptions.vmRenderScriptFilePath);
   assert(renderOptions.vmRenderContext);
   assert(renderOptions.pageOptions);
-  assert(renderOptions.pageOptions.locationHref);
+  assert(renderOptions.pageOptions.locationUrl);
   assert(renderOptions.pageOptions.cspNonce);
 
   const { dom, vmContext } = createDomAndSetupVmContext();
 
   // A small `window.location` stub
   if (!dom.window.location) {
-    const locationUrl = new URL(renderOptions.pageOptions.locationHref);
+    const locationUrl = new URL(renderOptions.pageOptions.locationUrl);
     dom.window.location = {};
     [
       'hash',
