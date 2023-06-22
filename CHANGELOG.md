@@ -5,6 +5,7 @@
 - Fix room cards sorting in the wrong direction on Firefox, https://github.com/matrix-org/matrix-public-archive/pull/261
 - Remove `libera.chat` as a default since their rooms are not accessible in the archive, https://github.com/matrix-org/matrix-public-archive/pull/263
 - Add reason why the archive bot is joining the room, https://github.com/matrix-org/matrix-public-archive/pull/262
+- Add `/faq` redirect, https://github.com/matrix-org/matrix-public-archive/pull/265
 
 # 0.1.0 - 2023-05-11
 
