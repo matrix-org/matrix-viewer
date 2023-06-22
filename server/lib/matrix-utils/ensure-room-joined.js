@@ -52,12 +52,7 @@ async function ensureRoomJoined(
         reason:
           `Joining room to check history visibility. ` +
           `If your room is public with shared or world readable history visibility, ` +
-          `it will be accessible at ${matrixPublicArchiveURLCreator.archiveUrlForRoom(
-            roomIdOrAlias
-            // We don't need to include the `viaServers` option here because the archive
-            // will already be joined to the room from this request itself and we don't
-            // need to make the URL any longer/noisier than it needs to be.
-          )}. ` +
+          `it will be accessible on ${matrixPublicArchiveURLCreator.roomDirectoryUrl()}. ` +
           `See the FAQ for more details: ` +
           `https://github.com/matrix-org/matrix-public-archive/blob/main/docs/faq.md#why-did-the-archive-bot-join-my-room`,
       },
