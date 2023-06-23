@@ -19,6 +19,8 @@ const {
 } = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
 const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
+const createRetryFnIfNotJoined = require('../lib/matrix-utils/create-retry-fn-if-not-joined');
+const resolveRoomIdOrAlias = require('../lib/matrix-utils/resolve-room-id-or-alias');
 const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const { removeMe_fetchRoomCreateEventId } = require('../lib/matrix-utils/fetch-room-data');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
@@ -788,17 +790,18 @@ router.get(
       );
     }
 
-    // We have to wait for the room join to happen first before we can fetch
-    // any of the additional room info or messages.
-    //
-    // XXX: It would be better if we just tried fetching first and assume that we are
-    // already joined and only join after we see a 403 Forbidden error (we should do
-    // this for all places we `ensureRoomJoined`). But we need the `roomId` for use with
-    // the various Matrix API's anyway and `/join/{roomIdOrAlias}` -> `{ room_id }` is a
-    // great way to get it (see
-    // https://github.com/matrix-org/matrix-public-archive/issues/50).
-    const viaServers = parseViaServersFromUserInput(req.query.via);
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
+    // Resolve the room ID without joining the room (optimistically assume that we're
+    // already joined)
+    let viaServers = parseViaServersFromUserInput(req.query.via);
+    let roomId;
+    ({ roomId, viaServers } = await resolveRoomIdOrAlias({
+      accessToken: matrixAccessToken,
+      roomIdOrAlias,
+      viaServers,
+      abortSignal: req.abortSignal,
+    }));
+
+    const retryFnIfNotJoined = createRetryFnIfNotJoined(matrixAccessToken, roomIdOrAlias, {
       viaServers,
       abortSignal: req.abortSignal,
     });
@@ -806,26 +809,30 @@ router.get(
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
-      fetchRoomData(matrixAccessToken, roomId, { abortSignal: req.abortSignal }),
+      retryFnIfNotJoined(() =>
+        fetchRoomData(matrixAccessToken, roomId, { abortSignal: req.abortSignal })
+      ),
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
       //
       // When given a bare date like `2022/11/16`, we want to paginate from the end of that
       // day backwards. This is why we use the `toTimestamp` here and fetch backwards.
-      fetchEventsFromTimestampBackwards({
-        accessToken: matrixAccessToken,
-        roomId,
-        ts: toTimestamp,
-        // We fetch one more than the `archiveMessageLimit` so that we can see if there
-        // are too many messages from the given day. If we have over the
-        // `archiveMessageLimit` number of messages fetching from the given day, it's
-        // acceptable to have them be from surrounding days. But if all 500 messages
-        // (for example) are from the same day, let's redirect to a smaller hour range
-        // to display.
-        limit: archiveMessageLimit + 1,
-        abortSignal: req.abortSignal,
-      }),
+      retryFnIfNotJoined(() =>
+        fetchEventsFromTimestampBackwards({
+          accessToken: matrixAccessToken,
+          roomId,
+          ts: toTimestamp,
+          // We fetch one more than the `archiveMessageLimit` so that we can see if there
+          // are too many messages from the given day. If we have over the
+          // `archiveMessageLimit` number of messages fetching from the given day, it's
+          // acceptable to have them be from surrounding days. But if all 500 messages
+          // (for example) are from the same day, let's redirect to a smaller hour range
+          // to display.
+          limit: archiveMessageLimit + 1,
+          abortSignal: req.abortSignal,
+        })
+      ),
     ]);
 
     // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
