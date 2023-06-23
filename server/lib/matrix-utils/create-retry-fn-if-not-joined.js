@@ -77,10 +77,8 @@ function createRetryFnIfNotJoined(
         try {
           await joinPromise;
           joinState = JOIN_STATES.joined;
-          console.log('retryAfterJoin');
           return await retryFnIfNotJoined(fn);
         } catch (err) {
-          console.log('FAILED retryAfterJoin');
           joinState = JOIN_STATES.failed;
           throw err;
         }

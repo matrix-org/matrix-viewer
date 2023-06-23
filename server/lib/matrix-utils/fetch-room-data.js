@@ -3,7 +3,7 @@
 const assert = require('assert');
 
 const urlJoin = require('url-join');
-const { fetchEndpointAsJson } = require('../fetch-endpoint');
+const { HTTPResponseError, fetchEndpointAsJson } = require('../fetch-endpoint');
 const parseViaServersFromUserInput = require('../parse-via-servers-from-user-input');
 const { traceFunction } = require('../../tracing/trace-utilities');
 
@@ -20,13 +20,43 @@ function getStateEndpointForRoomIdAndEventType(roomId, eventType) {
   );
 }
 
+const fetchPotentiallyMissingStateEvent = traceFunction(async function ({
+  accessToken,
+  roomId,
+  stateEventType,
+  abortSignal,
+} = {}) {
+  assert(accessToken);
+  assert(roomId);
+  assert(stateEventType);
+
+  try {
+    const { data } = await fetchEndpointAsJson(
+      getStateEndpointForRoomIdAndEventType(roomId, stateEventType),
+      {
+        accessToken,
+        abortSignal,
+      }
+    );
+    return data;
+  } catch (err) {
+    const is404Error = err instanceof HTTPResponseError && err.response.status === 404;
+
+    // Ignore 404 errors, because it just means that the room doesn't have that state
+    // event (which is normal).
+    if (!is404Error) {
+      throw err;
+    }
+  }
+});
+
 // Unfortunately, we can't just get the event ID from the `/state?format=event`
 // endpoint, so we have to do this trick. Related to
 // https://github.com/matrix-org/synapse/issues/15454
 //
 // TODO: Remove this when we have MSC3999 (because it's the only usage)
 const removeMe_fetchRoomCreateEventId = traceFunction(async function (
-  matrixAccessToken,
+  accessToken,
   roomId,
   { abortSignal } = {}
 ) {
@@ -36,7 +66,7 @@ const removeMe_fetchRoomCreateEventId = traceFunction(async function (
       `_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/messages?dir=f&limit1`
     ),
     {
-      accessToken: matrixAccessToken,
+      accessToken,
       abortSignal,
     }
   );
@@ -51,22 +81,16 @@ const fetchRoomCreationInfo = traceFunction(async function (
   roomId,
   { abortSignal } = {}
 ) {
-  const [stateCreateResDataOutcome] = await Promise.allSettled([
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.create'), {
-      accessToken: matrixAccessToken,
-      abortSignal,
-    }),
-  ]);
+  const stateCreateResData = await fetchPotentiallyMissingStateEvent({
+    accessToken: matrixAccessToken,
+    roomId,
+    stateEventType: 'm.room.create',
+    abortSignal,
+  });
 
-  let roomCreationTs;
-  let predecessorRoomId;
-  let predecessorLastKnownEventId;
-  if (stateCreateResDataOutcome.reason === undefined) {
-    const { data } = stateCreateResDataOutcome.value;
-    roomCreationTs = data?.origin_server_ts;
-    predecessorLastKnownEventId = data?.content?.event_id;
-    predecessorRoomId = data?.content?.predecessor?.room_id;
-  }
+  const roomCreationTs = stateCreateResData?.origin_server_ts;
+  const predecessorRoomId = stateCreateResData?.content?.predecessor?.room_id;
+  const predecessorLastKnownEventId = stateCreateResData?.content?.event_id;
 
   return { roomCreationTs, predecessorRoomId, predecessorLastKnownEventId };
 });
@@ -76,33 +100,33 @@ const fetchPredecessorInfo = traceFunction(async function (
   roomId,
   { abortSignal } = {}
 ) {
-  const [roomCreationInfoOutcome, statePredecessorResDataOutcome] = await Promise.allSettled([
+  const [roomCreationInfo, statePredecessorResData] = await Promise.all([
     fetchRoomCreationInfo(matrixAccessToken, roomId, { abortSignal }),
-    fetchEndpointAsJson(
-      getStateEndpointForRoomIdAndEventType(roomId, 'org.matrix.msc3946.room_predecessor'),
-      {
-        accessToken: matrixAccessToken,
-        abortSignal,
-      }
-    ),
+    fetchPotentiallyMissingStateEvent({
+      accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'org.matrix.msc3946.room_predecessor',
+      abortSignal,
+    }),
   ]);
 
   let predecessorRoomId;
   let predecessorLastKnownEventId;
   let predecessorViaServers;
   // Prefer the dynamic predecessor from the dedicated state event
-  if (statePredecessorResDataOutcome.reason === undefined) {
-    const { data } = statePredecessorResDataOutcome.value;
-    predecessorRoomId = data?.content?.predecessor_room_id;
-    predecessorLastKnownEventId = data?.content?.last_known_event_id;
-    predecessorViaServers = parseViaServersFromUserInput(data?.content?.via_servers);
+  if (statePredecessorResData) {
+    predecessorRoomId = statePredecessorResData?.content?.predecessor_room_id;
+    predecessorLastKnownEventId = statePredecessorResData?.content?.last_known_event_id;
+    predecessorViaServers = parseViaServersFromUserInput(
+      statePredecessorResData?.content?.via_servers
+    );
   }
   // Then fallback to the predecessor defined by the room creation event
-  else if (roomCreationInfoOutcome.reason === undefined) {
-    ({ predecessorRoomId, predecessorLastKnownEventId } = roomCreationInfoOutcome.value);
+  else if (roomCreationInfo) {
+    ({ predecessorRoomId, predecessorLastKnownEventId } = roomCreationInfo);
   }
 
-  const { roomCreationTs: currentRoomCreationTs } = roomCreationInfoOutcome;
+  const { roomCreationTs: currentRoomCreationTs } = roomCreationInfo;
 
   return {
     // This is prefixed with "current" so we don't get this confused with the
@@ -119,20 +143,15 @@ const fetchSuccessorInfo = traceFunction(async function (
   roomId,
   { abortSignal } = {}
 ) {
-  const [stateTombstoneResDataOutcome] = await Promise.allSettled([
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.tombstone'), {
-      accessToken: matrixAccessToken,
-      abortSignal,
-    }),
-  ]);
+  const stateTombstoneResData = await fetchPotentiallyMissingStateEvent({
+    accessToken: matrixAccessToken,
+    roomId,
+    stateEventType: 'm.room.tombstone',
+    abortSignal,
+  });
 
-  let successorRoomId;
-  let successorSetTs;
-  if (stateTombstoneResDataOutcome.reason === undefined) {
-    const { data } = stateTombstoneResDataOutcome.value;
-    successorRoomId = data?.content?.replacement_room;
-    successorSetTs = data?.origin_server_ts;
-  }
+  const successorRoomId = stateTombstoneResData?.content?.replacement_room;
+  const successorSetTs = stateTombstoneResData?.origin_server_ts;
 
   return {
     successorRoomId,
@@ -150,99 +169,70 @@ const fetchRoomData = traceFunction(async function (
   assert(roomId);
 
   const [
-    stateNameResDataOutcome,
-    stateTopicResDataOutcome,
-    stateCanonicalAliasResDataOutcome,
-    stateAvatarResDataOutcome,
-    stateHistoryVisibilityResDataOutcome,
-    stateJoinRulesResDataOutcome,
-    predecessorInfoOutcome,
-    successorInfoOutcome,
-  ] = await Promise.allSettled([
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.name'), {
+    stateNameResData,
+    stateTopicResData,
+    stateCanonicalAliasResData,
+    stateAvatarResData,
+    stateHistoryVisibilityResData,
+    stateJoinRulesResData,
+    predecessorInfo,
+    successorInfo,
+  ] = await Promise.all([
+    fetchPotentiallyMissingStateEvent({
       accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'm.room.name',
       abortSignal,
     }),
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.topic'), {
+    fetchPotentiallyMissingStateEvent({
       accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'm.room.topic',
       abortSignal,
     }),
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.canonical_alias'), {
+    fetchPotentiallyMissingStateEvent({
       accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'm.room.canonical_alias',
       abortSignal,
     }),
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.avatar'), {
+    fetchPotentiallyMissingStateEvent({
       accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'm.room.avatar',
       abortSignal,
     }),
-    fetchEndpointAsJson(
-      getStateEndpointForRoomIdAndEventType(roomId, 'm.room.history_visibility'),
-      {
-        accessToken: matrixAccessToken,
-        abortSignal,
-      }
-    ),
-    fetchEndpointAsJson(getStateEndpointForRoomIdAndEventType(roomId, 'm.room.join_rules'), {
+    fetchPotentiallyMissingStateEvent({
       accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'm.room.history_visibility',
+      abortSignal,
+    }),
+    fetchPotentiallyMissingStateEvent({
+      accessToken: matrixAccessToken,
+      roomId,
+      stateEventType: 'm.room.join_rules',
       abortSignal,
     }),
     fetchPredecessorInfo(matrixAccessToken, roomId, { abortSignal }),
     fetchSuccessorInfo(matrixAccessToken, roomId, { abortSignal }),
   ]);
 
-  let name;
-  if (stateNameResDataOutcome.reason === undefined) {
-    const { data } = stateNameResDataOutcome.value;
-    name = data?.content?.name;
-  }
+  let name = stateNameResData?.content?.name;
+  let canonicalAlias = stateCanonicalAliasResData?.content?.alias;
+  let topic = stateTopicResData?.content?.topic;
+  let avatarUrl = stateAvatarResData?.content?.url;
+  let historyVisibility = stateHistoryVisibilityResData?.content?.history_visibility;
+  let joinRule = stateJoinRulesResData?.content?.join_rule;
 
-  let canonicalAlias;
-  if (stateCanonicalAliasResDataOutcome.reason === undefined) {
-    const { data } = stateCanonicalAliasResDataOutcome.value;
-    canonicalAlias = data?.content?.alias;
-  }
+  const {
+    currentRoomCreationTs: roomCreationTs,
+    predecessorRoomId,
+    predecessorLastKnownEventId,
+    predecessorViaServers,
+  } = predecessorInfo;
 
-  let topic;
-  if (stateTopicResDataOutcome.reason === undefined) {
-    const { data } = stateTopicResDataOutcome.value;
-    topic = data?.content?.topic;
-  }
-
-  let avatarUrl;
-  if (stateAvatarResDataOutcome.reason === undefined) {
-    const { data } = stateAvatarResDataOutcome.value;
-    avatarUrl = data?.content?.url;
-  }
-
-  let historyVisibility;
-  if (stateHistoryVisibilityResDataOutcome.reason === undefined) {
-    const { data } = stateHistoryVisibilityResDataOutcome.value;
-    historyVisibility = data?.content?.history_visibility;
-  }
-
-  let joinRule;
-  if (stateJoinRulesResDataOutcome.reason === undefined) {
-    const { data } = stateJoinRulesResDataOutcome.value;
-    joinRule = data?.content?.join_rule;
-  }
-
-  let roomCreationTs;
-  let predecessorRoomId;
-  let predecessorLastKnownEventId;
-  let predecessorViaServers;
-  if (predecessorInfoOutcome.reason === undefined) {
-    ({
-      currentRoomCreationTs: roomCreationTs,
-      predecessorRoomId,
-      predecessorLastKnownEventId,
-      predecessorViaServers,
-    } = predecessorInfoOutcome.value);
-  }
-  let successorRoomId;
-  let successorSetTs;
-  if (successorInfoOutcome.reason === undefined) {
-    ({ successorRoomId, successorSetTs } = successorInfoOutcome.value);
-  }
+  const { successorRoomId, successorSetTs } = successorInfo;
 
   return {
     id: roomId,
