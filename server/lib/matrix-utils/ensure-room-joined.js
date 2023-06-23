@@ -21,6 +21,8 @@ async function ensureRoomJoined(
   roomIdOrAlias,
   { viaServers = new Set(), abortSignal } = {}
 ) {
+  assert(accessToken);
+  assert(roomIdOrAlias);
   // We use a `Set` to ensure that we don't have duplicate servers in the list
   assert(viaServers instanceof Set);
 

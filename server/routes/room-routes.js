@@ -18,7 +18,8 @@ const {
   fetchSuccessorInfo,
 } = require('../lib/matrix-utils/fetch-room-data');
 const fetchEventsFromTimestampBackwards = require('../lib/matrix-utils/fetch-events-from-timestamp-backwards');
-const ensureRoomJoined = require('../lib/matrix-utils/ensure-room-joined');
+const createRetryFnIfNotJoined = require('../lib/matrix-utils/create-retry-fn-if-not-joined');
+const resolveRoomIdOrAlias = require('../lib/matrix-utils/resolve-room-id-or-alias');
 const timestampToEvent = require('../lib/matrix-utils/timestamp-to-event');
 const { removeMe_fetchRoomCreateEventId } = require('../lib/matrix-utils/fetch-room-data');
 const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages-response-from-event-id');
@@ -179,21 +180,32 @@ router.get(
     // the time before we join and looking backwards.
     const dateBeforeJoin = Date.now();
 
-    // We have to wait for the room join to happen first before we can fetch
-    // any of the additional room info or messages.
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
-      viaServers: parseViaServersFromUserInput(req.query.via),
+    // Resolve the room ID without joining the room (optimistically assume that we're
+    // already joined)
+    let viaServers = parseViaServersFromUserInput(req.query.via);
+    let roomId;
+    ({ roomId, viaServers } = await resolveRoomIdOrAlias({
+      accessToken: matrixAccessToken,
+      roomIdOrAlias,
+      viaServers,
+      abortSignal: req.abortSignal,
+    }));
+    // And then we can always retry after joining if we fail somewhere
+    const retryFnIfNotJoined = createRetryFnIfNotJoined(matrixAccessToken, roomIdOrAlias, {
+      viaServers,
       abortSignal: req.abortSignal,
     });
 
     // Find the closest day to the current time with messages
-    const { originServerTs } = await timestampToEvent({
-      accessToken: matrixAccessToken,
-      roomId,
-      ts: dateBeforeJoin,
-      direction: DIRECTION.backward,
-      abortSignal: req.abortSignal,
-    });
+    const { originServerTs } = await retryFnIfNotJoined(() =>
+      timestampToEvent({
+        accessToken: matrixAccessToken,
+        roomId,
+        ts: dateBeforeJoin,
+        direction: DIRECTION.backward,
+        abortSignal: req.abortSignal,
+      })
+    );
     if (!originServerTs) {
       throw new StatusError(404, 'Unable to find day with history');
     }
@@ -201,8 +213,8 @@ router.get(
     // Redirect to a day with messages
     res.redirect(
       matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
-        // We can avoid passing along the `via` query parameter because we already
-        // joined the room above (see `ensureRoomJoined`).
+        // We can avoid passing along the `viaServers` because our server already knows
+        // about the room given that we fetched data about it already.
         //
         //viaServers: parseViaServersFromUserInput(req.query.via),
       })
@@ -251,10 +263,18 @@ router.get(
       `?timelineEndEventId must be a string or undefined but saw ${typeof timelineStartEventId}`
     );
 
-    // We have to wait for the room join to happen first before we can use the jump to
-    // date endpoint (or any other Matrix endpoint)
-    const viaServers = parseViaServersFromUserInput(req.query.via);
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
+    // Resolve the room ID without joining the room (optimistically assume that we're
+    // already joined)
+    let viaServers = parseViaServersFromUserInput(req.query.via);
+    let roomId;
+    ({ roomId, viaServers } = await resolveRoomIdOrAlias({
+      accessToken: matrixAccessToken,
+      roomIdOrAlias,
+      viaServers,
+      abortSignal: req.abortSignal,
+    }));
+    // And then we can always retry after joining if we fail somewhere
+    const retryFnIfNotJoined = createRetryFnIfNotJoined(matrixAccessToken, roomIdOrAlias, {
       viaServers,
       abortSignal: req.abortSignal,
     });
@@ -296,28 +316,32 @@ router.get(
       // Find the closest event to the given timestamp
       [{ eventId: eventIdForClosestEvent, originServerTs: tsForClosestEvent }, roomCreateEventId] =
         await Promise.all([
-          timestampToEvent({
-            accessToken: matrixAccessToken,
-            roomId,
-            ts: ts,
-            direction: dir,
-            // Since timestamps are untrusted and can be crafted to make loops in the
-            // timeline. We use this as a signal to keep progressing from this event
-            // regardless of what timestamp shenanigans are going on. See MSC3999
-            // (https://github.com/matrix-org/matrix-spec-proposals/pull/3999)
-            //
-            // TODO: Add tests for timestamp loops once Synapse supports MSC3999. We
-            // currently just have this set in case some server has this implemented in
-            // the future but there currently is no implementation (as of 2023-04-17) and
-            // we can't have passing tests without a server implementation first.
-            //
-            // TODO: This isn't implemented yet
-            fromCausalEventId,
-            abortSignal: req.abortSignal,
-          }),
-          removeMe_fetchRoomCreateEventId(matrixAccessToken, roomId, {
-            abortSignal: req.abortSignal,
-          }),
+          retryFnIfNotJoined(() =>
+            timestampToEvent({
+              accessToken: matrixAccessToken,
+              roomId,
+              ts: ts,
+              direction: dir,
+              // Since timestamps are untrusted and can be crafted to make loops in the
+              // timeline. We use this as a signal to keep progressing from this event
+              // regardless of what timestamp shenanigans are going on. See MSC3999
+              // (https://github.com/matrix-org/matrix-spec-proposals/pull/3999)
+              //
+              // TODO: Add tests for timestamp loops once Synapse supports MSC3999. We
+              // currently just have this set in case some server has this implemented in
+              // the future but there currently is no implementation (as of 2023-04-17) and
+              // we can't have passing tests without a server implementation first.
+              //
+              // TODO: This isn't implemented yet
+              fromCausalEventId,
+              abortSignal: req.abortSignal,
+            })
+          ),
+          retryFnIfNotJoined(() =>
+            removeMe_fetchRoomCreateEventId(matrixAccessToken, roomId, {
+              abortSignal: req.abortSignal,
+            })
+          ),
         ]);
 
       // Without MSC3999, we currently only detect one kind of loop where the
@@ -442,14 +466,16 @@ router.get(
         // for the actual room display that we redirect to from this route. No need for
         // us go out 100 messages, only for us to go backwards 100 messages again in the
         // next route.
-        const messageResData = await getMessagesResponseFromEventId({
-          accessToken: matrixAccessToken,
-          roomId,
-          eventId: eventIdForClosestEvent,
-          dir: DIRECTION.forward,
-          limit: archiveMessageLimit,
-          abortSignal: req.abortSignal,
-        });
+        const messageResData = await retryFnIfNotJoined(() =>
+          getMessagesResponseFromEventId({
+            accessToken: matrixAccessToken,
+            roomId,
+            eventId: eventIdForClosestEvent,
+            dir: DIRECTION.forward,
+            limit: archiveMessageLimit,
+            abortSignal: req.abortSignal,
+          })
+        );
 
         if (!messageResData.chunk?.length) {
           throw new StatusError(
@@ -582,9 +608,11 @@ router.get(
             predecessorRoomId,
             predecessorLastKnownEventId,
             predecessorViaServers,
-          } = await fetchPredecessorInfo(matrixAccessToken, roomId, {
-            abortSignal: req.abortSignal,
-          });
+          } = await retryFnIfNotJoined(() =>
+            fetchPredecessorInfo(matrixAccessToken, roomId, {
+              abortSignal: req.abortSignal,
+            })
+          );
 
           if (!predecessorRoomId) {
             throw new StatusError(
@@ -593,18 +621,24 @@ router.get(
             );
           }
 
-          // We have to join the predecessor room before we can fetch the successor info
-          // (this could be our first time seeing the room)
-          await ensureRoomJoined(matrixAccessToken, predecessorRoomId, {
-            viaServers,
-            abortSignal: req.abortSignal,
-          });
+          // We can always retry after joining if we fail somewhere
+          const retryFnIfNotJoinedToPredecessorRoom = createRetryFnIfNotJoined(
+            matrixAccessToken,
+            predecessorRoomId,
+            {
+              viaServers,
+              abortSignal: req.abortSignal,
+            }
+          );
+
           const {
             successorRoomId: successorRoomIdForPredecessor,
             successorSetTs: successorSetTsForPredecessor,
-          } = await fetchSuccessorInfo(matrixAccessToken, predecessorRoomId, {
-            abortSignal: req.abortSignal,
-          });
+          } = await retryFnIfNotJoinedToPredecessorRoom(() =>
+            fetchSuccessorInfo(matrixAccessToken, predecessorRoomId, {
+              abortSignal: req.abortSignal,
+            })
+          );
 
           let tombstoneEventId;
           if (!predecessorLastKnownEventId) {
@@ -615,13 +649,15 @@ router.get(
             //
             // We just assume this is the tombstone event ID but in any case it gets us to
             // an event that happened at the same time.
-            ({ eventId: tombstoneEventId } = await timestampToEvent({
-              accessToken: matrixAccessToken,
-              roomId: predecessorRoomId,
-              ts: successorSetTsForPredecessor,
-              direction: DIRECTION.backward,
-              abortSignal: req.abortSignal,
-            }));
+            ({ eventId: tombstoneEventId } = await retryFnIfNotJoinedToPredecessorRoom(() =>
+              timestampToEvent({
+                accessToken: matrixAccessToken,
+                roomId: predecessorRoomId,
+                ts: successorSetTsForPredecessor,
+                direction: DIRECTION.backward,
+                abortSignal: req.abortSignal,
+              })
+            ));
           }
 
           // Try to continue from the tombstone event in the predecessor room because
@@ -683,9 +719,11 @@ router.get(
           );
           return;
         } else if (dir === DIRECTION.forward) {
-          const { successorRoomId } = await fetchSuccessorInfo(matrixAccessToken, roomId, {
-            abortSignal: req.abortSignal,
-          });
+          const { successorRoomId } = await retryFnIfNotJoined(() =>
+            fetchSuccessorInfo(matrixAccessToken, roomId, {
+              abortSignal: req.abortSignal,
+            })
+          );
           if (successorRoomId) {
             // Jump to the successor room and continue at the first event of the room
             res.redirect(
@@ -788,17 +826,18 @@ router.get(
       );
     }
 
-    // We have to wait for the room join to happen first before we can fetch
-    // any of the additional room info or messages.
-    //
-    // XXX: It would be better if we just tried fetching first and assume that we are
-    // already joined and only join after we see a 403 Forbidden error (we should do
-    // this for all places we `ensureRoomJoined`). But we need the `roomId` for use with
-    // the various Matrix API's anyway and `/join/{roomIdOrAlias}` -> `{ room_id }` is a
-    // great way to get it (see
-    // https://github.com/matrix-org/matrix-public-archive/issues/50).
-    const viaServers = parseViaServersFromUserInput(req.query.via);
-    const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
+    // Resolve the room ID without joining the room (optimistically assume that we're
+    // already joined)
+    let viaServers = parseViaServersFromUserInput(req.query.via);
+    let roomId;
+    ({ roomId, viaServers } = await resolveRoomIdOrAlias({
+      accessToken: matrixAccessToken,
+      roomIdOrAlias,
+      viaServers,
+      abortSignal: req.abortSignal,
+    }));
+    // And then we can always retry after joining if we fail somewhere
+    const retryFnIfNotJoined = createRetryFnIfNotJoined(matrixAccessToken, roomIdOrAlias, {
       viaServers,
       abortSignal: req.abortSignal,
     });
@@ -806,26 +845,30 @@ router.get(
     // Do these in parallel to avoid the extra time in sequential round-trips
     // (we want to display the archive page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
-      fetchRoomData(matrixAccessToken, roomId, { abortSignal: req.abortSignal }),
+      retryFnIfNotJoined(() =>
+        fetchRoomData(matrixAccessToken, roomId, { abortSignal: req.abortSignal })
+      ),
       // We over-fetch messages outside of the range of the given day so that we
       // can display messages from surrounding days (currently only from days
       // before) so that the quiet rooms don't feel as desolate and broken.
       //
       // When given a bare date like `2022/11/16`, we want to paginate from the end of that
       // day backwards. This is why we use the `toTimestamp` here and fetch backwards.
-      fetchEventsFromTimestampBackwards({
-        accessToken: matrixAccessToken,
-        roomId,
-        ts: toTimestamp,
-        // We fetch one more than the `archiveMessageLimit` so that we can see if there
-        // are too many messages from the given day. If we have over the
-        // `archiveMessageLimit` number of messages fetching from the given day, it's
-        // acceptable to have them be from surrounding days. But if all 500 messages
-        // (for example) are from the same day, let's redirect to a smaller hour range
-        // to display.
-        limit: archiveMessageLimit + 1,
-        abortSignal: req.abortSignal,
-      }),
+      retryFnIfNotJoined(() =>
+        fetchEventsFromTimestampBackwards({
+          accessToken: matrixAccessToken,
+          roomId,
+          ts: toTimestamp,
+          // We fetch one more than the `archiveMessageLimit` so that we can see if there
+          // are too many messages from the given day. If we have over the
+          // `archiveMessageLimit` number of messages fetching from the given day, it's
+          // acceptable to have them be from surrounding days. But if all 500 messages
+          // (for example) are from the same day, let's redirect to a smaller hour range
+          // to display.
+          limit: archiveMessageLimit + 1,
+          abortSignal: req.abortSignal,
+        })
+      ),
     ]);
 
     // Only `world_readable` or `shared` rooms that are `public` are viewable in the archive
@@ -925,8 +968,8 @@ router.get(
           // We purposely omit `scrollStartEventId` here because the canonical location
           // for any given event ID is the page it resides on.
           //
-          // We can avoid passing along the `viaServers` because we already joined the
-          // room above (see `ensureRoomJoined`).
+          // We can avoid passing along the `viaServers` because our server already knows about
+          // the room given that we fetched data about it already.
         }
       ),
       shouldIndex,
