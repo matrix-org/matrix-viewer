@@ -2688,14 +2688,49 @@ describe('matrix-public-archive', () => {
         assert.strictEqual(dom.document.querySelector(`meta[name="robots"]`), null);
       });
 
-      it('search engines not allowed to index `public` room', async () => {
+      it('search engines not allowed to access public room with non-`world_readable` history visibility', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client, {
-          // The default options for the test rooms adds a
-          // `m.room.history_visiblity` state event so we override that here so
-          // it's only a public room.
-          initial_state: [],
+          // Set as `shared` since it's the next most permissive history visibility
+          // after `world_readable` but still not allowed to be accesible in the
+          // archive.
+          initial_state: [
+            {
+              type: 'm.room.history_visibility',
+              state_key: '',
+              content: {
+                history_visibility: 'shared',
+              },
+            },
+          ],
         });
+
+        try {
+          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
+          await fetchEndpointAsText(archiveUrl);
+          assert.fail(
+            new TestError(
+              'We expect the request to fail with a 403 since the archive should not be able to view a non-world_readable room but it succeeded'
+            )
+          );
+        } catch (err) {
+          if (err instanceof TestError) {
+            throw err;
+          }
+          assert.strictEqual(
+            err.response.status,
+            403,
+            `Expected err.response.status=${err?.response?.status} to be 403 but error was: ${err.stack}`
+          );
+        }
+      });
+
+      it('Configuring `stopSearchEngineIndexing` will stop search engine indexing', async () => {
+        // Disable search engine indexing across the entire instance
+        config.set('stopSearchEngineIndexing', true);
+
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        const roomId = await createTestRoom(client);
 
         archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
         const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);

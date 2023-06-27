@@ -22,7 +22,6 @@ const matrixServerName = config.get('matrixServerName');
 assert(matrixServerName);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
-const stopSearchEngineIndexing = config.get('stopSearchEngineIndexing');
 
 const router = express.Router({
   caseSensitive: true,
@@ -71,7 +70,8 @@ router.get(
     }
 
     // We index the room directory unless the config says we shouldn't index anything
-    const shouldIndex = !stopSearchEngineIndexing;
+    const stopSearchEngineIndexingFromConfig = config.get('stopSearchEngineIndexing');
+    const shouldIndex = !stopSearchEngineIndexingFromConfig;
 
     const pageOptions = {
       title: `Matrix Public Archive`,
