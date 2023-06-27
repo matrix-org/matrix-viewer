@@ -57,7 +57,6 @@ const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
-const stopSearchEngineIndexing = config.get('stopSearchEngineIndexing');
 
 const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
 
@@ -889,7 +888,8 @@ router.get(
 
     // Default to no indexing (safe default)
     let shouldIndex = false;
-    if (stopSearchEngineIndexing) {
+    const stopSearchEngineIndexingFromConfig = config.get('stopSearchEngineIndexing');
+    if (stopSearchEngineIndexingFromConfig) {
       shouldIndex = false;
     } else {
       // Otherwise we only allow search engines to index `world_readable` rooms
