@@ -8,6 +8,11 @@
 - Add `/faq` redirect, https://github.com/matrix-org/matrix-public-archive/pull/265
 - Use `rel=canonical` link to de-duplicate event permalinks, https://github.com/matrix-org/matrix-public-archive/pull/266, https://github.com/matrix-org/matrix-public-archive/pull/269
 - Prevent join event spam with stable `reason`, https://github.com/matrix-org/matrix-public-archive/pull/268
+- Don't allow previewing `shared` history rooms, https://github.com/matrix-org/matrix-public-archive/pull/239
+
+Developer facing:
+
+- Fix eslint trying to look at `node_modules/`, https://github.com/matrix-org/matrix-public-archive/pull/275
 
 # 0.1.0 - 2023-05-11
 
