@@ -7,7 +7,7 @@
     "url": "https://github.com/matrix-org/matrix-public-archive"
   },
   "scripts": {
-    "lint": "eslint **/*.js",
+    "lint": "eslint \"**/*.js\"",
     "build": "node ./build-scripts/do-client-build.js",
     "start": "node server/server.js",
     "start-dev": "node server/start-dev.js",
