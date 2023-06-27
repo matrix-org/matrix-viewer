@@ -833,7 +833,7 @@ router.get(
     if (!allowedToViewRoom) {
       throw new StatusError(
         403,
-        `Only \`world_readable\` rooms can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility} m.room.join_rules=${roomData.joinRule}`
+        `Only \`world_readable\` rooms can be viewed in the archive. ${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility}`
       );
     }
 
