@@ -40,11 +40,9 @@ async function fetchPublicRooms(
     abortSignal,
   });
 
-  // We only want to see public rooms in the archive
+  // We only want to see world_readable rooms in the archive
   const accessibleRooms = publicRoomsRes.chunk.filter((room) => {
-    // `room.world_readable` is also accessible here but we only use history
-    // `world_readable` to determine search indexing.
-    return room.join_rule === 'public';
+    return room.world_readable;
   });
 
   return {
