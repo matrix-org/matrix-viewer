@@ -9,6 +9,7 @@
 - Use `rel=canonical` link to de-duplicate event permalinks, https://github.com/matrix-org/matrix-public-archive/pull/266, https://github.com/matrix-org/matrix-public-archive/pull/269
 - Prevent join event spam with stable `reason`, https://github.com/matrix-org/matrix-public-archive/pull/268
 - Don't allow previewing `shared` history rooms, https://github.com/matrix-org/matrix-public-archive/pull/239
+  - Contributed by [@tulir](https://github.com/tulir)
 
 Developer facing:
 
