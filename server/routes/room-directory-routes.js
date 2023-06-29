@@ -9,7 +9,7 @@ const asyncHandler = require('../lib/express-async-handler');
 const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const identifyRoute = require('../middleware/identify-route-middleware');
-const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
+const fetchAccessibleRooms = require('../lib/matrix-utils/fetch-accessible-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 
@@ -48,7 +48,7 @@ router.get(
     let prevPaginationToken;
     let roomFetchError;
     try {
-      ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
+      ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchAccessibleRooms(
         matrixAccessToken,
         {
           server: homeserver,
