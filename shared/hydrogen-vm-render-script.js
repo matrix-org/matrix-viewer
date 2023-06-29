@@ -118,6 +118,7 @@ async function mountHydrogen() {
     events,
     stateEventMap,
     shouldIndex,
+    historyVisibilityEventMeta: roomData.historyVisibilityEventMeta,
     basePath: config.basePath,
   });
 

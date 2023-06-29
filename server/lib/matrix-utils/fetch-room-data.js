@@ -210,9 +210,15 @@ const fetchRoomData = traceFunction(async function (
   }
 
   let historyVisibility;
+  let historyVisibilityEventMeta;
   if (stateHistoryVisibilityResDataOutcome.reason === undefined) {
     const { data } = stateHistoryVisibilityResDataOutcome.value;
     historyVisibility = data?.content?.history_visibility;
+    historyVisibilityEventMeta = {
+      historyVisibility,
+      sender: data?.sender,
+      originServerTs: data?.origin_server_ts,
+    };
   }
 
   let roomCreationTs;
@@ -240,6 +246,7 @@ const fetchRoomData = traceFunction(async function (
     canonicalAlias,
     avatarUrl,
     historyVisibility,
+    historyVisibilityEventMeta,
     roomCreationTs,
     predecessorRoomId,
     predecessorLastKnownEventId,
