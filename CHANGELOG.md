@@ -10,6 +10,8 @@
 - Prevent join event spam with stable `reason`, https://github.com/matrix-org/matrix-public-archive/pull/268
 - Don't allow previewing `shared` history rooms, https://github.com/matrix-org/matrix-public-archive/pull/239
   - Contributed by [@tulir](https://github.com/tulir)
+- Update FAQ to explain `world_readable` only, https://github.com/matrix-org/matrix-public-archive/pull/277
+- Indicate when the room was set to `world_readable` and by who, https://github.com/matrix-org/matrix-public-archive/pull/278
 
 Developer facing:
 

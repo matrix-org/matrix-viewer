@@ -10,11 +10,27 @@ class RightPanelContentView extends TemplateView {
   render(t, vm) {
     assert(vm.shouldIndex !== undefined);
     assert(vm.shouldShowTimeSelector !== undefined);
+    assert(vm.historyVisibilityEventMeta.historyVisibility);
+    assert(vm.historyVisibilityEventMeta.sender);
+    assert(vm.historyVisibilityEventMeta.originServerTs);
 
     let maybeIndexedMessage = 'This room is not being indexed by search engines ';
     if (vm.shouldIndex) {
-      maybeIndexedMessage = 'This room is being indexed by search engines ';
+      maybeIndexedMessage = 'This room is being indexed by search engines';
     }
+
+    const historyVisibilitySender = vm.historyVisibilityEventMeta.sender;
+
+    let historyVisibilityDisplayValue = vm.historyVisibilityEventMeta.historyVisibility;
+    if (vm.historyVisibilityEventMeta.historyVisibility === 'world_readable') {
+      historyVisibilityDisplayValue = 'world readable';
+    }
+
+    const [historyVisibilitySetDatePiece, _timePiece] = new Date(
+      vm.historyVisibilityEventMeta.originServerTs
+    )
+      .toISOString()
+      .split('T');
 
     return t.div(
       {
@@ -34,8 +50,12 @@ class RightPanelContentView extends TemplateView {
           },
           [
             t.p([
+              `This room is accessible in the archive because it was set to ` +
+                `${historyVisibilityDisplayValue} by ${historyVisibilitySender} on ${historyVisibilitySetDatePiece}.`,
+            ]),
+            t.p([
               maybeIndexedMessage,
-              '(',
+              ' (',
               t.a(
                 {
                   className: 'external-link RightPanelContentView_footerLink',
