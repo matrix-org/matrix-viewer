@@ -75,6 +75,7 @@ class ArchiveRoomViewModel extends ViewModel {
       events,
       stateEventMap,
       shouldIndex,
+      historyVisibilityEventMeta,
       basePath,
     } = options;
     assert(homeserverUrl);
@@ -85,6 +86,9 @@ class ArchiveRoomViewModel extends ViewModel {
     assert(events);
     assert(stateEventMap);
     assert(shouldIndex !== undefined);
+    assert(historyVisibilityEventMeta.historyVisibility);
+    assert(historyVisibilityEventMeta.sender);
+    assert(historyVisibilityEventMeta.originServerTs);
     assert(events);
 
     this._room = room;
@@ -213,6 +217,7 @@ class ArchiveRoomViewModel extends ViewModel {
         shouldShowTimeSelector,
         timeSelectorViewModel: this._timeSelectorViewModel,
         shouldIndex,
+        historyVisibilityEventMeta,
         get developerOptionsUrl() {
           return urlRouter.urlForSegments([
             navigation.segment('room', room.id),
