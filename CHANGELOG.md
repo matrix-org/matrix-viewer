@@ -2,6 +2,7 @@
 
 - Prevent Cloudflare from overriding our own 504 timeout page, https://github.com/matrix-org/matrix-public-archive/pull/228
 - Catch NSFW rooms with underscores, https://github.com/matrix-org/matrix-public-archive/pull/231
+- Fix `18+` false positives with NSFW check, https://github.com/matrix-org/matrix-public-archive/pull/279
 - Fix room cards sorting in the wrong direction on Firefox, https://github.com/matrix-org/matrix-public-archive/pull/261
 - Remove `libera.chat` as a default since their rooms are not accessible in the archive, https://github.com/matrix-org/matrix-public-archive/pull/263
 - Add reason why the archive bot is joining the room, https://github.com/matrix-org/matrix-public-archive/pull/262
