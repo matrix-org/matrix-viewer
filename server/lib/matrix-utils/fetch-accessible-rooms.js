@@ -61,11 +61,6 @@ async function fetchAccessibleRooms(
   assert(accessToken);
   assert([DIRECTION.forward, DIRECTION.backward].includes(direction), 'direction must be [f|b]');
 
-  console.log(
-    `fetchAccessibleRooms searchTerm=${searchTerm} direction=${direction} paginationToken=${paginationToken} limit=${limit}\n` +
-      '--------------------------------'
-  );
-
   // Based off of the matrix.org room directory, only 42% of rooms are world_readable,
   // which means our best bet to fill up the results to the limit is to request 2.5 times as many.
   const bulkPaginationLimit = Math.ceil(2.5 * limit);
@@ -100,22 +95,11 @@ async function fetchAccessibleRooms(
     lastLoopToken = loopToken;
     lastResponse = publicRoomsRes;
 
-    console.log(
-      `publicRoomsRes currentRequestCount=${currentRequestCount} direction=${direction}, publicRoomsRes=${JSON.stringify(
-        publicRoomsRes.chunk.map((room) => room.name),
-        null,
-        2
-      )}`
-    );
-
     if (currentRequestCount === 0) {
       firstResponse = publicRoomsRes;
     }
 
-    // Keep track of this as we go. For the final pagination token, we return to the
-    // client, we might need to back-track later to get the perfect continuation point
-    // if we find more than the limit of rooms we want to fetch. Alternatively, we could
-    // just not worry about and show more than the limit of rooms.
+    // Get the token ready for the next loop
     loopToken =
       direction === DIRECTION.forward ? publicRoomsRes.next_batch : publicRoomsRes.prev_batch;
 
@@ -162,15 +146,6 @@ async function fetchAccessibleRooms(
   let nextPaginationToken;
   let prevPaginationToken;
   if (continuationIndex) {
-    // let continuationLimit;
-    // if (direction === DIRECTION.forward) {
-    //   continuationLimit = continuationIndex + 1;
-    // } else if (direction === DIRECTION.backward) {
-    //   continuationLimit = bulkPaginationLimit - continuationIndex;
-    // } else {
-    //   throw new Error(`Invalid direction: ${direction}`);
-    // }
-
     const publicRoomsRes = await requestPublicRooms(accessToken, {
       server,
       searchTerm,
@@ -180,17 +155,6 @@ async function fetchAccessibleRooms(
       limit: continuationIndex + 1,
       abortSignal,
     });
-
-    console.log(
-      `publicRoomsRes back-track direction=${direction}, publicRoomsRes=${JSON.stringify(
-        publicRoomsRes.chunk.map((room) => room.name),
-        null,
-        2
-      )}`
-    );
-
-    // console.log('firstResponse', firstResponse.prev_batch, firstResponse.next_batch);
-    // console.log('back-track publicRoomsRes', publicRoomsRes.prev_batch, publicRoomsRes.next_batch);
 
     if (direction === DIRECTION.forward) {
       prevPaginationToken = firstResponse.prev_batch;
@@ -212,14 +176,6 @@ async function fetchAccessibleRooms(
       throw new Error(`Invalid direction: ${direction}`);
     }
   }
-
-  console.log(
-    `return accessibleRooms=${JSON.stringify(
-      accessibleRooms.map((room) => room.name),
-      null,
-      2
-    )}`
-  );
 
   return {
     rooms: accessibleRooms,
