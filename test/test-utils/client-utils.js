@@ -4,6 +4,8 @@ const assert = require('assert');
 const urlJoin = require('url-join');
 const { fetchEndpointAsJson, fetchEndpoint } = require('../../server/lib/fetch-endpoint');
 const getServerNameFromMatrixRoomIdOrAlias = require('../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias');
+const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
+const { ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 const config = require('../../server/lib/config');
 const matrixAccessToken = config.get('matrixAccessToken');
@@ -14,7 +16,7 @@ assert(testMatrixServerUrl1);
 let txnCount = 0;
 function getTxnId() {
   txnCount++;
-  return `${new Date().getTime()}--${txnCount}`;
+  return `txn${txnCount}-${new Date().getTime()}`;
 }
 
 // Basic slugify function, plenty of edge cases and should not be used for
@@ -150,7 +152,7 @@ async function createTestRoom(client, overrideCreateOptions = {}) {
   }
 
   const roomName = overrideCreateOptions.name || 'the hangout spot';
-  const roomAlias = slugify(roomName + getTxnId());
+  const roomAlias = slugify(roomName + '-' + getTxnId());
 
   const { data: createRoomResponse } = await fetchEndpointAsJson(
     urlJoin(client.homeserverUrl, `/_matrix/client/v3/createRoom?${qs.toString()}`),
@@ -421,6 +423,50 @@ async function uploadContent({ client, roomId, data, fileName, contentType }) {
   return mxcUri;
 }
 
+// This can be removed after https://github.com/matrix-org/synapse/issues/15526 is solved
+async function waitForResultsInHomeserverRoomDirectory({
+  client,
+  searchTerm,
+  timeoutMs = 10 * ONE_SECOND_IN_MS,
+}) {
+  assert(client);
+  assert(searchTerm !== undefined);
+
+  const roomDirectoryEndpoint = urlJoin(client.homeserverUrl, `_matrix/client/v3/publicRooms`);
+
+  // eslint-disable-next-line no-async-promise-executor
+  await new Promise(async (resolve, reject) => {
+    try {
+      setTimeout(() => {
+        reject(new Error('Timed out waiting for rooms to appear in the room directory'));
+      }, timeoutMs);
+
+      let foundResults = false;
+      while (!foundResults) {
+        const { data: publicRoomsRes } = await fetchEndpointAsJson(roomDirectoryEndpoint, {
+          method: 'POST',
+          body: {
+            include_all_networks: true,
+            filter: {
+              generic_search_term: searchTerm,
+            },
+            limit: 1,
+          },
+          accessToken: client.accessToken,
+        });
+
+        if (publicRoomsRes.chunk.length > 0) {
+          foundResults = true;
+          resolve();
+          break;
+        }
+      }
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 module.exports = {
   ensureUserRegistered,
   getTestClientForAs,
@@ -433,6 +479,7 @@ module.exports = {
   sendMessage,
   createMessagesInRoom,
   getMessagesInRoom,
+  waitForResultsInHomeserverRoomDirectory,
   updateProfile,
   uploadContent,
 };
