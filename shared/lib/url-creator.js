@@ -3,7 +3,10 @@
 const urlJoin = require('url-join');
 
 const assert = require('matrix-public-archive-shared/lib/assert');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+const {
+  DIRECTION,
+  TIME_PRECISION_VALUES,
+} = require('matrix-public-archive-shared/lib/reference-values');
 
 function qsToUrlPiece(qs) {
   if (qs.toString()) {
@@ -25,7 +28,16 @@ class URLCreator {
     return `https://matrix.to/#/${roomIdOrAlias}`;
   }
 
-  roomDirectoryUrl({ searchTerm, homeserver, paginationToken } = {}) {
+  roomDirectoryUrl({ searchTerm, homeserver, paginationToken, direction } = {}) {
+    // You must provide both `paginationToken` and `direction` if either is defined
+    if (paginationToken || direction) {
+      assert(
+        [DIRECTION.forward, DIRECTION.backward].includes(direction),
+        'direction must be [f|b]'
+      );
+      assert(paginationToken);
+    }
+
     let qs = new URLSearchParams();
     if (searchTerm) {
       qs.append('search', searchTerm);
@@ -35,6 +47,9 @@ class URLCreator {
     }
     if (paginationToken) {
       qs.append('page', paginationToken);
+    }
+    if (direction) {
+      qs.append('dir', direction);
     }
 
     return `${this._basePath}${qsToUrlPiece(qs)}`;

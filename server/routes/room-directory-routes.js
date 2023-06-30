@@ -6,10 +6,11 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
+const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
 const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const identifyRoute = require('../middleware/identify-route-middleware');
-const fetchPublicRooms = require('../lib/matrix-utils/fetch-public-rooms');
+const fetchAccessibleRooms = require('../lib/matrix-utils/fetch-accessible-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 
@@ -33,9 +34,19 @@ router.get(
   '/',
   identifyRoute('app-room-directory-index'),
   asyncHandler(async function (req, res) {
-    const paginationToken = req.query.page;
     const searchTerm = req.query.search;
     const homeserver = req.query.homeserver;
+    const paginationToken = req.query.page;
+    const direction = req.query.dir;
+
+    // You must provide both `paginationToken` and `direction` if either is defined
+    if (paginationToken || direction) {
+      assert(
+        [DIRECTION.forward, DIRECTION.backward].includes(direction),
+        '?dir query parameter must be [f|b]'
+      );
+      assert(paginationToken, '?page query parameter must be defined if ?dir is defined');
+    }
 
     // It would be good to grab more rooms than we display in case we need
     // to filter any out but then the pagination tokens with the homeserver
@@ -48,12 +59,13 @@ router.get(
     let prevPaginationToken;
     let roomFetchError;
     try {
-      ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchPublicRooms(
+      ({ rooms, nextPaginationToken, prevPaginationToken } = await fetchAccessibleRooms(
         matrixAccessToken,
         {
           server: homeserver,
           searchTerm,
           paginationToken,
+          direction,
           limit,
           abortSignal: req.abortSignal,
         }

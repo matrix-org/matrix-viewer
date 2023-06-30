@@ -322,10 +322,21 @@ class RoomDirectoryView extends TemplateView {
           t.view(roomList),
           t.div({ className: 'RoomDirectoryView_paginationButtonCombo' }, [
             t.a(
-              { className: 'RoomDirectoryView_paginationButton', href: vm.prevPageUrl },
+              {
+                className: 'RoomDirectoryView_paginationButton',
+                href: vm.prevPageUrl,
+                'data-testid': 'room-directory-prev-link',
+              },
               'Previous'
             ),
-            t.a({ className: 'RoomDirectoryView_paginationButton', href: vm.nextPageUrl }, 'Next'),
+            t.a(
+              {
+                className: 'RoomDirectoryView_paginationButton',
+                href: vm.nextPageUrl,
+                'data-testid': 'room-directory-next-link',
+              },
+              'Next'
+            ),
           ]),
         ]),
         t.if(

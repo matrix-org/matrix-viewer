@@ -38,6 +38,7 @@ const {
   sendMessage,
   createMessagesInRoom,
   getMessagesInRoom,
+  waitForResultsInHomeserverRoomDirectory,
   updateProfile,
   uploadContent,
 } = require('./test-utils/client-utils');
@@ -2507,15 +2508,33 @@ describe('matrix-public-archive', () => {
         // test runs against the same homeserver
         const timeToken = Date.now();
         const roomPlanetPrefix = `planet-${timeToken}`;
+        const roomSaturnName = `${roomPlanetPrefix}-saturn`;
         const roomSaturnId = await createTestRoom(client, {
-          name: `${roomPlanetPrefix}-saturn`,
+          name: roomSaturnName,
         });
+        const roomMarsName = `${roomPlanetPrefix}-mars`;
         const roomMarsId = await createTestRoom(client, {
-          name: `${roomPlanetPrefix}-mars`,
+          name: roomMarsName,
         });
 
         // Browse the room directory without search to see many rooms
+        //
+        // (we set this here in case we timeout while waiting for the test rooms to
+        // appear in the room directory)
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
+
+        // Try to avoid flakey tests where the homeserver hasn't added the rooms to the
+        // room directory yet. This isn't completely robust as it doesn't check that the
+        // random room at the start is in the directory but should be good enough.
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: roomSaturnName,
+        });
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: roomMarsName,
+        });
+
         const { data: roomDirectoryPageHtml } = await fetchEndpointAsText(archiveUrl);
         const dom = parseHTML(roomDirectoryPageHtml);
 
@@ -2556,17 +2575,33 @@ describe('matrix-public-archive', () => {
         // test runs against the same homeserver
         const timeToken = Date.now();
         const roomPlanetPrefix = `remote-planet-${timeToken}`;
+        const roomXName = `${roomPlanetPrefix}-x`;
         const roomXId = await createTestRoom(hs2Client, {
-          name: `${roomPlanetPrefix}-x`,
+          name: roomXName,
         });
+        const roomYname = `${roomPlanetPrefix}-y`;
         const roomYId = await createTestRoom(hs2Client, {
-          name: `${roomPlanetPrefix}-y`,
+          name: roomYname,
         });
 
+        // (we set this here in case we timeout while waiting for the test rooms to
+        // appear in the room directory)
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
           homeserver: HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2],
           searchTerm: roomPlanetPrefix,
         });
+
+        // Try to avoid flakey tests where the homeserver hasn't added the rooms to the
+        // room directory yet.
+        await waitForResultsInHomeserverRoomDirectory({
+          client: hs2Client,
+          searchTerm: roomXName,
+        });
+        await waitForResultsInHomeserverRoomDirectory({
+          client: hs2Client,
+          searchTerm: roomYname,
+        });
+
         const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
@@ -2601,21 +2636,39 @@ describe('matrix-public-archive', () => {
         // test runs against the same homeserver
         const timeToken = Date.now();
         const roomPlanetPrefix = `planet-${timeToken}`;
+        const roomUranusName = `${roomPlanetPrefix}-uranus-nsfw`;
         const roomUranusId = await createTestRoom(client, {
           // NSFW in title
-          name: `${roomPlanetPrefix}-uranus-nsfw`,
+          name: roomUranusName,
         });
+        const roomMarsName = `${roomPlanetPrefix}-mars`;
         const roomMarsId = await createTestRoom(client, {
-          name: `${roomPlanetPrefix}-mars`,
+          name: roomMarsName,
           // NSFW in room topic/description
           topic: 'Get your ass to mars (NSFW)',
         });
 
         // Browse the room directory searching the room directory for those NSFW rooms
         // (narrowing down results).
+        //
+        // (we set this here in case we timeout while waiting for the test rooms to
+        // appear in the room directory)
         archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
           searchTerm: roomPlanetPrefix,
         });
+
+        // Try to avoid flakey tests where the homeserver hasn't added the rooms to the
+        // room directory yet. This isn't completely robust as it doesn't check that the
+        // random room at the start is in the directory but should be good enough.
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: roomUranusName,
+        });
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: roomMarsName,
+        });
+
         const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
@@ -2643,6 +2696,173 @@ describe('matrix-public-archive', () => {
             )}`
           );
         });
+      });
+
+      it('pagination is seamless', async () => {
+        const client = await getTestClientForHs(testMatrixServerUrl1);
+        // We use a `timeToken` so that we can namespace these rooms away from other
+        // test runs against the same homeserver
+        const timeToken = Date.now();
+        const roomPlanetPrefix = `planet-${timeToken}`;
+
+        // Fill up the room room directory with multiple pages of rooms
+        const visibleRoomConfigurations = [];
+        const roomsConfigurationsToCreate = [];
+        for (let i = 0; i < 40; i++) {
+          const roomCreateOptions = {
+            name: `${roomPlanetPrefix}-room-${i}`,
+          };
+
+          // Sprinkle in some rooms every so often that should not appear in the room directory
+          if (i % 3 === 0) {
+            roomCreateOptions.name = `${roomPlanetPrefix}-room-not-world-readable-${i}`;
+            roomCreateOptions.initial_state = [
+              {
+                type: 'm.room.history_visibility',
+                state_key: '',
+                content: {
+                  history_visibility: 'joined',
+                },
+              },
+              {
+                type: 'm.room.topic',
+                state_key: '',
+                content: {
+                  // Just a specific token we can search for in the DOM to make sure
+                  // this room does not appear in the room directory.
+                  topic: 'should-not-be-visible-in-archive-room-directory',
+                },
+              },
+            ];
+          } else {
+            visibleRoomConfigurations.push(roomCreateOptions);
+          }
+
+          roomsConfigurationsToCreate.push(roomCreateOptions);
+        }
+
+        // Doing all of these create room requests in parallel is about 2x faster than
+        // doing them serially and the room directory doesn't return the rooms in any
+        // particular order so it doesn't make the test any more clear doing them
+        // serially anyway.
+        const createdRoomsIds = await Promise.all(
+          roomsConfigurationsToCreate.map((roomCreateOptions) =>
+            createTestRoom(client, roomCreateOptions)
+          )
+        );
+
+        function roomIdToRoomName(expectedRoomId) {
+          const roomIndex = createdRoomsIds.findIndex((roomId) => {
+            return roomId === expectedRoomId;
+          });
+          assert(
+            roomIndex > 0,
+            `Expected to find expectedRoomId=${expectedRoomId} in the list of created rooms createdRoomsIds=${createdRoomsIds}`
+          );
+
+          const roomConfig = roomsConfigurationsToCreate[roomIndex];
+          assert(
+            roomConfig,
+            `Expected to find room config for roomIndex=${roomIndex} in the list of roomsConfigurationsToCreate (length ${roomsConfigurationsToCreate.length})}`
+          );
+
+          return roomConfig.name;
+        }
+
+        async function checkRoomsOnPage(archiveUrl) {
+          const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
+          const dom = parseHTML(roomDirectoryWithSearchPageHtml);
+
+          const roomsCardsOnPageWithSearch = [
+            ...dom.document.querySelectorAll(`[data-testid="room-card"]`),
+          ];
+
+          const roomsIdsOnPage = roomsCardsOnPageWithSearch.map((roomCardEl) => {
+            return roomCardEl.getAttribute('data-room-id');
+          });
+
+          // Sanity check that we don't see any non-world_readable rooms.
+          roomsCardsOnPageWithSearch.forEach((roomCardEl) => {
+            assert.match(
+              roomCardEl.innerHTML,
+              /^((?!should-not-be-visible-in-archive-room-directory).)*$/,
+              `Expected not to see any non-world_readable rooms on the page but saw ${roomCardEl.getAttribute(
+                'data-room-id'
+              )} which has "should-not-be-visible-in-archive-room-directory" in the room topic`
+            );
+          });
+
+          // Find the pagination buttons and grab the links to the previous and next pages
+          const previousLinkElement = dom.document.querySelector(
+            `[data-testid="room-directory-prev-link"]`
+          );
+          const nextLinkElement = dom.document.querySelector(
+            `[data-testid="room-directory-next-link"]`
+          );
+
+          const previousPaginationLink = previousLinkElement.getAttribute('href');
+          const nextPaginationLink = nextLinkElement.getAttribute('href');
+
+          return {
+            archiveUrl,
+            roomsIdsOnPage,
+            previousPaginationLink,
+            nextPaginationLink,
+          };
+        }
+
+        // Browse the room directory with the search prefix so we only see rooms
+        // relevant to this test.
+        //
+        // (we set this here in case we timeout while waiting for the test rooms to
+        // appear in the room directory)
+        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+          searchTerm: roomPlanetPrefix,
+        });
+
+        // Try to avoid flakey tests where the homeserver hasn't added the rooms
+        // to the room directory yet. This isn't completely robust as it doesn't check
+        // that all rooms are visible but it's better than nothing.
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: visibleRoomConfigurations[0].name,
+        });
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: visibleRoomConfigurations[visibleRoomConfigurations.length - 1].name,
+        });
+
+        // Visit a sequence of pages using the pagination links: 1 -> 2 -> 3 -> 2 -> 1
+        const firstPage = await checkRoomsOnPage(archiveUrl);
+        const secondPage = await checkRoomsOnPage(firstPage.nextPaginationLink);
+        const thirdPage = await checkRoomsOnPage(secondPage.nextPaginationLink);
+        const backtrackSecondPage = await checkRoomsOnPage(thirdPage.previousPaginationLink);
+        const backtrackFirstPage = await checkRoomsOnPage(
+          backtrackSecondPage.previousPaginationLink
+        );
+
+        // Ensure that we saw all of the visible rooms paginating through the directory
+        assert.deepStrictEqual(
+          [...firstPage.roomsIdsOnPage, ...secondPage.roomsIdsOnPage, ...thirdPage.roomsIdsOnPage]
+            .map(roomIdToRoomName)
+            .sort(),
+          visibleRoomConfigurations.map((roomConfig) => roomConfig.name).sort(),
+          'Make sure we saw all visible rooms paginating through the directory'
+        );
+
+        // Ensure that we see the same rooms in the same order going backward that we saw going forward
+        archiveUrl = backtrackSecondPage.archiveUrl;
+        assert.deepStrictEqual(
+          backtrackSecondPage.roomsIdsOnPage.map(roomIdToRoomName),
+          secondPage.roomsIdsOnPage.map(roomIdToRoomName),
+          'From the third page, going backward to second page should show the same rooms that we saw on the second page when going forward'
+        );
+        archiveUrl = backtrackFirstPage.archiveUrl;
+        assert.deepStrictEqual(
+          backtrackFirstPage.roomsIdsOnPage.map(roomIdToRoomName),
+          firstPage.roomsIdsOnPage.map(roomIdToRoomName),
+          'From the second page, going backward to first page should show the same rooms that we saw on first page when going forward'
+        );
       });
     });
 
