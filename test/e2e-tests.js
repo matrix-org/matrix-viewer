@@ -2745,7 +2745,7 @@ describe('matrix-public-archive', () => {
         // doing them serially and the room directory doesn't return the rooms in any
         // particular order so it doesn't make the test any more clear doing them
         // serially.
-        await Promise.all(
+        const createdRoomsIds = await Promise.all(
           roomsConfigurationsToCreate.map((roomCreateOptions) =>
             createTestRoom(client, roomCreateOptions)
           )
@@ -2786,6 +2786,7 @@ describe('matrix-public-archive', () => {
           const nextPaginationLink = nextLinkElement.getAttribute('href');
 
           return {
+            archiveUrl,
             roomsIdsOnPage,
             previousPaginationLink,
             nextPaginationLink,
@@ -2817,12 +2818,56 @@ describe('matrix-public-archive', () => {
         const firstPage = await checkRoomsOnPage(archiveUrl);
         const secondPage = await checkRoomsOnPage(firstPage.nextPaginationLink);
         const thirdPage = await checkRoomsOnPage(secondPage.nextPaginationLink);
+        const backtrackSecondPage = await checkRoomsOnPage(thirdPage.previousPaginationLink);
+        const backtrackFirstPage = await checkRoomsOnPage(
+          backtrackSecondPage.previousPaginationLink
+        );
 
-        // TODO: This does not work (pagination tokens are not stable)
-        assert.strictEqual(firstPage.previousPaginationLink, null);
-        assert.strictEqual(firstPage.nextPaginationLink, secondPage.previousPaginationLink);
-        assert.strictEqual(secondPage.nextPaginationLink, thirdPage.previousPaginationLink);
-        assert.strictEqual(thirdPage.nextPaginationLink, null);
+        // assert.strictEqual(firstPage.previousPaginationLink, null);
+        // assert.strictEqual(firstPage.nextPaginationLink, secondPage.previousPaginationLink);
+        // assert.strictEqual(secondPage.nextPaginationLink, thirdPage.previousPaginationLink);
+        // assert.strictEqual(thirdPage.nextPaginationLink, null);
+
+        function roomIdToRoomName(expectedRoomId) {
+          const roomIndex = createdRoomsIds.findIndex((roomId) => {
+            return roomId === expectedRoomId;
+          });
+          assert(
+            roomIndex > 0,
+            `Expected to find expectedRoomId=${expectedRoomId} in the list of created rooms createdRoomsIds=${createdRoomsIds}`
+          );
+
+          const roomConfig = roomsConfigurationsToCreate[roomIndex];
+          assert(
+            roomConfig,
+            `Expected to find room config for roomIndex=${roomIndex} in the list of roomsConfigurationsToCreate (length ${roomsConfigurationsToCreate.length})}`
+          );
+
+          return roomConfig.name;
+        }
+
+        // Ensure that we saw all of the visible rooms paginating through the directory
+        assert.deepStrictEqual(
+          [...firstPage.roomsIdsOnPage, ...secondPage.roomsIdsOnPage, ...thirdPage.roomsIdsOnPage]
+            .map(roomIdToRoomName)
+            .sort(),
+          visibleRoomConfigurations.map((roomConfig) => roomConfig.name).sort(),
+          'Make sure we saw all visible rooms paginating through the directory'
+        );
+
+        // Ensure that we see the same rooms in the same order going backward that we saw going forward
+        archiveUrl = backtrackSecondPage.archiveUrl;
+        assert.deepStrictEqual(
+          backtrackSecondPage.roomsIdsOnPage.map(roomIdToRoomName),
+          secondPage.roomsIdsOnPage.map(roomIdToRoomName),
+          'From the third page, going backward to second page should show the same rooms that we saw on the second page when going forward'
+        );
+        archiveUrl = backtrackFirstPage.archiveUrl;
+        assert.deepStrictEqual(
+          backtrackFirstPage.roomsIdsOnPage.map(roomIdToRoomName),
+          firstPage.roomsIdsOnPage.map(roomIdToRoomName),
+          'From the second page, going backward to first page should show the same rooms that we saw on first page when going forward'
+        );
       });
     });
 

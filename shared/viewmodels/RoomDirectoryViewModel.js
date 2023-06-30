@@ -9,6 +9,7 @@ const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalVie
 const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel');
 const RoomCardViewModel = require('matrix-public-archive-shared/viewmodels/RoomCardViewModel');
 const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
+const { DIRECTION } = require('../lib/reference-values');
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im'];
 
@@ -304,6 +305,7 @@ class RoomDirectoryViewModel extends ViewModel {
         homeserver: this.homeserverSelection,
         searchTerm: this.searchTerm,
         paginationToken: this._nextPaginationToken,
+        direction: DIRECTION.forward,
       });
     }
 
@@ -316,6 +318,7 @@ class RoomDirectoryViewModel extends ViewModel {
         homeserver: this.homeserverSelection,
         searchTerm: this.searchTerm,
         paginationToken: this._prevPaginationToken,
+        direction: DIRECTION.backward,
       });
     }
 
