@@ -11,6 +11,7 @@ const config = require('../config');
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
+// The number of requests we should make to try to fill the limit before bailing out
 const NUM_MAX_REQUESTS = 10;
 
 async function requestPublicRooms(
@@ -62,8 +63,10 @@ async function fetchAccessibleRooms(
   assert([DIRECTION.forward, DIRECTION.backward].includes(direction), 'direction must be [f|b]');
 
   // Based off of the matrix.org room directory, only 42% of rooms are world_readable,
-  // which means our best bet to fill up the results to the limit is to request 2.5 times as many.
-  const bulkPaginationLimit = Math.ceil(2.5 * limit);
+  // which means our best bet to fill up the results to the limit is to request at least
+  // 2.4 times as many. I've doubled and rounded it up to 5 times as many so we can have
+  // less round-trips.
+  const bulkPaginationLimit = Math.ceil(5 * limit);
 
   let accessibleRooms = [];
 
@@ -135,14 +138,14 @@ async function fetchAccessibleRooms(
     currentRequestCount += 1;
   }
 
-  // Back-track to get the perfect continuation point
+  // Back-track to get the perfect continuation point and show exactly the limit of
+  // rooms in the grid.
   //
   // Alternatively, we could just not worry about and show more than the limit of rooms
   //
   // XXX: Since the room directory order is not stable, this is slightly flawed as the
-  // results could have shifted slightly from when we made the last request to get the
-  // `continuationIndex` to now when we're trying to get the actual token to continue
-  // seamlessly.
+  // results could have shifted slightly from when we made the last request to now but
+  // we assume it's good enough.
   let nextPaginationToken;
   let prevPaginationToken;
   if (continuationIndex) {
@@ -151,7 +154,8 @@ async function fetchAccessibleRooms(
       searchTerm,
       // Start from the last request
       paginationToken: lastLoopToken,
-      // Then only go out as far out as the continuation index (the point when we filled the limit)
+      // Then only go out as far out as the continuation index (the point when we filled
+      // the limit)
       limit: continuationIndex + 1,
       abortSignal,
     });

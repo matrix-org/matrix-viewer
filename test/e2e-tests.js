@@ -2744,12 +2744,30 @@ describe('matrix-public-archive', () => {
         // Doing all of these create room requests in parallel is about 2x faster than
         // doing them serially and the room directory doesn't return the rooms in any
         // particular order so it doesn't make the test any more clear doing them
-        // serially.
+        // serially anyway.
         const createdRoomsIds = await Promise.all(
           roomsConfigurationsToCreate.map((roomCreateOptions) =>
             createTestRoom(client, roomCreateOptions)
           )
         );
+
+        function roomIdToRoomName(expectedRoomId) {
+          const roomIndex = createdRoomsIds.findIndex((roomId) => {
+            return roomId === expectedRoomId;
+          });
+          assert(
+            roomIndex > 0,
+            `Expected to find expectedRoomId=${expectedRoomId} in the list of created rooms createdRoomsIds=${createdRoomsIds}`
+          );
+
+          const roomConfig = roomsConfigurationsToCreate[roomIndex];
+          assert(
+            roomConfig,
+            `Expected to find room config for roomIndex=${roomIndex} in the list of roomsConfigurationsToCreate (length ${roomsConfigurationsToCreate.length})}`
+          );
+
+          return roomConfig.name;
+        }
 
         async function checkRoomsOnPage(archiveUrl) {
           const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
@@ -2814,7 +2832,7 @@ describe('matrix-public-archive', () => {
           searchTerm: visibleRoomConfigurations[visibleRoomConfigurations.length - 1].name,
         });
 
-        // Visit a sequence of pages using the pagination links
+        // Visit a sequence of pages using the pagination links: 1 -> 2 -> 3 -> 2 -> 1
         const firstPage = await checkRoomsOnPage(archiveUrl);
         const secondPage = await checkRoomsOnPage(firstPage.nextPaginationLink);
         const thirdPage = await checkRoomsOnPage(secondPage.nextPaginationLink);
@@ -2822,29 +2840,6 @@ describe('matrix-public-archive', () => {
         const backtrackFirstPage = await checkRoomsOnPage(
           backtrackSecondPage.previousPaginationLink
         );
-
-        // assert.strictEqual(firstPage.previousPaginationLink, null);
-        // assert.strictEqual(firstPage.nextPaginationLink, secondPage.previousPaginationLink);
-        // assert.strictEqual(secondPage.nextPaginationLink, thirdPage.previousPaginationLink);
-        // assert.strictEqual(thirdPage.nextPaginationLink, null);
-
-        function roomIdToRoomName(expectedRoomId) {
-          const roomIndex = createdRoomsIds.findIndex((roomId) => {
-            return roomId === expectedRoomId;
-          });
-          assert(
-            roomIndex > 0,
-            `Expected to find expectedRoomId=${expectedRoomId} in the list of created rooms createdRoomsIds=${createdRoomsIds}`
-          );
-
-          const roomConfig = roomsConfigurationsToCreate[roomIndex];
-          assert(
-            roomConfig,
-            `Expected to find room config for roomIndex=${roomIndex} in the list of roomsConfigurationsToCreate (length ${roomsConfigurationsToCreate.length})}`
-          );
-
-          return roomConfig.name;
-        }
 
         // Ensure that we saw all of the visible rooms paginating through the directory
         assert.deepStrictEqual(
