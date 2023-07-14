@@ -2735,10 +2735,13 @@ describe('matrix-viewer', () => {
         // doing them serially and the room directory doesn't return the rooms in any
         // particular order so it doesn't make the test any more clear doing them
         // serially anyway.
+        let lastCreatedRoomId;
         const createdRoomsIds = await Promise.all(
-          roomsConfigurationsToCreate.map((roomCreateOptions) =>
-            createTestRoom(client, roomCreateOptions)
-          )
+          roomsConfigurationsToCreate.map(async (roomCreateOptions) => {
+            const roomId = await createTestRoom(client, roomCreateOptions);
+            lastCreatedRoomId = roomId;
+            return roomId;
+          })
         );
 
         function roomIdToRoomName(expectedRoomId) {
@@ -2821,6 +2824,11 @@ describe('matrix-viewer', () => {
         await waitForResultsInHomeserverRoomDirectory({
           client,
           searchTerm: visibleRoomConfigurations[visibleRoomConfigurations.length - 1].name,
+        });
+        // Also check for the room that we last saw created as an extra measure
+        await waitForResultsInHomeserverRoomDirectory({
+          client,
+          searchTerm: roomIdToRoomName(lastCreatedRoomId),
         });
 
         // Visit a sequence of pages using the pagination links: 1 -> 2 -> 3 -> 2 -> 1
