@@ -25,14 +25,14 @@ module.exports = defineConfig({
       // This doesn't seem to be necessary for the this package to work (ref
       // https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies)
       //
-      //'matrix-public-archive-shared'
+      //'matrix-viewer-shared'
     ],
   },
   resolve: {
     alias: {
       // The `file:` packages don't seem resolve correctly so let's add an alias as well
       // See https://css-tricks.com/adding-vite-to-your-existing-web-app/#aa-aliases
-      'matrix-public-archive-shared': path.resolve(__dirname, '../shared'),
+      'matrix-viewer-shared': path.resolve(__dirname, '../shared'),
     },
     // This will make sure Vite/Rollup matches the original file path (i.e. the path
     // without following symlinks) instead of the real file path (i.e. the path after

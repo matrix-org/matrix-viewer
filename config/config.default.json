@@ -7,7 +7,7 @@
   "matrixServerName": "localhost",
   // Set this to 100 since that is the max that Synapse will backfill even if you do a
   // `/messages?limit=1000` and we don't want to miss messages in between.
-  "archiveMessageLimit": 100,
+  "messageLimit": 100,
   "requestTimeoutMs": 25000,
   "logOutputFromChildProcesses": false,
   //"stopSearchEngineIndexing": true,

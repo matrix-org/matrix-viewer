@@ -57,7 +57,7 @@ class RoomCardView extends TemplateView {
                 return false;
               }
 
-              return vm.archiveRoomUrl;
+              return vm.roomUrl;
             },
             // Since this is the same button as the "View" link, just tab to
             // that instead
@@ -107,7 +107,7 @@ class RoomCardView extends TemplateView {
             t.a(
               {
                 className: 'RoomCardView_alias',
-                href: vm.archiveRoomUrl,
+                href: vm.roomUrl,
                 // Since this is the same button as the "View" link, just tab to
                 // that instead
                 tabindex: -1,
@@ -145,7 +145,7 @@ class RoomCardView extends TemplateView {
                     return false;
                   }
 
-                  return vm.archiveRoomUrl;
+                  return vm.roomUrl;
                 },
                 title: (vm) => {
                   if (vm.blockedBySafeSearch) {

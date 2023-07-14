@@ -14,7 +14,7 @@ allow_public_rooms_over_federation: true
 tls_certificate_path: /conf/server.tls.crt
 tls_private_key_path: /conf/server.tls.key
 bcrypt_rounds: 4
-registration_shared_secret: matrix_public_archive
+registration_shared_secret: matrix_viewer
 
 listeners:
   - port: 8448

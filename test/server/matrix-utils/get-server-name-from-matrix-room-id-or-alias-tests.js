@@ -14,8 +14,8 @@ describe('getServerNameFromMatrixRoomIdOrAlias', () => {
     },
     {
       name: 'can parse sub-domain',
-      input: '!foo:archive.matrix.org',
-      expected: 'archive.matrix.org',
+      input: '!foo:view.matrix.org',
+      expected: 'view.matrix.org',
     },
     {
       name: 'can parse domain with port',

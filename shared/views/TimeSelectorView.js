@@ -1,13 +1,10 @@
 'use strict';
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+const assert = require('matrix-viewer-shared/lib/assert');
 const { TemplateView } = require('hydrogen-view-sdk');
-const {
-  MS_LOOKUP,
-  TIME_PRECISION_VALUES,
-} = require('matrix-public-archive-shared/lib/reference-values');
+const { MS_LOOKUP, TIME_PRECISION_VALUES } = require('matrix-viewer-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
-const { getUtcStartOfDayTs } = require('matrix-public-archive-shared/lib/timestamp-utilities');
+const { getUtcStartOfDayTs } = require('matrix-viewer-shared/lib/timestamp-utilities');
 
 function clamp(input, min, max) {
   assert(input !== undefined);

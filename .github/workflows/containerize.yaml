@@ -8,11 +8,11 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  GHCR_NAMESPACE: matrix-org/matrix-public-archive
-  IMAGE_NAME: matrix-public-archive
+  GHCR_NAMESPACE: matrix-org/matrix-viewer
+  IMAGE_NAME: matrix-viewer
 
 jobs:
-  # Create and publish a Docker image for matrix-public-archive
+  # Create and publish a Docker image for matrix-viewer
   #
   # Based off of
   # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images#publishing-images-to-github-packages
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      matrix-public-archive:
+      matrix-viewer:
         image: ${{ needs.build-image.outputs.docker_image_name }}:sha-${{ github.sha }}
         credentials:
           username: ${{ github.actor }}

@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
+const checkTextForNsfw = require('matrix-viewer-shared/lib/check-text-for-nsfw');
 
 describe('checkTextForNsfw', () => {
   Object.entries({

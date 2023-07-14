@@ -2,11 +2,8 @@
 
 const urlJoin = require('url-join');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-const {
-  DIRECTION,
-  TIME_PRECISION_VALUES,
-} = require('matrix-public-archive-shared/lib/reference-values');
+const assert = require('matrix-viewer-shared/lib/assert');
+const { DIRECTION, TIME_PRECISION_VALUES } = require('matrix-viewer-shared/lib/reference-values');
 
 function qsToUrlPiece(qs) {
   if (qs.toString()) {
@@ -55,7 +52,7 @@ class URLCreator {
     return `${this._basePath}${qsToUrlPiece(qs)}`;
   }
 
-  _getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias) {
+  _getUrlPathForRoomIdOrAlias(roomIdOrAlias) {
     let urlPath;
     // We don't `encodeURIComponent(...)` because the URL looks nicer without encoded things
     if (roomIdOrAlias.startsWith('#')) {
@@ -64,14 +61,14 @@ class URLCreator {
       urlPath = `/roomid/${roomIdOrAlias.replace(/^!/, '')}`;
     } else {
       throw new Error(
-        'URLCreator._getArchiveUrlPathForRoomIdOrAlias(...): roomIdOrAlias should start with # (alias) or ! (room ID)'
+        'URLCreator._getUrlPathForRoomIdOrAlias(...): roomIdOrAlias should start with # (alias) or ! (room ID)'
       );
     }
 
     return urlPath;
   }
 
-  archiveUrlForRoom(roomIdOrAlias, { viaServers = [] } = {}) {
+  roomUrl(roomIdOrAlias, { viaServers = [] } = {}) {
     assert(roomIdOrAlias);
     assert(Array.isArray(viaServers));
     let qs = new URLSearchParams();
@@ -79,12 +76,12 @@ class URLCreator {
       qs.append('via', viaServer);
     });
 
-    const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
+    const urlPath = this._getUrlPathForRoomIdOrAlias(roomIdOrAlias);
 
     return `${urlJoin(this._basePath, `${urlPath}`)}${qsToUrlPiece(qs)}`;
   }
 
-  archiveUrlForDate(
+  roomUrlForDate(
     roomIdOrAlias,
     date,
     { preferredPrecision = null, viaServers = [], scrollStartEventId } = {}
@@ -110,7 +107,7 @@ class URLCreator {
       qs.append('at', scrollStartEventId);
     }
 
-    const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
+    const urlPath = this._getUrlPathForRoomIdOrAlias(roomIdOrAlias);
 
     // Gives the date in YYYY/mm/dd format.
     // date.toISOString() -> 2022-02-16T23:20:04.709Z
@@ -134,7 +131,7 @@ class URLCreator {
     )}${qsToUrlPiece(qs)}`;
   }
 
-  archiveJumpUrlForRoom(
+  jumpUrlForRoom(
     roomIdOrAlias,
     {
       dir,
@@ -168,7 +165,7 @@ class URLCreator {
       qs.append('via', viaServer);
     });
 
-    const urlPath = this._getArchiveUrlPathForRoomIdOrAlias(roomIdOrAlias);
+    const urlPath = this._getUrlPathForRoomIdOrAlias(roomIdOrAlias);
 
     return `${urlJoin(this._basePath, `${urlPath}/jump`)}${qsToUrlPiece(qs)}`;
   }

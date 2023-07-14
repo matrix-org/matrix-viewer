@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const { getUtcStartOfDayTs } = require('matrix-public-archive-shared/lib/timestamp-utilities');
+const { getUtcStartOfDayTs } = require('matrix-viewer-shared/lib/timestamp-utilities');
 
 // `X-Date-Temporal-Context` indicates the temporal context of the content, whether it
 // is related to past, present, or future *day*.

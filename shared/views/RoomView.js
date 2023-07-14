@@ -8,12 +8,10 @@ const {
   LightboxView,
 } = require('hydrogen-view-sdk');
 
-const {
-  customViewClassForTile,
-} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
+const { customViewClassForTile } = require('matrix-viewer-shared/lib/custom-tile-utilities');
 
-const DeveloperOptionsContentView = require('matrix-public-archive-shared/views/DeveloperOptionsContentView');
-const ModalView = require('matrix-public-archive-shared/views/ModalView');
+const DeveloperOptionsContentView = require('matrix-viewer-shared/views/DeveloperOptionsContentView');
+const ModalView = require('matrix-viewer-shared/views/ModalView');
 
 class RoomHeaderView extends TemplateView {
   render(t, vm) {
@@ -90,13 +88,13 @@ class DisabledComposerView extends TemplateView {
           (vm) => vm.currentTopPositionEventEntry,
           (_currentTopPositionEventEntry, t, vm) => {
             const activeDate = new Date(
-              // If the date from our `archiveRoomViewModel` is available, use that
+              // If the date from our `roomViewModel` is available, use that
               vm?.currentTopPositionEventEntry?.timestamp ||
                 // Otherwise, use our initial `dayTimestampTo`
                 vm.dayTimestampTo
             );
             const dateString = activeDate.toISOString().split('T')[0];
-            return t.span(`You're viewing an archive of events from ${dateString}. Use a `);
+            return t.span(`You're viewing a snapshot of events from ${dateString}. Use a `);
           }
         ),
         t.a(
@@ -113,7 +111,7 @@ class DisabledComposerView extends TemplateView {
   }
 }
 
-class ArchiveRoomView extends TemplateView {
+class RoomView extends TemplateView {
   constructor(vm) {
     super(vm);
 
@@ -131,7 +129,7 @@ class ArchiveRoomView extends TemplateView {
     const rootElement = t.div(
       {
         className: {
-          ArchiveRoomView: true,
+          RoomView: true,
           'right-shown': (vm) => vm.shouldShowRightPanel,
         },
       },
@@ -156,9 +154,9 @@ class ArchiveRoomView extends TemplateView {
             });
           }
         ),
-        t.main({ className: 'ArchiveRoomView_mainArea' }, [
+        t.main({ className: 'RoomView_mainArea' }, [
           t.view(new RoomHeaderView(vm)),
-          t.main({ className: 'ArchiveRoomView_mainBody' }, [
+          t.main({ className: 'RoomView_mainBody' }, [
             t.view(new TimelineView(vm.timelineViewModel, customViewClassForTile)),
             t.view(new DisabledComposerView(vm)),
           ]),
@@ -218,4 +216,4 @@ class ArchiveRoomView extends TemplateView {
   }
 }
 
-module.exports = ArchiveRoomView;
+module.exports = RoomView;

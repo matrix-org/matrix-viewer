@@ -12,7 +12,7 @@ const { readFile } = require('fs').promises;
 const chalk = require('chalk');
 
 const RethrownError = require('../server/lib/errors/rethrown-error');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
 const { fetchEndpointAsText, fetchEndpointAsJson } = require('../server/lib/fetch-endpoint');
 const ensureRoomJoined = require('../server/lib/matrix-utils/ensure-room-joined');
 const config = require('../server/lib/config');
@@ -20,12 +20,12 @@ const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
-} = require('matrix-public-archive-shared/lib/reference-values');
+} = require('matrix-viewer-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
   roundUpTimestampToUtcDay,
   getUtcStartOfDayTs,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+} = require('matrix-viewer-shared/lib/timestamp-utilities');
 
 const {
   getTestClientForAs,
@@ -44,7 +44,7 @@ const {
 } = require('./test-utils/client-utils');
 const TestError = require('./test-utils/test-error');
 const parseRoomDayMessageStructure = require('./test-utils/parse-room-day-message-structure');
-const parseArchiveUrlForRoom = require('./test-utils/parse-archive-url-for-room');
+const parseMatrixViewerUrlForRoom = require('./test-utils/parse-matrix-viewer-url-for-room');
 
 const testMatrixServerUrl1 = config.get('testMatrixServerUrl1');
 const testMatrixServerUrl2 = config.get('testMatrixServerUrl2');
@@ -54,7 +54,7 @@ const basePath = config.get('basePath');
 assert(basePath);
 const interactive = config.get('interactive');
 
-const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+const matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
 
 const HOMESERVER_URL_TO_PRETTY_NAME_MAP = {
   [testMatrixServerUrl1]: 'hs1',
@@ -82,10 +82,10 @@ function assertExpectedTimePrecisionAgainstUrl(expectedTimePrecision, url) {
   }
 }
 
-describe('matrix-public-archive', () => {
+describe('matrix-viewer', () => {
   let server;
   before(() => {
-    // Start the archive server
+    // Start the app server
     server = require('../server/server');
   });
 
@@ -148,18 +148,18 @@ describe('matrix-public-archive', () => {
     });
   });
 
-  describe('Archive', () => {
+  describe('Matrix Viewer', () => {
     // Use a fixed date at the start of the UTC day so that the tests are
     // consistent. Otherwise, the tests could fail when they start close to
     // midnight and it rolls over to the next day.
     // January 15th, 2022
-    const archiveDate = new Date(Date.UTC(2022, 0, 15));
-    let archiveUrl;
+    const FIXED_VIEW_DATE = new Date(Date.UTC(2022, 0, 15));
+    let testUrl;
     let numMessagesSent = 0;
     afterEach(function () {
       if (interactive) {
         // eslint-disable-next-line no-console
-        console.log('Interactive URL for test', archiveUrl);
+        console.log('Interactive URL for test', testUrl);
       }
 
       // Reset `numMessagesSent` between tests so each test starts from the
@@ -181,37 +181,35 @@ describe('matrix-public-archive', () => {
     });
 
     // Sends a message and makes sure that a timestamp was provided
-    async function sendMessageOnArchiveDate(options) {
+    async function sendMessageOnFixedViewDate(options) {
       const minute = 1000 * 60;
       // Adjust the timestamp by a minute each time so there is some visual difference.
-      options.timestamp = archiveDate.getTime() + minute * numMessagesSent;
+      options.timestamp = FIXED_VIEW_DATE.getTime() + minute * numMessagesSent;
       numMessagesSent++;
 
       return sendMessage(options);
     }
 
     // Sends a message and makes sure that a timestamp was provided
-    async function sendEventOnArchiveDate(options) {
+    async function sendEventOnFixedViewDate(options) {
       const minute = 1000 * 60;
       // Adjust the timestamp by a minute each time so there is some visual difference.
-      options.timestamp = archiveDate.getTime() + minute * numMessagesSent;
+      options.timestamp = FIXED_VIEW_DATE.getTime() + minute * numMessagesSent;
       numMessagesSent++;
 
       return sendEvent(options);
     }
 
-    describe('Archive room view', () => {
+    describe('Room view', () => {
       it('shows all events in a given day', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client);
 
-        // Just render the page initially so that the archiver user is already
+        // Just render the page initially so that the bot user is already
         // joined to the page. We don't want their join event masking the one-off
         // problem where we're missing the latest message in the room. We just use the date now
         // because it will find whatever events backwards no matter when they were sent.
-        await fetchEndpointAsText(
-          matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, new Date())
-        );
+        await fetchEndpointAsText(matrixViewerURLCreator.roomUrlForDate(roomId, new Date()));
 
         const messageTextList = [
           `Amontons' First Law: The force of friction is directly proportional to the applied load.`,
@@ -223,7 +221,7 @@ describe('matrix-public-archive', () => {
         // TODO: Can we use `createMessagesInRoom` here instead?
         const eventIds = [];
         for (const messageText of messageTextList) {
-          const eventId = await sendMessageOnArchiveDate({
+          const eventId = await sendMessageOnFixedViewDate({
             client,
             roomId,
             content: {
@@ -237,10 +235,10 @@ describe('matrix-public-archive', () => {
         // Sanity check that we actually sent some messages
         assert.strictEqual(eventIds.length, 3);
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the messages are visible
         for (let i = 0; i < eventIds.length; i++) {
@@ -290,7 +288,7 @@ describe('matrix-public-archive', () => {
           data: imageBuffer,
           fileName: imageFileName,
         });
-        const imageEventId = await sendMessageOnArchiveDate({
+        const imageEventId = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -310,7 +308,7 @@ describe('matrix-public-archive', () => {
         // A normal text message
         const normalMessageText1 =
           '^ Figure 1: Simulated blocks with fractal rough surfaces, exhibiting static frictional interactions';
-        const normalMessageEventId1 = await sendMessageOnArchiveDate({
+        const normalMessageEventId1 = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -322,7 +320,7 @@ describe('matrix-public-archive', () => {
         // Another normal text message
         const normalMessageText2 =
           'The topography of the Moon has been measured with laser altimetry and stereo image analysis.';
-        const normalMessageEventId2 = await sendMessageOnArchiveDate({
+        const normalMessageEventId2 = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -333,7 +331,7 @@ describe('matrix-public-archive', () => {
 
         // Test replies
         const replyMessageText = `The concentration of maria on the near side likely reflects the substantially thicker crust of the highlands of the Far Side, which may have formed in a slow-velocity impact of a second moon of Earth a few tens of millions of years after the Moon's formation.`;
-        const replyMessageEventId = await sendMessageOnArchiveDate({
+        const replyMessageEventId = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -363,7 +361,7 @@ describe('matrix-public-archive', () => {
         // event it's replying to (the relation).
         const replyMissingRelationMessageText = `While the giant-impact theory explains many lines of evidence, some questions are still unresolved, most of which involve the Moon's composition.`;
         const missingRelationEventId = '$someMissingEvent';
-        const replyMissingRelationMessageEventId = await sendMessageOnArchiveDate({
+        const replyMissingRelationMessageEventId = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -391,7 +389,7 @@ describe('matrix-public-archive', () => {
 
         // Test reactions
         const reactionText = '😅';
-        await sendEventOnArchiveDate({
+        await sendEventOnFixedViewDate({
           client,
           roomId,
           eventType: 'm.reaction',
@@ -404,11 +402,11 @@ describe('matrix-public-archive', () => {
           },
         });
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
+        testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
 
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the user display name is visible on the message
         assert.match(
@@ -484,18 +482,18 @@ describe('matrix-public-archive', () => {
           roomId: hs2RoomId,
           numMessages: 3,
           prefix: HOMESERVER_URL_TO_PRETTY_NAME_MAP[hs2Client.homeserverUrl],
-          timestamp: archiveDate.getTime(),
+          timestamp: FIXED_VIEW_DATE.getTime(),
         });
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(hs2RoomId, archiveDate, {
+        testUrl = matrixViewerURLCreator.roomUrlForDate(hs2RoomId, FIXED_VIEW_DATE, {
           // Since hs1 doesn't know about this room on hs2 yet, we have to provide
           // a via server to ask through.
           viaServers: [HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2]],
         });
 
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the messages are visible
         assert.deepStrictEqual(
@@ -513,7 +511,7 @@ describe('matrix-public-archive', () => {
         const roomId = await createTestRoom(client);
 
         // Send an event in the room so we have some day of history to redirect to
-        const eventId = await sendMessageOnArchiveDate({
+        const eventId = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -524,10 +522,10 @@ describe('matrix-public-archive', () => {
         const expectedEventIdsOnDay = [eventId];
 
         // Visit `/:roomIdOrAlias` and expect to be redirected to the most recent day with events
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        testUrl = matrixViewerURLCreator.roomUrl(roomId);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the messages from the day we expect to get redirected to are visible
         assert.deepStrictEqual(
@@ -547,7 +545,7 @@ describe('matrix-public-archive', () => {
         // Send an event in the room so there is some history to display in the
         // surroundings and everything doesn't just 404 because we can't find
         // any event.
-        const eventId = await sendMessageOnArchiveDate({
+        const eventId = await sendMessageOnFixedViewDate({
           client,
           roomId,
           content: {
@@ -557,16 +555,16 @@ describe('matrix-public-archive', () => {
         });
         const expectedEventIdsToBeDisplayed = [eventId];
 
-        // Visit the archive on the day ahead of where there are messages
-        const visitArchiveDate = new Date(Date.UTC(2022, 0, 20));
+        // Visit on the day ahead of where there are messages
+        const visitDate = new Date(Date.UTC(2022, 0, 20));
         assert(
-          visitArchiveDate > archiveDate,
-          'The date we visit the archive (`visitArchiveDate`) should be after where the messages were sent (`archiveDate`)'
+          visitDate > FIXED_VIEW_DATE,
+          'The date we visit (`visitDate`) should be after where the messages were sent (`FIXED_VIEW_DATE`)'
         );
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, visitArchiveDate);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, visitDate);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the summary exists on the page
         assert(
@@ -592,10 +590,10 @@ describe('matrix-public-archive', () => {
 
         // We purposely send no events in the room
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the summary exists on the page
         assert(
@@ -612,14 +610,11 @@ describe('matrix-public-archive', () => {
         try {
           const TWO_DAYS_IN_MS = 2 * ONE_DAY_IN_MS;
           await fetchEndpointAsText(
-            matrixPublicArchiveURLCreator.archiveUrlForDate(
-              roomId,
-              new Date(Date.now() + TWO_DAYS_IN_MS)
-            )
+            matrixViewerURLCreator.roomUrlForDate(roomId, new Date(Date.now() + TWO_DAYS_IN_MS))
           );
           assert.fail(
             new TestError(
-              `We expect the request to fail with a 404 since you can't view the future in the archive but it succeeded`
+              `We expect the request to fail with a 404 since you can't view a date in the future but it succeeded`
             )
           );
         } catch (err) {
@@ -655,9 +650,9 @@ describe('matrix-public-archive', () => {
             const client = await getTestClientForHs(testMatrixServerUrl1);
             const roomId = await createTestRoom(client, testCase.createRoomOptions);
 
-            archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-            const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-            const dom = parseHTML(archivePageHtml);
+            testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+            const { data: pageHtml } = await fetchEndpointAsText(testUrl);
+            const dom = parseHTML(pageHtml);
 
             // Make sure the `<meta name="rating" ...>` tag exists on the page
             // telling search engines that this is an adult page.
@@ -677,9 +672,9 @@ describe('matrix-public-archive', () => {
           const client = await getTestClientForHs(testMatrixServerUrl1);
           const roomId = await createTestRoom(client);
 
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-          const dom = parseHTML(archivePageHtml);
+          testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+          const { data: pageHtml } = await fetchEndpointAsText(testUrl);
+          const dom = parseHTML(pageHtml);
 
           // Make sure the `<meta name="rating" ...>` tag does NOT exist on the
           // page telling search engines that this is an adult page.
@@ -690,7 +685,7 @@ describe('matrix-public-archive', () => {
       describe('time selector', () => {
         it('shows time selector when there are too many messages from the same day', async () => {
           // Set this low so it's easy to hit the limit
-          config.set('archiveMessageLimit', 3);
+          config.set('messageLimit', 3);
 
           const client = await getTestClientForHs(testMatrixServerUrl1);
           const roomId = await createTestRoom(client);
@@ -698,18 +693,18 @@ describe('matrix-public-archive', () => {
           await createMessagesInRoom({
             client,
             roomId,
-            // This should be greater than the `archiveMessageLimit`
+            // This should be greater than the `messageLimit`
             numMessages: 10,
             prefix: `foo`,
-            timestamp: archiveDate.getTime(),
+            timestamp: FIXED_VIEW_DATE.getTime(),
             // Just spread things out a bit so the event times are more obvious
             // and stand out from each other while debugging
             increment: ONE_HOUR_IN_MS,
           });
 
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-          const dom = parseHTML(archivePageHtml);
+          testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+          const { data: pageHtml } = await fetchEndpointAsText(testUrl);
+          const dom = parseHTML(pageHtml);
 
           // Make sure the time selector is visible
           const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
@@ -718,7 +713,7 @@ describe('matrix-public-archive', () => {
 
         it('shows time selector when there are too many messages from the same day but paginated forward into days with no messages', async () => {
           // Set this low so it's easy to hit the limit
-          config.set('archiveMessageLimit', 3);
+          config.set('messageLimit', 3);
 
           const client = await getTestClientForHs(testMatrixServerUrl1);
           const roomId = await createTestRoom(client);
@@ -726,24 +721,24 @@ describe('matrix-public-archive', () => {
           await createMessagesInRoom({
             client,
             roomId,
-            // This should be greater than the `archiveMessageLimit`
+            // This should be greater than the `messageLimit`
             numMessages: 10,
             prefix: `foo`,
-            timestamp: archiveDate.getTime(),
+            timestamp: FIXED_VIEW_DATE.getTime(),
             // Just spread things out a bit so the event times are more obvious
             // and stand out from each other while debugging
             increment: ONE_HOUR_IN_MS,
           });
 
           // Visit a day after when the messages were sent but there weren't
-          const visitArchiveDate = new Date(Date.UTC(2022, 0, 20));
+          const visitDate = new Date(Date.UTC(2022, 0, 20));
           assert(
-            visitArchiveDate > archiveDate,
-            'The date we visit the archive (`visitArchiveDate`) should be after where the messages were sent (`archiveDate`)'
+            visitDate > FIXED_VIEW_DATE,
+            'The date we visit (`visitDate`) should be after where the messages were sent (`FIXED_VIEW_DATE`)'
           );
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, visitArchiveDate);
-          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-          const dom = parseHTML(archivePageHtml);
+          testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, visitDate);
+          const { data: pageHtml } = await fetchEndpointAsText(testUrl);
+          const dom = parseHTML(pageHtml);
 
           // Make sure the time selector is visible
           const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
@@ -754,7 +749,7 @@ describe('matrix-public-archive', () => {
           // Set this low so we don't have to deal with many messages in the tests But
           // high enough to encompass all of the primoridial room creation events +
           // whatever messages we send in the room for this test.
-          config.set('archiveMessageLimit', 15);
+          config.set('messageLimit', 15);
 
           const client = await getTestClientForHs(testMatrixServerUrl1);
           // FIXME: This test is flawed and needs MSC3997 to timestamp massage the
@@ -766,18 +761,18 @@ describe('matrix-public-archive', () => {
           await createMessagesInRoom({
             client,
             roomId,
-            // This should be lesser than the `archiveMessageLimit`
+            // This should be lesser than the `messageLimit`
             numMessages: 1,
             prefix: `foo`,
-            timestamp: archiveDate.getTime(),
+            timestamp: FIXED_VIEW_DATE.getTime(),
             // Just spread things out a bit so the event times are more obvious
             // and stand out from each other while debugging
             increment: ONE_HOUR_IN_MS,
           });
 
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-          const dom = parseHTML(archivePageHtml);
+          testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+          const { data: pageHtml } = await fetchEndpointAsText(testUrl);
+          const dom = parseHTML(pageHtml);
 
           // Make sure the time selector is *NOT* visible
           const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
@@ -786,25 +781,25 @@ describe('matrix-public-archive', () => {
 
         it('does not show time selector when showing events from multiple days', async () => {
           // Set this low so we don't have to deal with many messages in the tests
-          config.set('archiveMessageLimit', 5);
+          config.set('messageLimit', 5);
 
           const client = await getTestClientForHs(testMatrixServerUrl1);
           const roomId = await createTestRoom(client);
 
-          // Create more messages than the archiveMessageLimit across many days but we
+          // Create more messages than the messageLimit across many days but we
           // should not go over the limit on a daily basis
-          const dayBeforeArchiveDateTs = Date.UTC(
-            archiveDate.getUTCFullYear(),
-            archiveDate.getUTCMonth(),
-            archiveDate.getUTCDate() - 1
+          const dayBeforeFixedViewDateTs = Date.UTC(
+            FIXED_VIEW_DATE.getUTCFullYear(),
+            FIXED_VIEW_DATE.getUTCMonth(),
+            FIXED_VIEW_DATE.getUTCDate() - 1
           );
           await createMessagesInRoom({
             client,
             roomId,
-            // This should be lesser than the `archiveMessageLimit`
+            // This should be lesser than the `messageLimit`
             numMessages: 3,
             prefix: `foo`,
-            timestamp: dayBeforeArchiveDateTs,
+            timestamp: dayBeforeFixedViewDateTs,
             // Just spread things out a bit so the event times are more obvious
             // and stand out from each other while debugging
             increment: ONE_HOUR_IN_MS,
@@ -812,18 +807,18 @@ describe('matrix-public-archive', () => {
           await createMessagesInRoom({
             client,
             roomId,
-            // This should be lesser than the `archiveMessageLimit`
+            // This should be lesser than the `messageLimit`
             numMessages: 3,
             prefix: `foo`,
-            timestamp: archiveDate.getTime(),
+            timestamp: FIXED_VIEW_DATE.getTime(),
             // Just spread things out a bit so the event times are more obvious
             // and stand out from each other while debugging
             increment: ONE_HOUR_IN_MS,
           });
 
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(roomId, archiveDate);
-          const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
-          const dom = parseHTML(archivePageHtml);
+          testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, FIXED_VIEW_DATE);
+          const { data: pageHtml } = await fetchEndpointAsText(testUrl);
+          const dom = parseHTML(pageHtml);
 
           // Make sure the time selector is *NOT* visible
           const timeSelectorElement = dom.document.querySelector(`[data-testid="time-selector"]`);
@@ -915,7 +910,7 @@ describe('matrix-public-archive', () => {
                 roomIdOrAlias: inputRoomIdOrAlias,
                 //urlDateTime: actualUrlDateTime,
                 continueAtEvent: inputContinueAtEventId,
-              } = parseArchiveUrlForRoom(inputUrl);
+              } = parseMatrixViewerUrlForRoom(inputUrl);
 
               let outputContinueAtEventId;
               if (inputContinueAtEventId) {
@@ -990,22 +985,22 @@ describe('matrix-public-archive', () => {
                 eventIdToFancyIdentifierMap.set(tombstoneEventId, fancyEventId);
               } else {
                 // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it
-                // supports it, see https://github.com/matrix-org/matrix-public-archive/issues/169
+                // supports it, see https://github.com/matrix-org/matrix-viewer/issues/169
                 roomId = await createTestRoom(client);
               }
               const fancyRoomId = `!room${roomIndex + 1}`;
               fancyIdentifierToRoomIdMap.set(fancyRoomId, roomId);
               roomIdToFancyIdentifierMap.set(roomId, fancyRoomId);
 
-              // Join the archive user to the room before we create the test messages to
+              // Join the bot user to the room before we create the test messages to
               // avoid problems jumping to the latest activity since we can't control the
               // timestamp of the membership event.
-              const archiveAppServiceUserClient = await getTestClientForAs();
+              const botAppServiceUserClient = await getTestClientForAs();
               // We use `ensureRoomJoined` instead of `joinRoom` because we're joining
-              // the archive user here and want the same join `reason` to avoid a new
+              // the bot user here and want the same join `reason` to avoid a new
               // state event being created (`joinRoom` -> `{ displayname, membership }`
               // whereas `ensureRoomJoined` -> `{ reason, displayname, membership }`)
-              await ensureRoomJoined(archiveAppServiceUserClient.accessToken, roomId);
+              await ensureRoomJoined(botAppServiceUserClient.accessToken, roomId);
 
               // Just spread things out a bit so the event times are more obvious
               // and stand out from each other while debugging and so we just have
@@ -1014,9 +1009,9 @@ describe('matrix-public-archive', () => {
                 testCase.timeIncrementBetweenMessages || ONE_HOUR_IN_MS;
 
               for (const eventMeta of room.events) {
-                const archiveDate = new Date(Date.UTC(2022, 0, eventMeta.dayNumber, 0, 0, 0, 1));
+                const viewDate = new Date(Date.UTC(2022, 0, eventMeta.dayNumber, 0, 0, 0, 1));
                 const originServerTs =
-                  archiveDate.getTime() + eventMeta.eventIndexInDay * eventSendTimeIncrement;
+                  viewDate.getTime() + eventMeta.eventIndexInDay * eventSendTimeIncrement;
                 const content = {
                   msgtype: 'm.text',
                   body: `event${eventMeta.eventNumber} - day${eventMeta.dayNumber}.${eventMeta.eventIndexInDay}`,
@@ -1047,9 +1042,9 @@ describe('matrix-public-archive', () => {
             // Assemble a list of events to to reference and assist with debugging when
             // some assertion fails
             for (const [fancyRoomId, roomId] of fancyIdentifierToRoomIdMap.entries()) {
-              const archiveAppServiceUserClient = await getTestClientForAs();
+              const botAppServiceUserClient = await getTestClientForAs();
               const eventsInRoom = await getMessagesInRoom({
-                client: archiveAppServiceUserClient,
+                client: botAppServiceUserClient,
                 roomId: roomId,
                 // This is arbitrarily larger than any amount of messages we would ever
                 // send in the tests
@@ -1083,9 +1078,9 @@ describe('matrix-public-archive', () => {
             // --------------------------------------
             // --------------------------------------
 
-            // Make sure the archive is configured as the test expects
-            assert(testCase.archiveMessageLimit);
-            config.set('archiveMessageLimit', testCase.archiveMessageLimit);
+            // Make sure the app is configured as the test expects
+            assert(testCase.messageLimit);
+            config.set('messageLimit', testCase.messageLimit);
 
             // eslint-disable-next-line max-nested-callbacks
             const pagesKeyList = Object.keys(testCase).filter((key) => {
@@ -1115,9 +1110,9 @@ describe('matrix-public-archive', () => {
 
             // Get the URL for the first page to fetch
             //
-            // Set the `archiveUrl` for debugging if the test fails here
+            // Set the `testUrl` for debugging if the test fails here
             const { roomIdOrAlias: startRoomFancyKey, urlDateTime: startUrlDateTime } =
-              parseArchiveUrlForRoom(urlJoin('https://example.com', testCase.startUrl));
+              parseMatrixViewerUrlForRoom(urlJoin('https://example.com', testCase.startUrl));
             const startRoomIdOrAlias = fancyIdentifierToRoomIdMap.get(startRoomFancyKey);
             assert(
               startRoomIdOrAlias,
@@ -1127,7 +1122,7 @@ describe('matrix-public-archive', () => {
                 2
               )}`
             );
-            archiveUrl = `${matrixPublicArchiveURLCreator.archiveUrlForRoom(
+            testUrl = `${matrixViewerURLCreator.roomUrl(
               startRoomIdOrAlias
             )}/date/${startUrlDateTime}`;
 
@@ -1148,7 +1143,7 @@ describe('matrix-public-archive', () => {
                   roomIdOrAlias: expectedRoomFancyId,
                   //urlDateTime: expectedUrlDateTime,
                   continueAtEvent: expectedContinueAtEvent,
-                } = parseArchiveUrlForRoom(urlJoin('https://example.com', pageTestMeta.url));
+                } = parseMatrixViewerUrlForRoom(urlJoin('https://example.com', pageTestMeta.url));
                 const expectedRoomId = fancyIdentifierToRoomIdMap.get(expectedRoomFancyId);
                 assert(
                   expectedRoomId,
@@ -1160,10 +1155,8 @@ describe('matrix-public-archive', () => {
                 );
 
                 // Fetch the given page.
-                const { data: archivePageHtml, res: pageRes } = await fetchEndpointAsText(
-                  archiveUrl
-                );
-                const pageDom = parseHTML(archivePageHtml);
+                const { data: pageHtml, res: pageRes } = await fetchEndpointAsText(testUrl);
+                const pageDom = parseHTML(pageHtml);
 
                 const eventIdsOnPage = [...pageDom.document.querySelectorAll(`[data-event-id]`)]
                   // eslint-disable-next-line max-nested-callbacks
@@ -1264,7 +1257,7 @@ describe('matrix-public-archive', () => {
                 // Move to the next iteration of the loop
                 //
                 // Set this for debugging if the test fails here
-                archiveUrl = nextPageLink;
+                testUrl = nextPageLink;
               } catch (err) {
                 const errorWithContext = new RethrownError(
                   `Encountered error while asserting ${pageKey}: (see original error below)`,
@@ -1303,7 +1296,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                       [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
               url: '/roomid/room1/date/2022/01/02',
@@ -1335,7 +1328,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                 [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
               url: '/roomid/room1/date/2022/01/02',
@@ -1361,7 +1354,7 @@ describe('matrix-public-archive', () => {
                                                                      |--jump-fwd-4-messages-->|
                                                         [page2                     ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/04T01:00',
             page1: {
               url: '/roomid/room1/date/2022/01/04T01:00',
@@ -1387,7 +1380,7 @@ describe('matrix-public-archive', () => {
                                                               |---jump-fwd-4-messages--->|
                                                         [page2                     ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/03',
             page1: {
               url: '/roomid/room1/date/2022/01/03',
@@ -1402,7 +1395,7 @@ describe('matrix-public-archive', () => {
           // creation events which are created in now time vs the timestamp massaging we
           // do for the message fixtures. We can uncomment this once Synapse supports
           // timestamp massaging for `/createRoom`, see
-          // https://github.com/matrix-org/matrix-public-archive/issues/169
+          // https://github.com/matrix-org/matrix-viewer/issues/169
           //
           // {
           //   // In order to jump from the 1st page to the 2nd, we first "jump" forward 4
@@ -1419,7 +1412,7 @@ describe('matrix-public-archive', () => {
           //                                                                          |---jump-fwd-4-messages--->|
           //                                               [page2                     ]
           //   `,
-          //   archiveMessageLimit: 4,
+          //   messageLimit: 4,
           //   startUrl: '/roomid/room1/date/2022/01/04',
           //   page1: {
           //     url: '/roomid/room1/date/2022/01/04',
@@ -1456,7 +1449,7 @@ describe('matrix-public-archive', () => {
                                             |-jump-fwd-3-msg->|
                                       [page2            ]
             `,
-            archiveMessageLimit: 3,
+            messageLimit: 3,
             startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
               url: '/roomid/room1/date/2022/01/02',
@@ -1483,7 +1476,7 @@ describe('matrix-public-archive', () => {
                                       [page1                  ]
               [page2            ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/03',
             page1: {
               url: '/roomid/room1/date/2022/01/03',
@@ -1511,7 +1504,7 @@ describe('matrix-public-archive', () => {
                                                                                    |------------------jump-fwd-8-msg---------------------->|
                                                                     [page2                                                   ]
             `,
-            archiveMessageLimit: 8,
+            messageLimit: 8,
             startUrl: '/roomid/room1/date/2022/01/04',
             page1: {
               url: '/roomid/room1/date/2022/01/04',
@@ -1535,7 +1528,7 @@ describe('matrix-public-archive', () => {
                                                                                          [page1                                                   ]
                                 [page2                                             ]
             `,
-            archiveMessageLimit: 8,
+            messageLimit: 8,
             startUrl: '/roomid/room1/date/2022/01/09',
             page1: {
               url: '/roomid/room1/date/2022/01/09',
@@ -1550,9 +1543,9 @@ describe('matrix-public-archive', () => {
             // Test to make sure we can jump forwards from the 1st page to the 2nd page
             // with too many messages to display on a single day.
             //
-            // We jump forward 4 messages (`archiveMessageLimit`), then back-track to
+            // We jump forward 4 messages (`messageLimit`), then back-track to
             // the nearest hour which starts us from event9, and then we display 5
-            // messages because we fetch one more than `archiveMessageLimit` to
+            // messages because we fetch one more than `messageLimit` to
             // determine overflow.
             testName: 'can jump forward to the next activity and land in too many messages',
             roomDayMessageStructureString: `
@@ -1563,7 +1556,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                       [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
               url: '/roomid/room1/date/2022/01/02',
@@ -1579,11 +1572,11 @@ describe('matrix-public-archive', () => {
             // when there is a multiple-day gap between the end of the first page to the
             // next messages.
             //
-            // We jump forward 4 messages (`archiveMessageLimit`), then back-track to
+            // We jump forward 4 messages (`messageLimit`), then back-track to
             // the nearest hour because even though there is more than a day gap in the
             // jump, there aren't any mesages in between from another day. Because, we
             // back-tracked to the nearest hour, this starts us from event9, and then we
-            // display 5 messages because we fetch one more than `archiveMessageLimit`
+            // display 5 messages because we fetch one more than `messageLimit`
             // to determine overflow.
             testName: 'can jump forward to the next activity when there is a multiple day gap',
             roomDayMessageStructureString: `
@@ -1594,7 +1587,7 @@ describe('matrix-public-archive', () => {
                                             |--jump-fwd-4-messages-->|
                                       [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -1621,7 +1614,7 @@ describe('matrix-public-archive', () => {
                                                                     [page1                       ]
                                       [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/04',
             page1: {
               url: '/roomid/room1/date/2022/01/04',
@@ -1633,9 +1626,9 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // We jump forward 4 messages (`archiveMessageLimit`) to event12, then
+            // We jump forward 4 messages (`messageLimit`) to event12, then
             // back-track to the nearest hour which starts off at event11 and render the
-            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // page with 5 messages because we fetch one more than `messageLimit`
             // to determine overflow.
             testName:
               'can jump forward from one day with too many messages into the next day with too many messages',
@@ -1647,7 +1640,7 @@ describe('matrix-public-archive', () => {
                                                         |---jump-fwd-4-messages--->|
                                                   [page2                    ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
               url: '/roomid/room1/date/2022/01/02',
@@ -1673,7 +1666,7 @@ describe('matrix-public-archive', () => {
                                                                     [page1                       ]
                                       [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/03',
             page1: {
               url: '/roomid/room1/date/2022/01/03',
@@ -1685,9 +1678,9 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // We jump forward 4 messages (`archiveMessageLimit`) to event12, then
+            // We jump forward 4 messages (`messageLimit`) to event12, then
             // back-track to the nearest hour which starts off at event11 and render the
-            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // page with 5 messages because we fetch one more than `messageLimit`
             // to determine overflow.
             testName:
               'can jump forward from one day with too many messages into the same day with too many messages',
@@ -1699,7 +1692,7 @@ describe('matrix-public-archive', () => {
                                                         |---jump-fwd-4-messages--->|
                                                   [page2                    ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02T6:00',
             page1: {
               url: '/roomid/room1/date/2022/01/02T6:00',
@@ -1725,7 +1718,7 @@ describe('matrix-public-archive', () => {
                                                               [page1                      ]
                                 [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02T11:00',
             page1: {
               url: '/roomid/room1/date/2022/01/02T11:00',
@@ -1737,9 +1730,9 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // We jump forward 4 messages (`archiveMessageLimit`) to event12, then
+            // We jump forward 4 messages (`messageLimit`) to event12, then
             // back-track to the nearest hour which starts off at event11 and render the
-            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // page with 5 messages because we fetch one more than `messageLimit`
             // to determine overflow.
             testName:
               'can jump forward from the middle of one day with too many messages into the next day with too many messages',
@@ -1751,7 +1744,7 @@ describe('matrix-public-archive', () => {
                                                         |---jump-fwd-4-messages--->|
                                                   [page2                    ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/02T06:00',
             page1: {
               url: '/roomid/room1/date/2022/01/02T06:00',
@@ -1778,7 +1771,7 @@ describe('matrix-public-archive', () => {
                                                               [page1                      ]
                                 [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/03T06:00',
             page1: {
               url: '/roomid/room1/date/2022/01/03T06:00',
@@ -1803,7 +1796,7 @@ describe('matrix-public-archive', () => {
                                                         [page1                     ]
                           [page2                  ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/03T05:00',
             page1: {
               url: '/roomid/room1/date/2022/01/03T05:00',
@@ -1834,7 +1827,7 @@ describe('matrix-public-archive', () => {
             // More than a minute for each but less than an hour when you multiply this
             // across all of messages
             timeIncrementBetweenMessages: 2 * ONE_MINUTE_IN_MS,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01T01:00',
             page1: {
               url: '/roomid/room1/date/2022/01/01T01:00',
@@ -1863,7 +1856,7 @@ describe('matrix-public-archive', () => {
             // More than a minute for each but less than an hour when you multiply this
             // across all of messages
             timeIncrementBetweenMessages: 2 * ONE_MINUTE_IN_MS,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -1892,7 +1885,7 @@ describe('matrix-public-archive', () => {
             // More than a second for each but less than an minute when you multiply
             // this across all of messages
             timeIncrementBetweenMessages: 2 * ONE_SECOND_IN_MS,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01T00:01',
             page1: {
               url: '/roomid/room1/date/2022/01/01T00:01',
@@ -1921,7 +1914,7 @@ describe('matrix-public-archive', () => {
             // More than a second for each but less than an minute when you multiply
             // this across all of messages
             timeIncrementBetweenMessages: 2 * ONE_SECOND_IN_MS,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -1938,9 +1931,9 @@ describe('matrix-public-archive', () => {
           // because day precision starts off at `T23:59:59.999Z` and jumping forward
           // will always land us in the next day.
           {
-            // We jump forward 4 messages (`archiveMessageLimit`) to event10, then
+            // We jump forward 4 messages (`messageLimit`) to event10, then
             // back-track to the nearest minute which starts off at event9 and render the
-            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // page with 5 messages because we fetch one more than `messageLimit`
             // to determine overflow.
             testName:
               'can jump forward to the next activity when less than an hour between all messages',
@@ -1955,7 +1948,7 @@ describe('matrix-public-archive', () => {
             // More than a minute for each but less than an hour when you multiply this
             // across all of messages
             timeIncrementBetweenMessages: 2 * ONE_MINUTE_IN_MS,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01T00:11',
             page1: {
               url: '/roomid/room1/date/2022/01/01T00:11',
@@ -1967,9 +1960,9 @@ describe('matrix-public-archive', () => {
             },
           },
           {
-            // We jump forward 4 messages (`archiveMessageLimit`) to event10, then
+            // We jump forward 4 messages (`messageLimit`) to event10, then
             // back-track to the nearest second which starts off at event9 and render the
-            // page with 5 messages because we fetch one more than `archiveMessageLimit`
+            // page with 5 messages because we fetch one more than `messageLimit`
             // to determine overflow.
             testName:
               'can jump forward to the next activity when less than an minute between all messages',
@@ -1984,7 +1977,7 @@ describe('matrix-public-archive', () => {
             // More than a second for each but less than an minute when you multiply this
             // across all of messages
             timeIncrementBetweenMessages: 2 * ONE_SECOND_IN_MS,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room1/date/2022/01/01T00:00:11',
             page1: {
               url: '/roomid/room1/date/2022/01/01T00:00:11',
@@ -2000,7 +1993,7 @@ describe('matrix-public-archive', () => {
         const jumpBackwardPredecessorTestCases = [
           {
             // Page2 only shows 4 messages ($event4-7) instead of 5
-            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // (`messageLimit` + 1) because it also has the tombstone event which
             // is hidden
             testName: 'can jump backward from one room to the predecessor room (different day)',
             roomDayMessageStructureString: `
@@ -2010,7 +2003,7 @@ describe('matrix-public-archive', () => {
                                                         [page1                     ]
                                 [page2            ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room2/date/2022/01/03T05:00',
             page1: {
               url: '/roomid/room2/date/2022/01/03T05:00',
@@ -2023,7 +2016,7 @@ describe('matrix-public-archive', () => {
           },
           {
             // Page2 only shows 4 messages ($event4-7) instead of 5
-            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // (`messageLimit` + 1) because it also has the tombstone event which
             // is hidden
             testName: 'can jump backward from one room to the predecessor room (same day)',
             roomDayMessageStructureString: `
@@ -2033,7 +2026,7 @@ describe('matrix-public-archive', () => {
                                                         [page1                     ]
                                 [page2            ]
             `,
-            archiveMessageLimit: 4,
+            messageLimit: 4,
             startUrl: '/roomid/room2/date/2022/01/02T10:00',
             page1: {
               url: '/roomid/room2/date/2022/01/02T10:00',
@@ -2046,7 +2039,7 @@ describe('matrix-public-archive', () => {
           },
           {
             // Page2 only shows 3 messages ($event2-4) instead of 4
-            // (`archiveMessageLimit` + 1) because it also has the tombstone event which
+            // (`messageLimit` + 1) because it also has the tombstone event which
             // is hidden
             testName: 'jumping back before room was created will go down the predecessor chain',
             roomDayMessageStructureString: `
@@ -2056,7 +2049,7 @@ describe('matrix-public-archive', () => {
                                                                                          [page1                ]
                     [page2      ]
             `,
-            archiveMessageLimit: 3,
+            messageLimit: 3,
             startUrl: '/roomid/room4/date/2022/01/08',
             page1: {
               url: '/roomid/room4/date/2022/01/08',
@@ -2070,8 +2063,8 @@ describe('matrix-public-archive', () => {
           // This doesn't work well because of the primordial create room events which
           // we can't control the timestamp of or assert properly in this diagram. If we
           // ever get timestamp massaging on the `/createRoom` endpoint (see
-          // https://github.com/matrix-org/matrix-public-archive/issues/169), we could
-          // make this work by increasing the `archiveMessageLimit` to something that
+          // https://github.com/matrix-org/matrix-viewer/issues/169), we could
+          // make this work by increasing the `messageLimit` to something that
           // would encompass all of the primordial events along with the last few
           // messages.
           //
@@ -2085,7 +2078,7 @@ describe('matrix-public-archive', () => {
           //                                               [page2]
           //                 [page3                  ]
           //   `,
-          //   archiveMessageLimit: 4,
+          //   messageLimit: 4,
           //   startUrl: '/roomid/room2/date/2022/01/03',
           //   page1: {
           //     url: '/roomid/room2/date/2022/01/03',
@@ -2107,11 +2100,11 @@ describe('matrix-public-archive', () => {
             // We jump from event3 which is found as the closest event looking forward
             // from the ts=0 in the successor room because the timestamp massaged events
             // come before `m.room.create` and other primordial events here (related to
-            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
-            // event3, we jump forward 10 messages (`archiveMessageLimit`) to event12,
+            // https://github.com/matrix-org/matrix-viewer/issues/169). From
+            // event3, we jump forward 10 messages (`messageLimit`) to event12,
             // then back-track to the nearest hour which starts off at event11 and try
             // to render the page with 11 messages because we fetch one more than
-            // `archiveMessageLimit` to determine overflow but there aren't enough
+            // `messageLimit` to determine overflow but there aren't enough
             // messages.
             testName: 'can jump forward from one room to the successor room (different day)',
             roomDayMessageStructureString: `
@@ -2122,7 +2115,7 @@ describe('matrix-public-archive', () => {
                           |------------------jump-fwd-10-messages----------------->|
                           [page2                                            ]
             `,
-            archiveMessageLimit: 10,
+            messageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -2137,10 +2130,10 @@ describe('matrix-public-archive', () => {
             // We jump from event8 which is found as the closest event looking forward
             // from the ts=0 in the successor room because the timestamp massaged events
             // come before `m.room.create` and other primordial events here (related to
-            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
-            // event8, we jump forward 10 messages (`archiveMessageLimit`) to the end of
+            // https://github.com/matrix-org/matrix-viewer/issues/169). From
+            // event8, we jump forward 10 messages (`messageLimit`) to the end of
             // the room, then go to the day of the last message which will show us all
-            // messages in room2 because we fetch one more than `archiveMessageLimit` to
+            // messages in room2 because we fetch one more than `messageLimit` to
             // determine overflow which is more messages than room2 has.
             testName: 'can jump forward from one room to the successor room (same day)',
             roomDayMessageStructureString: `
@@ -2151,7 +2144,7 @@ describe('matrix-public-archive', () => {
                                                         |------------------jump-fwd-10-messages----------------------->|
                                                         [page2                                   ]
             `,
-            archiveMessageLimit: 10,
+            messageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/02T05:00',
             page1: {
               url: '/roomid/room1/date/2022/01/02T05:00',
@@ -2166,11 +2159,11 @@ describe('matrix-public-archive', () => {
             // We jump from event3 which is found as the closest event looking forward
             // from the ts=0 in the successor room because the timestamp massaged events
             // come before `m.room.create` and other primordial events here (related to
-            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
-            // event3, we jump forward 10 messages (`archiveMessageLimit`) to event13,
+            // https://github.com/matrix-org/matrix-viewer/issues/169). From
+            // event3, we jump forward 10 messages (`messageLimit`) to event13,
             // then back-track to the nearest hour which starts off at event11 and try
             // to render the page with 11 messages because we fetch one more than
-            // `archiveMessageLimit` to determine overflow but there aren't enough
+            // `messageLimit` to determine overflow but there aren't enough
             // messages.
             testName: 'can jump forward from one room to the successor room (multiple day gap)',
             roomDayMessageStructureString: `
@@ -2181,7 +2174,7 @@ describe('matrix-public-archive', () => {
                           |----------------jump-fwd-10-messages------------------->|
                           [page2                                            ]
             `,
-            archiveMessageLimit: 10,
+            messageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -2200,17 +2193,17 @@ describe('matrix-public-archive', () => {
             // to the successor room and find the closest event from ts=0 looking
             // forward which is event5 because the timestamp massaged events come before
             // `m.room.create` and other primordial events here (related to
-            // https://github.com/matrix-org/matrix-public-archive/issues/169). From
-            // event5, we jump forward 10 messages (`archiveMessageLimit`) to event14,
+            // https://github.com/matrix-org/matrix-viewer/issues/169). From
+            // event5, we jump forward 10 messages (`messageLimit`) to event14,
             // then back-track to the *day* before the last message found which starts off
             // at event6 and try to render the page with 11 messages because we fetch
-            // one more than `archiveMessageLimit` to determine overflow but there
+            // one more than `messageLimit` to determine overflow but there
             // aren't enough messages.
             //
             // For the jump from page3 to page4, we jump forward 10 messages to event16,
             // then back-track to the nearest hour which starts off at event15 and try
             // to render the page with 11 messages because we fetch one more than
-            // `archiveMessageLimit`.
+            // `messageLimit`.
             testName: 'can jump forward from one room to the successor room (across multiple days)',
             roomDayMessageStructureString: `
               [room1            ]     [room2                                                                   ]
@@ -2224,7 +2217,7 @@ describe('matrix-public-archive', () => {
                                             |----------------------jump-fwd-10-messages----------------------->|
                                       [page4                                                            ]
             `,
-            archiveMessageLimit: 10,
+            messageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -2259,7 +2252,7 @@ describe('matrix-public-archive', () => {
                                             |----------------------jump-fwd-10-messages----------------------->|
                                       [page4                                                            ]
             `,
-            archiveMessageLimit: 10,
+            messageLimit: 10,
             startUrl: '/roomid/room1/date/2022/01/01',
             page1: {
               url: '/roomid/room1/date/2022/01/01',
@@ -2289,7 +2282,7 @@ describe('matrix-public-archive', () => {
                     [page1      ]
                                                                                          [page2                ]
             `,
-            archiveMessageLimit: 3,
+            messageLimit: 3,
             startUrl: '/roomid/room1/date/2022/01/02',
             page1: {
               url: '/roomid/room1/date/2022/01/02',
@@ -2386,9 +2379,9 @@ describe('matrix-public-archive', () => {
               it(testTitle, async () => {
                 // The date should be just past midnight so we don't run into inclusive
                 // bounds leaking messages from one day into another.
-                const archiveDate = new Date(Date.UTC(2022, 0, 1, 0, 0, 0, 1));
+                const viewDate = new Date(Date.UTC(2022, 0, 1, 0, 0, 0, 1));
 
-                config.set('archiveMessageLimit', 3);
+                config.set('messageLimit', 3);
 
                 const client = await getTestClientForHs(testMatrixServerUrl1);
                 const roomId = await createTestRoom(client);
@@ -2400,13 +2393,13 @@ describe('matrix-public-archive', () => {
                   // for another page of history
                   numMessages: 10,
                   prefix: `foo`,
-                  timestamp: archiveDate.getTime(),
+                  timestamp: viewDate.getTime(),
                   increment: testCase.durationMinMs,
                 });
                 const fourthEvent = eventMap.get(eventIds[3]);
                 const sixthEvent = eventMap.get(eventIds[5]);
 
-                const jumpUrl = `${matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(roomId, {
+                const jumpUrl = `${matrixViewerURLCreator.jumpUrlForRoom(roomId, {
                   dir: directionValue,
                   currentRangeStartTs: fourthEvent.originServerTs,
                   currentRangeEndTs: sixthEvent.originServerTs,
@@ -2431,17 +2424,17 @@ describe('matrix-public-archive', () => {
       const testCases = [
         {
           testName: 'now is present',
-          archiveDate: nowDate,
+          viewDate: nowDate,
           expectedTemporalContext: 'present',
         },
         {
           testName: 'start of today is present',
-          archiveDate: new Date(getUtcStartOfDayTs(nowDate)),
+          viewDate: new Date(getUtcStartOfDayTs(nowDate)),
           expectedTemporalContext: 'present',
         },
         {
           testName: 'some time today is present',
-          archiveDate: new Date(
+          viewDate: new Date(
             getUtcStartOfDayTs(nowDate) +
               12 * ONE_HOUR_IN_MS +
               30 * ONE_MINUTE_IN_MS +
@@ -2451,7 +2444,7 @@ describe('matrix-public-archive', () => {
         },
         {
           testName: 'past is in the past',
-          archiveDate: new Date('2020-01-01'),
+          viewDate: new Date('2020-01-01'),
           expectedTemporalContext: 'past',
         },
       ];
@@ -2464,30 +2457,27 @@ describe('matrix-public-archive', () => {
 
       testCases.forEach((testCase) => {
         assert(testCase.testName);
-        assert(testCase.archiveDate);
+        assert(testCase.viewDate);
         assert(testCase.expectedTemporalContext);
 
         // Warn if it's close to the end of the UTC day. This test could be a flakey and
         // cause a failure if `expectedTemporalContext` was created just before midnight
-        // (UTC) and we visit the archive after midnight (UTC). The
-        // `X-Date-Temporal-Context` would read as `past` when we expect `present`.
+        // (UTC) and we visit after midnight (UTC). The `X-Date-Temporal-Context` would
+        // read as `past` when we expect `present`.
         if (roundUpTimestampToUtcDay(nowDate) - nowDate.getTime() < 30 * 1000 /* 30 seconds */) {
           // eslint-disable-next-line no-console
           console.warn(
             `Test is being run at the end of the UTC day. This could result in a flakey ` +
               `failure if \`expectedTemporalContext\` was created just before midnight (UTC) ` +
-              `and we visit the archive after midnight (UTC). Since ` +
+              `and we visit after midnight (UTC). Since ` +
               `this is an e2e test we can't control the date/time exactly.`
           );
         }
 
         it(testCase.testName, async () => {
           // Fetch the given page.
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForDate(
-            roomId,
-            testCase.archiveDate
-          );
-          const { res } = await fetchEndpointAsText(archiveUrl);
+          testUrl = matrixViewerURLCreator.roomUrlForDate(roomId, testCase.viewDate);
+          const { res } = await fetchEndpointAsText(testUrl);
 
           const dateTemporalContextHeader = res.headers.get('X-Date-Temporal-Context');
           assert.strictEqual(dateTemporalContextHeader, testCase.expectedTemporalContext);
@@ -2521,7 +2511,7 @@ describe('matrix-public-archive', () => {
         //
         // (we set this here in case we timeout while waiting for the test rooms to
         // appear in the room directory)
-        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl();
+        testUrl = matrixViewerURLCreator.roomDirectoryUrl();
 
         // Try to avoid flakey tests where the homeserver hasn't added the rooms to the
         // room directory yet. This isn't completely robust as it doesn't check that the
@@ -2535,7 +2525,7 @@ describe('matrix-public-archive', () => {
           searchTerm: roomMarsName,
         });
 
-        const { data: roomDirectoryPageHtml } = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryPageHtml } = await fetchEndpointAsText(testUrl);
         const dom = parseHTML(roomDirectoryPageHtml);
 
         const roomsOnPageWithoutSearch = [
@@ -2546,10 +2536,10 @@ describe('matrix-public-archive', () => {
 
         // Then browse the room directory again, this time with the search
         // narrowing down results.
-        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        testUrl = matrixViewerURLCreator.roomDirectoryUrl({
           searchTerm: roomPlanetPrefix,
         });
-        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(testUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         const roomsOnPageWithSearch = [
@@ -2586,7 +2576,7 @@ describe('matrix-public-archive', () => {
 
         // (we set this here in case we timeout while waiting for the test rooms to
         // appear in the room directory)
-        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        testUrl = matrixViewerURLCreator.roomDirectoryUrl({
           homeserver: HOMESERVER_URL_TO_PRETTY_NAME_MAP[testMatrixServerUrl2],
           searchTerm: roomPlanetPrefix,
         });
@@ -2602,7 +2592,7 @@ describe('matrix-public-archive', () => {
           searchTerm: roomYname,
         });
 
-        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(testUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         // Make sure the `?homserver` is selected in the homeserver selector `<select>`
@@ -2653,7 +2643,7 @@ describe('matrix-public-archive', () => {
         //
         // (we set this here in case we timeout while waiting for the test rooms to
         // appear in the room directory)
-        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        testUrl = matrixViewerURLCreator.roomDirectoryUrl({
           searchTerm: roomPlanetPrefix,
         });
 
@@ -2669,7 +2659,7 @@ describe('matrix-public-archive', () => {
           searchTerm: roomMarsName,
         });
 
-        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
+        const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(testUrl);
         const domWithSearch = parseHTML(roomDirectoryWithSearchPageHtml);
 
         const roomsCardsOnPageWithSearch = [
@@ -2730,7 +2720,7 @@ describe('matrix-public-archive', () => {
                 content: {
                   // Just a specific token we can search for in the DOM to make sure
                   // this room does not appear in the room directory.
-                  topic: 'should-not-be-visible-in-archive-room-directory',
+                  topic: 'should-not-be-visible-in-room-directory',
                 },
               },
             ];
@@ -2769,8 +2759,8 @@ describe('matrix-public-archive', () => {
           return roomConfig.name;
         }
 
-        async function checkRoomsOnPage(archiveUrl) {
-          const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(archiveUrl);
+        async function checkRoomsOnPage(testUrl) {
+          const { data: roomDirectoryWithSearchPageHtml } = await fetchEndpointAsText(testUrl);
           const dom = parseHTML(roomDirectoryWithSearchPageHtml);
 
           const roomsCardsOnPageWithSearch = [
@@ -2785,10 +2775,10 @@ describe('matrix-public-archive', () => {
           roomsCardsOnPageWithSearch.forEach((roomCardEl) => {
             assert.match(
               roomCardEl.innerHTML,
-              /^((?!should-not-be-visible-in-archive-room-directory).)*$/,
+              /^((?!should-not-be-visible-in-room-directory).)*$/,
               `Expected not to see any non-world_readable rooms on the page but saw ${roomCardEl.getAttribute(
                 'data-room-id'
-              )} which has "should-not-be-visible-in-archive-room-directory" in the room topic`
+              )} which has "should-not-be-visible-in-room-directory" in the room topic`
             );
           });
 
@@ -2804,7 +2794,7 @@ describe('matrix-public-archive', () => {
           const nextPaginationLink = nextLinkElement.getAttribute('href');
 
           return {
-            archiveUrl,
+            testUrl,
             roomsIdsOnPage,
             previousPaginationLink,
             nextPaginationLink,
@@ -2816,13 +2806,14 @@ describe('matrix-public-archive', () => {
         //
         // (we set this here in case we timeout while waiting for the test rooms to
         // appear in the room directory)
-        archiveUrl = matrixPublicArchiveURLCreator.roomDirectoryUrl({
+        testUrl = matrixViewerURLCreator.roomDirectoryUrl({
           searchTerm: roomPlanetPrefix,
         });
 
         // Try to avoid flakey tests where the homeserver hasn't added the rooms
         // to the room directory yet. This isn't completely robust as it doesn't check
         // that all rooms are visible but it's better than nothing.
+        // Check the first and last rooms as a best-effort thing.
         await waitForResultsInHomeserverRoomDirectory({
           client,
           searchTerm: visibleRoomConfigurations[0].name,
@@ -2833,7 +2824,7 @@ describe('matrix-public-archive', () => {
         });
 
         // Visit a sequence of pages using the pagination links: 1 -> 2 -> 3 -> 2 -> 1
-        const firstPage = await checkRoomsOnPage(archiveUrl);
+        const firstPage = await checkRoomsOnPage(testUrl);
         const secondPage = await checkRoomsOnPage(firstPage.nextPaginationLink);
         const thirdPage = await checkRoomsOnPage(secondPage.nextPaginationLink);
         const backtrackSecondPage = await checkRoomsOnPage(thirdPage.previousPaginationLink);
@@ -2851,13 +2842,13 @@ describe('matrix-public-archive', () => {
         );
 
         // Ensure that we see the same rooms in the same order going backward that we saw going forward
-        archiveUrl = backtrackSecondPage.archiveUrl;
+        testUrl = backtrackSecondPage.testUrl;
         assert.deepStrictEqual(
           backtrackSecondPage.roomsIdsOnPage.map(roomIdToRoomName),
           secondPage.roomsIdsOnPage.map(roomIdToRoomName),
           'From the third page, going backward to second page should show the same rooms that we saw on the second page when going forward'
         );
-        archiveUrl = backtrackFirstPage.archiveUrl;
+        testUrl = backtrackFirstPage.testUrl;
         assert.deepStrictEqual(
           backtrackFirstPage.roomsIdsOnPage.map(roomIdToRoomName),
           firstPage.roomsIdsOnPage.map(roomIdToRoomName),
@@ -2867,7 +2858,7 @@ describe('matrix-public-archive', () => {
     });
 
     describe('access controls', () => {
-      it('not allowed to view private room even when the archiver user is in the room', async () => {
+      it('not allowed to view private room even when the bot user is in the room', async () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client, {
           preset: 'private_chat',
@@ -2875,11 +2866,11 @@ describe('matrix-public-archive', () => {
         });
 
         try {
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-          await fetchEndpointAsText(archiveUrl);
+          testUrl = matrixViewerURLCreator.roomUrl(roomId);
+          await fetchEndpointAsText(testUrl);
           assert.fail(
             new TestError(
-              'We expect the request to fail with a 403 since the archive should not be able to view a private room  but it succeeded'
+              'We expect the request to fail with a 403 since we should not be able to view a private room but it succeeded'
             )
           );
         } catch (err) {
@@ -2898,10 +2889,10 @@ describe('matrix-public-archive', () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client);
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        testUrl = matrixViewerURLCreator.roomUrl(roomId);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the `<meta name="robots" ...>` tag does NOT exist on the
         // page telling search engines not to index it
@@ -2912,8 +2903,8 @@ describe('matrix-public-archive', () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client, {
           // Set as `shared` since it's the next most permissive history visibility
-          // after `world_readable` but still not allowed to be accesible in the
-          // archive.
+          // after `world_readable` but still not allowed to be accesible in Matrix
+          // Viewer.
           initial_state: [
             {
               type: 'm.room.history_visibility',
@@ -2926,11 +2917,11 @@ describe('matrix-public-archive', () => {
         });
 
         try {
-          archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-          await fetchEndpointAsText(archiveUrl);
+          testUrl = matrixViewerURLCreator.roomUrl(roomId);
+          await fetchEndpointAsText(testUrl);
           assert.fail(
             new TestError(
-              'We expect the request to fail with a 403 since the archive should not be able to view a non-world_readable room but it succeeded'
+              'We expect the request to fail with a 403 since we should not be able to view a non-world_readable room but it succeeded'
             )
           );
         } catch (err) {
@@ -2952,10 +2943,10 @@ describe('matrix-public-archive', () => {
         const client = await getTestClientForHs(testMatrixServerUrl1);
         const roomId = await createTestRoom(client);
 
-        archiveUrl = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomId);
-        const { data: archivePageHtml } = await fetchEndpointAsText(archiveUrl);
+        testUrl = matrixViewerURLCreator.roomUrl(roomId);
+        const { data: pageHtml } = await fetchEndpointAsText(testUrl);
 
-        const dom = parseHTML(archivePageHtml);
+        const dom = parseHTML(pageHtml);
 
         // Make sure the `<meta name="robots" ...>` tag exists on the page
         // telling search engines not to index it

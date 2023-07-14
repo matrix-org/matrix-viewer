@@ -15,7 +15,7 @@ const {
   areTimestampsFromSameUtcHour,
   areTimestampsFromSameUtcMinute,
   areTimestampsFromSameUtcSecond,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+} = require('matrix-viewer-shared/lib/timestamp-utilities');
 
 describe('timestamp-utilities', () => {
   describe('roundUpTimestampToUtcX', () => {

@@ -6,7 +6,7 @@ const urlJoin = require('url-join');
 const StatusError = require('../errors/status-error');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
 const getServerNameFromMatrixRoomIdOrAlias = require('./get-server-name-from-matrix-room-id-or-alias');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
 
 const config = require('../config');
 const basePath = config.get('basePath');
@@ -14,7 +14,7 @@ assert(basePath);
 const matrixServerUrl = config.get('matrixServerUrl');
 assert(matrixServerUrl);
 
-const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+const matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
 
 async function ensureRoomJoined(
   accessToken,
@@ -52,9 +52,9 @@ async function ensureRoomJoined(
         reason:
           `Joining room to check history visibility. ` +
           `If your room is public with shared or world readable history visibility, ` +
-          `it will be accessible on ${matrixPublicArchiveURLCreator.roomDirectoryUrl()}. ` +
+          `it will be accessible on ${matrixViewerURLCreator.roomDirectoryUrl()}. ` +
           `See the FAQ for more details: ` +
-          `https://github.com/matrix-org/matrix-public-archive/blob/main/docs/faq.md#why-did-the-archive-bot-join-my-room`,
+          `https://github.com/matrix-org/matrix-viewer/blob/main/docs/faq.md#why-did-the-bot-join-my-room`,
       },
     });
     assert(
@@ -63,7 +63,7 @@ async function ensureRoomJoined(
     );
     return joinData.room_id;
   } catch (err) {
-    throw new StatusError(403, `Archiver is unable to join room: ${err.message}`);
+    throw new StatusError(403, `Bot is unable to join room: ${err.message}`);
   }
 }
 

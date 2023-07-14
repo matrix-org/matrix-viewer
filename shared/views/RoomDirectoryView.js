@@ -2,7 +2,7 @@
 
 const { TemplateView, ListView, text } = require('hydrogen-view-sdk');
 
-const ModalView = require('matrix-public-archive-shared/views/ModalView');
+const ModalView = require('matrix-viewer-shared/views/ModalView');
 const HomeserverSelectionModalContentView = require('./HomeserverSelectionModalContentView');
 const MatrixLogoView = require('./MatrixLogoView');
 const RoomCardView = require('./RoomCardView');
@@ -117,7 +117,7 @@ class RoomDirectoryView extends TemplateView {
       t.a(
         {
           className: 'RoomDirectoryView_matrixLogo',
-          title: 'Matrix Public Archive',
+          title: 'Matrix Viewer',
           href: vm.roomDirectoryUrl,
         },
         [t.view(new MatrixLogoView(vm))]
@@ -217,9 +217,9 @@ class RoomDirectoryView extends TemplateView {
                 [
                   t.h3('❗ Unable to fetch rooms from room directory'),
                   t.p({}, [
-                    `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the homeserver that the archive is pulling from (${vm.homeserverName}). You can try adjusting your search or select a different homeserver to look at. If this problem persists, please check the homeserver status and with a homeserver admin first, then open a `,
+                    `This may be a temporary problem with the homeserver where the room directory lives (${vm.pageSearchParameters.homeserver}) or the remote homeserver that we are pulling from (${vm.homeserverName}). You can try adjusting your search or select a different homeserver to look at. If this problem persists, please check the homeserver status and with a homeserver admin first, then open a `,
                     t.a(
-                      { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
+                      { href: 'https://github.com/matrix-org/matrix-viewer/issues/new' },
                       'bug report'
                     ),
                     ` with this whole section copy-pasted into the issue.`,
@@ -248,7 +248,7 @@ class RoomDirectoryView extends TemplateView {
                     t.p({}, [
                       `We're showing as much detail as we know so you're not frustrated by a generic message with no feedback on how to move forward. This also makes it easier for you to write a `,
                       t.a(
-                        { href: 'https://github.com/matrix-org/matrix-public-archive/issues/new' },
+                        { href: 'https://github.com/matrix-org/matrix-viewer/issues/new' },
                         'bug report'
                       ),
                       ` with all the details necessary for us to triage it.`,
@@ -256,10 +256,7 @@ class RoomDirectoryView extends TemplateView {
                     t.p({}, t.strong(`Isn't this a security risk?`)),
                     t.p({}, [
                       `Not really. Usually, people are worried about returning details because it makes it easier for people to probe the system by getting better feedback about what's going wrong to craft exploits. But the `,
-                      t.a(
-                        { href: 'https://github.com/matrix-org/matrix-public-archive' },
-                        'Matrix Public Archive'
-                      ),
+                      t.a({ href: 'https://github.com/matrix-org/matrix-viewer' }, 'Matrix Viewer'),
                       ` is already open source so the details of the app are already public and you can run your own instance against the same homeservers that we are to find problems.`,
                     ]),
                     t.p({}, [
@@ -273,7 +270,7 @@ class RoomDirectoryView extends TemplateView {
                     t.p({}, [
                       `If you have ideas on how we can better present these errors, please `,
                       t.a(
-                        { href: 'https://github.com/matrix-org/matrix-public-archive/issues' },
+                        { href: 'https://github.com/matrix-org/matrix-viewer/issues' },
                         'create an issue'
                       ),
                       `.`,

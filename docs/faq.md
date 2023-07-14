@@ -2,14 +2,14 @@
 
 ## Can I run my own instance?
 
-Yes! We host a public canonical version of the Matrix Public Archive at
-[archive.matrix.org](https://archive.matrix.org/) that everyone can use but feel free to
+Yes! We host a public canonical version of the Matrix Viewer at
+_(incoming)_ that everyone can use but feel free to
 also run your own instance (setup instructions in the [readme](../README.md)).
 
-## How is this different from [`view.matrix.org`](https://view.matrix.org/)?
+## How is this different from the `matrix-static` project?
 
-https://view.matrix.org/ (https://github.com/matrix-org/matrix-static) already existed
-before the Matrix Public Archive but there was some desire to make something with more
+[Matrix Static](https://github.com/matrix-org/matrix-static) already existed
+before the Matrix Viewer but there was some desire to make something with more
 Element-feeling polish and loading faster (avoid the slow 502's errors that are frequent
 on `view.matrix.org`).
 
@@ -17,19 +17,22 @@ And with the introduction of the jump to date API via
 [MSC3030](https://github.com/matrix-org/matrix-spec-proposals/pull/3030), we could show
 messages from any given date and day-by-day navigation.
 
-## Why did the archive bot join my room?
+The Matrix Viewer project has since replaced the `matrix-static` project on
+[`view.matrix.org`](https://view.matrix.org/).
+
+## Why did the bot join my room?
 
 Only Matrix rooms with `world_readable` [history
 visibility](https://spec.matrix.org/latest/client-server-api/#room-history-visibility)
-are accessible in the Matrix Public Archive and indexed by search engines.
+are accessible in the Matrix Viewer and indexed by search engines.
 
-But the archive bot (`@archive:matrix.org`) will join any public room because it doesn't
+But the bot (`@view:matrix.org`) will join any public room because it doesn't
 know the history visibility without first joining. Any room that doesn't have
 `world_readable` history visibility will lead a `403 Forbidden`.
 
-The Matrix Public Archive doesn't hold onto any data (it's
+The Matrix Viewer hold onto any data (it's
 stateless) and requests the messages from the homeserver every time. The
-[archive.matrix.org](https://archive.matrix.org/) instance has some caching in place, 5
+[view.matrix.org](https://view.matrix.org/) instance has some caching in place, 5
 minutes for the current day, and 2 days for past content.
 
 See the [opt out
@@ -40,22 +43,21 @@ for more details.
 
 Only Matrix rooms with `world_readable` [history
 visibility](https://spec.matrix.org/latest/client-server-api/#room-history-visibility)
-are accessible in the Matrix Public Archive and indexed by search engines. One easy way
+are accessible in the Matrix Viewer and indexed by search engines. One easy way
 to opt-out is to change your rooms history visibility to something else if you don't
 intend for your room be world readable.
 
 Dedicated opt-out controls are being tracked in
-[#47](https://github.com/matrix-org/matrix-public-archive/issues/47).
+[#47](https://github.com/matrix-org/matrix-viewer/issues/47).
 
-As a workaround for [archive.matrix.org](https://archive.matrix.org/), you can ban the
-`@archive:matrix.org` user if you don't want your room content to be shown in the
-archive at all.
+As a workaround for [view.matrix.org](https://view.matrix.org/), you can ban the
+`@view:matrix.org` user if you don't want your room content to be shown at all.
 
-### Why does the archive user join rooms instead peeking in the room or using guests?
+### Why does the bot user join rooms instead peeking in the room or using guests?
 
-Since the archive only displays rooms with `world_readable` history visibility, we could
+Since Matrix Viewer only displays rooms with `world_readable` history visibility, we could
 peek into the rooms without joining. This is being explored in
-[#272](https://github.com/matrix-org/matrix-public-archive/pull/272). But peeking
+[#272](https://github.com/matrix-org/matrix-viewer/pull/272). But peeking
 doesn't work when the server doesn't know about the room already (this is commonly
 referred to as federated peeking) which is why we have to fallback to joining the room
 in any case. We could solve the federated peeking problem and avoid the join with
@@ -64,7 +66,7 @@ to check whether the room is `world_readable` even over federation.
 
 Guests are completely separate concept and controlled by the `m.room.guest_access` state
 event in the room. Guest access is also a much different ask than read-only access since
-guests can also send messages in the room which isn't always desirable. The archive bot
+guests can also send messages in the room which isn't always desirable. The bot
 is read-only and does not send messages.
 
 ## Technical details
@@ -72,7 +74,7 @@ is read-only and does not send messages.
 The main readme has a [technical overview](../README.md#technical-overview) of the
 project. Here are a few more details.
 
-### How do I figure out what version of the Matrix Public Archive is running?
+### How do I figure out what version of the Matrix Viewer is running?
 
 Just visit the `/health-check` endpoint which will return information like the following:
 
@@ -86,11 +88,11 @@ Just visit the `/health-check` endpoint which will return information like the f
 }
 ```
 
-### How does the archive room URL relate to what is displayed on the page?
+### How does the room URL relate to what is displayed on the page?
 
 We start the end of the date/time specified in the URL looking backward up to the limit.
 
 ### Why does the time selector only appear for some pages?
 
 The time selector only appears for pages that have a lot of messages on a given
-day/hour/minute/second (more than the configured `archiveMessageLimit`).
+day/hour/minute/second (more than the configured `messageLimit`).

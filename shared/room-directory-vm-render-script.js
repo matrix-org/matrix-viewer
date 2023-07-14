@@ -3,38 +3,38 @@
 // Isomorphic script that runs in the browser and on the server for SSR (needs
 // browser context) that renders Hydrogen to the `document.body`.
 //
-// Data is passed in via `window.matrixPublicArchiveContext`
+// Data is passed in via `window.matrixViewerContext`
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+const assert = require('matrix-viewer-shared/lib/assert');
 const { Platform, Navigation, createRouter } = require('hydrogen-view-sdk');
 
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
-const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
-const redirectIfRoomAliasInHash = require('matrix-public-archive-shared/lib/redirect-if-room-alias-in-hash');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
+const MatrixViewerHistory = require('matrix-viewer-shared/lib/matrix-viewer-history');
+const supressBlankAnchorsReloadingThePage = require('matrix-viewer-shared/lib/supress-blank-anchors-reloading-the-page');
+const redirectIfRoomAliasInHash = require('matrix-viewer-shared/lib/redirect-if-room-alias-in-hash');
 
-const RoomDirectoryView = require('matrix-public-archive-shared/views/RoomDirectoryView');
-const RoomDirectoryViewModel = require('matrix-public-archive-shared/viewmodels/RoomDirectoryViewModel');
+const RoomDirectoryView = require('matrix-viewer-shared/views/RoomDirectoryView');
+const RoomDirectoryViewModel = require('matrix-viewer-shared/viewmodels/RoomDirectoryViewModel');
 
-const rooms = window.matrixPublicArchiveContext.rooms;
+const rooms = window.matrixViewerContext.rooms;
 assert(rooms);
-const roomFetchError = window.matrixPublicArchiveContext.roomFetchError;
-const nextPaginationToken = window.matrixPublicArchiveContext.nextPaginationToken;
-const prevPaginationToken = window.matrixPublicArchiveContext.prevPaginationToken;
-const pageSearchParameters = window.matrixPublicArchiveContext.pageSearchParameters;
-const config = window.matrixPublicArchiveContext.config;
+const roomFetchError = window.matrixViewerContext.roomFetchError;
+const nextPaginationToken = window.matrixViewerContext.nextPaginationToken;
+const prevPaginationToken = window.matrixViewerContext.prevPaginationToken;
+const pageSearchParameters = window.matrixViewerContext.pageSearchParameters;
+const config = window.matrixViewerContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 assert(config.matrixServerName);
 assert(config.basePath);
 
-const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(config.basePath);
+const matrixViewerURLCreator = new MatrixViewerURLCreator(config.basePath);
 
 supressBlankAnchorsReloadingThePage();
 
 let roomDirectoryViewModel;
 let isRedirecting = false;
-isRedirecting = redirectIfRoomAliasInHash(matrixPublicArchiveURLCreator, () => {
+isRedirecting = redirectIfRoomAliasInHash(matrixViewerURLCreator, () => {
   isRedirecting = true;
   if (roomDirectoryViewModel) {
     roomDirectoryViewModel.setPageRedirectingFromUrlHash(true);
@@ -69,10 +69,10 @@ async function mountHydrogen() {
   const navigation = new Navigation(allowsChild);
   platform.setNavigation(navigation);
 
-  const archiveHistory = new ArchiveHistory(`#`);
+  const matrixViewerHistory = new MatrixViewerHistory(`#`);
   const urlRouter = createRouter({
     navigation,
-    history: archiveHistory,
+    history: matrixViewerHistory,
   });
   // Make it listen to changes from the history instance. And populate the
   // `Navigation` with path segments to work from so `href`'s rendered on the
@@ -83,12 +83,12 @@ async function mountHydrogen() {
     // Hydrogen options
     navigation: navigation,
     urlRouter: urlRouter,
-    history: archiveHistory,
+    history: matrixViewerHistory,
     // Our options
     basePath: config.basePath,
     homeserverUrl: config.matrixServerUrl,
     homeserverName: config.matrixServerName,
-    matrixPublicArchiveURLCreator,
+    matrixViewerURLCreator,
     rooms,
     roomFetchError,
     pageSearchParameters,

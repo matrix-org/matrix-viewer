@@ -4,7 +4,7 @@ const assert = require('assert');
 const urlJoin = require('url-join');
 const { fetchEndpointAsJson, fetchEndpoint } = require('../../server/lib/fetch-endpoint');
 const getServerNameFromMatrixRoomIdOrAlias = require('../../server/lib/matrix-utils/get-server-name-from-matrix-room-id-or-alias');
-const { MS_LOOKUP } = require('matrix-public-archive-shared/lib/reference-values');
+const { MS_LOOKUP } = require('matrix-viewer-shared/lib/reference-values');
 const { ONE_SECOND_IN_MS } = MS_LOOKUP;
 
 const config = require('../../server/lib/config');
@@ -52,7 +52,7 @@ async function getTestClientForAs() {
   return {
     homeserverUrl: testMatrixServerUrl1,
     accessToken: matrixAccessToken,
-    userId: '@archiver:hs1',
+    userId: '@view:hs1',
   };
 }
 
@@ -212,7 +212,7 @@ async function upgradeTestRoom({
   }
 
   // TODO: Pass `timestamp` massaging option to `createTestRoom()` when it supports it,
-  // see https://github.com/matrix-org/matrix-public-archive/issues/169
+  // see https://github.com/matrix-org/matrix-viewer/issues/169
   const newRoomid = await createTestRoom(client, createOptions);
 
   // Now send the tombstone event pointing from the old room to the new room

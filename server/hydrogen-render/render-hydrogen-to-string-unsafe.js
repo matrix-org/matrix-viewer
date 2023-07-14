@@ -96,7 +96,7 @@ async function _renderHydrogenToStringUnsafe(renderOptions) {
   }
 
   // Define this for the SSR context
-  dom.window.matrixPublicArchiveContext = {
+  dom.window.matrixViewerContext = {
     ...renderOptions.vmRenderContext,
   };
 

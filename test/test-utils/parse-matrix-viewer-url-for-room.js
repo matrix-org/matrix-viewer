@@ -2,11 +2,11 @@
 
 const {
   VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
-} = require('matrix-public-archive-shared/lib/reference-values');
+} = require('matrix-viewer-shared/lib/reference-values');
 
-// http://archive.matrix.org/r/some-room:matrix.org/date/2022/11/16T23:59:59?at=$xxx
-function parseArchiveUrlForRoom(archiveUrlForRoom) {
-  const urlObj = new URL(archiveUrlForRoom);
+// http://view.matrix.org/r/some-room:matrix.org/date/2022/11/16T23:59:59?at=$xxx
+function parseMatrixViewerUrlForRoom(roomUrl) {
+  const urlObj = new URL(roomUrl);
   const urlPathname = urlObj.pathname;
 
   const [_match, roomIdOrAliasDescriptor, roomIdOrAliasUrlPart, urlDateTime] = urlPathname.match(
@@ -26,4 +26,4 @@ function parseArchiveUrlForRoom(archiveUrlForRoom) {
   };
 }
 
-module.exports = parseArchiveUrlForRoom;
+module.exports = parseMatrixViewerUrlForRoom;

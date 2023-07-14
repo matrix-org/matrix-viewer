@@ -2,23 +2,23 @@
 
 const { ViewModel } = require('hydrogen-view-sdk');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+const assert = require('matrix-viewer-shared/lib/assert');
 
 class CalendarViewModel extends ViewModel {
   constructor(options) {
     super(options);
-    const { activeDate, calendarDate, room, matrixPublicArchiveURLCreator } = options;
+    const { activeDate, calendarDate, room, matrixViewerURLCreator } = options;
     assert(activeDate);
     assert(calendarDate);
     assert(room);
-    assert(matrixPublicArchiveURLCreator);
+    assert(matrixViewerURLCreator);
 
-    // The day being shown in the archive
+    // The day being shown
     this._activeDate = activeDate;
     // The month displayed in the calendar
     this._calendarDate = calendarDate;
     this._room = room;
-    this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
+    this._matrixViewerURLCreator = matrixViewerURLCreator;
   }
 
   get activeDate() {
@@ -37,8 +37,8 @@ class CalendarViewModel extends ViewModel {
     this.emitChange('calendarDate');
   }
 
-  archiveUrlForDate(date) {
-    return this._matrixPublicArchiveURLCreator.archiveUrlForDate(
+  roomUrlForDate(date) {
+    return this._matrixViewerURLCreator.roomUrlForDate(
       this._room.canonicalAlias || this._room.id,
       date
     );

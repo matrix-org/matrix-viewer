@@ -7,7 +7,7 @@ const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 const StatusError = require('../lib/errors/status-error');
 
-const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
+const redirectToCorrectRoomUrlIfBadSigil = require('../middleware/redirect-to-correct-room-url-if-bad-sigil-middleware');
 const identifyRoute = require('../middleware/identify-route-middleware');
 
 const { HTTPResponseError } = require('../lib/fetch-endpoint');
@@ -25,15 +25,15 @@ const getMessagesResponseFromEventId = require('../lib/matrix-utils/get-messages
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
 const setHeadersForDateTemporalContext = require('../lib/set-headers-for-date-temporal-context');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const { mxcUrlToHttpThumbnail } = require('matrix-public-archive-shared/lib/mxc-url-to-http');
-const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
+const { mxcUrlToHttpThumbnail } = require('matrix-viewer-shared/lib/mxc-url-to-http');
+const checkTextForNsfw = require('matrix-viewer-shared/lib/check-text-for-nsfw');
 const {
   MS_LOOKUP,
   TIME_PRECISION_VALUES,
   DIRECTION,
   VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP,
-} = require('matrix-public-archive-shared/lib/reference-values');
+} = require('matrix-viewer-shared/lib/reference-values');
 const { ONE_DAY_IN_MS, ONE_HOUR_IN_MS, ONE_MINUTE_IN_MS, ONE_SECOND_IN_MS } = MS_LOOKUP;
 const {
   roundUpTimestampToUtcDay,
@@ -48,7 +48,7 @@ const {
   areTimestampsFromSameUtcHour,
   areTimestampsFromSameUtcMinute,
   areTimestampsFromSameUtcSecond,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+} = require('matrix-viewer-shared/lib/timestamp-utilities');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -58,7 +58,7 @@ assert(matrixServerUrl);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 
-const matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+const matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
 
 const router = express.Router({
   caseSensitive: true,
@@ -69,10 +69,10 @@ const router = express.Router({
 const validSigilList = Object.values(VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP);
 const sigilRe = new RegExp(`^(${validSigilList.join('|')})`);
 
-function getErrorStringForTooManyMessages(archiveMessageLimit) {
+function getErrorStringForTooManyMessages(messageLimit) {
   const message =
     `Too many messages were sent all within a second for us to display ` +
-    `(more than ${archiveMessageLimit} in one second). We're unable to redirect you to ` +
+    `(more than ${messageLimit} in one second). We're unable to redirect you to ` +
     `a smaller time range to view them without losing a few between each page. ` +
     `Since this is probably pretty rare, we've decided not to support it for now.`;
   return message;
@@ -88,7 +88,7 @@ function getRoomIdOrAliasFromReq(req) {
   const sigil = VALID_ENTITY_DESCRIPTOR_TO_SIGIL_MAP[entityDescriptor];
   if (!sigil) {
     throw new Error(
-      `Unknown entityDescriptor=${entityDescriptor} has no sigil. This is an error with the Matrix Public Archive itself (please open an issue).`
+      `Unknown entityDescriptor=${entityDescriptor} has no sigil. This is an error with the Matrix Viewer itself (please open an issue).`
     );
   }
 
@@ -96,7 +96,7 @@ function getRoomIdOrAliasFromReq(req) {
 }
 
 // eslint-disable-next-line max-statements, complexity
-function parseArchiveRangeFromReq(req) {
+function parseDateTimeInfoFromReq(req) {
   const yyyy = parseInt(req.params.yyyy, 10);
   // Month is the only zero-based index in this group
   const mm = parseInt(req.params.mm, 10) - 1;
@@ -165,11 +165,11 @@ function parseArchiveRangeFromReq(req) {
   };
 }
 
-router.use(redirectToCorrectArchiveUrlIfBadSigil);
+router.use(redirectToCorrectRoomUrlIfBadSigil);
 
 router.get(
   '/',
-  identifyRoute('app-archive-room-index'),
+  identifyRoute('app-room-index'),
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
 
@@ -199,7 +199,7 @@ router.get(
 
     // Redirect to a day with messages
     res.redirect(
-      matrixPublicArchiveURLCreator.archiveUrlForDate(roomIdOrAlias, new Date(originServerTs), {
+      matrixViewerURLCreator.roomUrlForDate(roomIdOrAlias, new Date(originServerTs), {
         // We can avoid passing along the `via` query parameter because we already
         // joined the room above (see `ensureRoomJoined`).
         //
@@ -211,7 +211,7 @@ router.get(
 
 router.get(
   '/event/:eventId',
-  identifyRoute('app-archive-room-event'),
+  identifyRoute('app-room-event'),
   asyncHandler(async function (req, res) {
     // TODO: Fetch event to get `origin_server_ts` and redirect to
     // /!roomId/2022/01/01?at=$eventId
@@ -221,7 +221,7 @@ router.get(
 
 router.get(
   '/jump',
-  identifyRoute('app-archive-room-jump'),
+  identifyRoute('app-room-jump'),
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const roomIdOrAlias = getRoomIdOrAliasFromReq(req);
@@ -289,7 +289,7 @@ router.get(
     try {
       // We pull this fresh from the config for each request to ensure we have an
       // updated value between each e2e test
-      const archiveMessageLimit = config.get('archiveMessageLimit');
+      const messageLimit = config.get('messageLimit');
 
       let roomCreateEventId;
       // Find the closest event to the given timestamp
@@ -348,9 +348,9 @@ router.get(
       // the next chunk in the desired direction.
       // ==============================
       //
-      // When jumping backwards, since a given room archive URL represents the end of
-      // the day/time-period looking backward (scroll is also anchored to the bottom),
-      // we just need to move the user to the time-period just prior the current one.
+      // When jumping backwards, since a given room URL represents the end of the
+      // day/time-period looking backward (scroll is also anchored to the bottom), we
+      // just need to move the user to the time-period just prior the current one.
       //
       // We are trying to avoid sending the user to the same time period they were just
       // viewing. i.e, if they were visiting `/2020/01/02T16:00:00` (displays messages
@@ -364,7 +364,7 @@ router.get(
         // We choose `currentRangeStartTs` instead of `ts` (the jump point) because
         // TODO: why? and we don't choose `currentRangeEndTs` because TODO: why? - I
         // feel like I can't justify this, see
-        // https://github.com/matrix-org/matrix-public-archive/pull/167#discussion_r1170850432
+        // https://github.com/matrix-org/matrix-viewer/pull/167#discussion_r1170850432
         const fromSameDay =
           tsForClosestEvent && areTimestampsFromSameUtcDay(currentRangeStartTs, tsForClosestEvent);
         const fromSameHour =
@@ -414,7 +414,7 @@ router.get(
         // We don't need to do anything. The next closest event is far enough away
         // (greater than 1 day) where we don't need to worry about the URL at all and
         // can just render whatever day that the closest event is from because the
-        // archives biggest time-period represented in the URL is a day.
+        // viewers biggest time-period represented in the URL is a day.
         //
         // We can display more than a day of content at a given URL (imagine lots of a
         // quiet days in a room), but the URL will never represent a time-period
@@ -426,7 +426,7 @@ router.get(
       }
       // When jumping forwards, the goal is to go forward 100 messages, so that when we
       // view the room at that point going backwards 100 messages (which is how the
-      // archive works for any given date from the archive URL), we end up at the
+      // viewer works for any given date from the viewer URL), we end up at the
       // perfect continuation spot in the room (seamless).
       //
       // XXX: This is flawed in the fact that when we go `/messages?dir=b` later, it
@@ -446,7 +446,7 @@ router.get(
           roomId,
           eventId: eventIdForClosestEvent,
           dir: DIRECTION.forward,
-          limit: archiveMessageLimit,
+          limit: messageLimit,
           abortSignal: req.abortSignal,
         });
 
@@ -500,7 +500,7 @@ router.get(
 
         // Back-track from the last message timestamp to the nearest date boundary.
         // Because we're back-tracking a couple events here, when we paginate back out
-        // by the `archiveMessageLimit` later in the room route, it will gurantee some
+        // by the `messageLimit` later in the room route, it will gurantee some
         // overlap with the previous page we jumped from so we don't lose any messages
         // in the gap.
         //
@@ -511,11 +511,11 @@ router.get(
         // the same timestamp and we will lose messages in the gap because it displays
         // more than we thought.
         //
-        // If the `/messages` response returns less than the `archiveMessageLimit`
+        // If the `/messages` response returns less than the `messageLimit`
         // looking forwards, it means we're looking at the latest events in the room. We
         // can simply just display the day that the latest event occured on or the given
         // rangeEnd (whichever is later).
-        const haveReachedLatestMessagesInRoom = messageResData.chunk?.length < archiveMessageLimit;
+        const haveReachedLatestMessagesInRoom = messageResData.chunk?.length < messageLimit;
         if (haveReachedLatestMessagesInRoom) {
           const latestDesiredTs = Math.max(currentRangeEndTs, tsOfLastMessage);
           const latestDesiredDate = new Date(latestDesiredTs);
@@ -561,9 +561,7 @@ router.get(
           // 501 Not Implemented: the server does not support the functionality required
           // to fulfill the request
           res.status(501);
-          res.send(
-            `/jump ran into a problem: ${getErrorStringForTooManyMessages(archiveMessageLimit)}`
-          );
+          res.send(`/jump ran into a problem: ${getErrorStringForTooManyMessages(messageLimit)}`);
           return;
         }
       }
@@ -661,7 +659,7 @@ router.get(
           // Since we're going backwards, we already know where to go so we can navigate
           // straight there.
           res.redirect(
-            matrixPublicArchiveURLCreator.archiveUrlForDate(
+            matrixViewerURLCreator.roomUrlForDate(
               predecessorRoomId,
               // XXX: We should probably go fetch and use the timestamp from
               // `predecessorLastKnownEventId` here but that requires an extra
@@ -688,7 +686,7 @@ router.get(
           if (successorRoomId) {
             // Jump to the successor room and continue at the first event of the room
             res.redirect(
-              matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(successorRoomId, {
+              matrixViewerURLCreator.jumpUrlForRoom(successorRoomId, {
                 dir: DIRECTION.forward,
                 currentRangeStartTs: 0,
                 currentRangeEndTs: 0,
@@ -731,7 +729,7 @@ router.get(
     }
 
     // Redirect to a day with messages
-    const archiveUrlToRedirecTo = matrixPublicArchiveURLCreator.archiveUrlForDate(
+    const urlToRedirecTo = matrixViewerURLCreator.roomUrlForDate(
       roomIdOrAlias,
       new Date(newOriginServerTs),
       {
@@ -740,7 +738,7 @@ router.get(
         preferredPrecision,
       }
     );
-    res.redirect(archiveUrlToRedirecTo);
+    res.redirect(urlToRedirecTo);
   })
 );
 
@@ -750,7 +748,7 @@ router.get(
   // `path-to-regex` bug where the `?` wasn't attaching to the capture group, see
   // https://github.com/pillarjs/path-to-regexp/issues/287
   '/date/:yyyy(\\d{4})/:mm(\\d{2})/:dd(\\d{2}):time(T\\d\\d?:\\d\\d?((:\\d\\d?)?))?',
-  identifyRoute('app-archive-room-date'),
+  identifyRoute('app-room-date'),
   // eslint-disable-next-line max-statements, complexity
   asyncHandler(async function (req, res) {
     const nowTs = Date.now();
@@ -758,16 +756,16 @@ router.get(
 
     // We pull this fresh from the config for each request to ensure we have an
     // updated value between each e2e test
-    const archiveMessageLimit = config.get('archiveMessageLimit');
-    assert(archiveMessageLimit);
+    const messageLimit = config.get('messageLimit');
+    assert(messageLimit);
     // Synapse has a max `/messages` limit of 1000
     assert(
-      archiveMessageLimit <= 999,
-      'archiveMessageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
+      messageLimit <= 999,
+      'messageLimit needs to be in range [1, 999]. We can only get 1000 messages at a time from Synapse and we need a buffer of at least one to see if there are too many messages on a given day so you can only configure a max of 999. If you need more messages, we will have to implement pagination'
     );
 
     const { toTimestamp, yyyy, mm, dd, timeDefined, secondsDefined } =
-      parseArchiveRangeFromReq(req);
+      parseDateTimeInfoFromReq(req);
 
     let precisionFromUrl = TIME_PRECISION_VALUES.none;
     if (secondsDefined) {
@@ -795,7 +793,7 @@ router.get(
     // this for all places we `ensureRoomJoined`). But we need the `roomId` for use with
     // the various Matrix API's anyway and `/join/{roomIdOrAlias}` -> `{ room_id }` is a
     // great way to get it (see
-    // https://github.com/matrix-org/matrix-public-archive/issues/50).
+    // https://github.com/matrix-org/matrix-viewer/issues/50).
     const viaServers = parseViaServersFromUserInput(req.query.via);
     const roomId = await ensureRoomJoined(matrixAccessToken, roomIdOrAlias, {
       viaServers,
@@ -803,7 +801,7 @@ router.get(
     });
 
     // Do these in parallel to avoid the extra time in sequential round-trips
-    // (we want to display the archive page faster)
+    // (we want to display the page faster)
     const [roomData, { events, stateEventMap }] = await Promise.all([
       fetchRoomData(matrixAccessToken, roomId, { abortSignal: req.abortSignal }),
       // We over-fetch messages outside of the range of the given day so that we
@@ -816,24 +814,24 @@ router.get(
         accessToken: matrixAccessToken,
         roomId,
         ts: toTimestamp,
-        // We fetch one more than the `archiveMessageLimit` so that we can see if there
+        // We fetch one more than the `messageLimit` so that we can see if there
         // are too many messages from the given day. If we have over the
-        // `archiveMessageLimit` number of messages fetching from the given day, it's
+        // `messageLimit` number of messages fetching from the given day, it's
         // acceptable to have them be from surrounding days. But if all 500 messages
         // (for example) are from the same day, let's redirect to a smaller hour range
         // to display.
-        limit: archiveMessageLimit + 1,
+        limit: messageLimit + 1,
         abortSignal: req.abortSignal,
       }),
     ]);
 
-    // Only `world_readable` rooms are viewable in the archive
+    // Only `world_readable` rooms are viewable
     const allowedToViewRoom = roomData.historyVisibility === 'world_readable';
 
     if (!allowedToViewRoom) {
       throw new StatusError(
         403,
-        `Only \`world_readable\` rooms can be viewed in the archive. ` +
+        `Only \`world_readable\` rooms can be viewed with Matrix Viewer. ` +
           `${roomData.id} has m.room.history_visiblity=${roomData.historyVisibility} ` +
           `(set by ${roomData.historyVisibilityEventMeta?.sender} on ` +
           `${new Date(roomData.historyVisibilityEventMeta?.originServerTs).toISOString()})`
@@ -848,15 +846,11 @@ router.get(
     if (hasNavigatedBeforeStartOfRoom && roomData.predecessorRoomId) {
       // Jump to the predecessor room at the date/time the user is trying to visit at
       res.redirect(
-        matrixPublicArchiveURLCreator.archiveUrlForDate(
-          roomData.predecessorRoomId,
-          new Date(toTimestamp),
-          {
-            preferredPrecision: precisionFromUrl,
-            // XXX: Should we also try combining `viaServers` we used to get to this room?
-            viaServers: Array.from(roomData.predecessorViaServers || []),
-          }
-        )
+        matrixViewerURLCreator.roomUrlForDate(roomData.predecessorRoomId, new Date(toTimestamp), {
+          preferredPrecision: precisionFromUrl,
+          // XXX: Should we also try combining `viaServers` we used to get to this room?
+          viaServers: Array.from(roomData.predecessorViaServers || []),
+        })
       );
       return;
     }
@@ -876,15 +870,11 @@ router.get(
     if (roomData.successorRoomId && isNavigatedPastSuccessor && !isNewestEventFromSameDay) {
       // Jump to the successor room at the date/time the user is trying to visit at
       res.redirect(
-        matrixPublicArchiveURLCreator.archiveUrlForDate(
-          roomData.successorRoomId,
-          new Date(toTimestamp),
-          {
-            preferredPrecision: precisionFromUrl,
-            // Just try to pass on the `viaServers` the user was using to get to this room
-            viaServers: Array.from(viaServers || []),
-          }
-        )
+        matrixViewerURLCreator.roomUrlForDate(roomData.successorRoomId, new Date(toTimestamp), {
+          preferredPrecision: precisionFromUrl,
+          // Just try to pass on the `viaServers` the user was using to get to this room
+          viaServers: Array.from(viaServers || []),
+        })
       );
       return;
     }
@@ -906,8 +896,8 @@ router.get(
     );
 
     const pageOptions = {
-      title: `${roomData.name} - Matrix Public Archive`,
-      description: `View the history of the ${roomData.name} room in the Matrix Public Archive`,
+      title: `${roomData.name} - Matrix Viewer`,
+      description: `View the history of the ${roomData.name} room in the Matrix Viewer`,
       imageUrl:
         roomData.avatarUrl &&
         mxcUrlToHttpThumbnail({
@@ -918,7 +908,7 @@ router.get(
       blockedBySafeSearch: isNsfw,
       entryPoint: 'client/js/entry-client-hydrogen.js',
       locationUrl: urlJoin(basePath, req.originalUrl),
-      canonicalUrl: matrixPublicArchiveURLCreator.archiveUrlForDate(
+      canonicalUrl: matrixViewerURLCreator.roomUrlForDate(
         roomData.canonicalAlias || roomIdOrAlias,
         new Date(toTimestamp),
         {
@@ -954,7 +944,7 @@ router.get(
         config: {
           basePath,
           matrixServerUrl,
-          archiveMessageLimit,
+          messageLimit,
         },
       },
       abortSignal: req.abortSignal,

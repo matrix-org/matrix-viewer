@@ -23,7 +23,7 @@ function getAssetUrls() {
   _assetUrls = {
     faviconIco: getAssetUrl('client/img/favicon.ico'),
     faviconSvg: getAssetUrl('client/img/favicon.svg'),
-    opengraphImage: getAssetUrl('client/img/matrix-public-archive-opengraph.png'),
+    opengraphImage: getAssetUrl('client/img/opengraph.png'),
   };
   return _assetUrls;
 }
@@ -45,7 +45,7 @@ function renderPageHtml({
 
   // Serialize the state for when we run the Hydrogen render again client-side to
   // re-hydrate the DOM
-  const serializedMatrixPublicArchiveContext = JSON.stringify({
+  const serializedMatrixViewerContext = JSON.stringify({
     ...vmRenderContext,
   });
 
@@ -123,7 +123,7 @@ if (atEventId) {
           </script>
 
           <script type="text/javascript" nonce="${pageOptions.cspNonce}">
-            window.matrixPublicArchiveContext = ${safeJson(serializedMatrixPublicArchiveContext)}
+            window.matrixViewerContext = ${safeJson(serializedMatrixViewerContext)}
           </script>
 
           ${scripts

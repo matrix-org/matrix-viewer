@@ -83,7 +83,7 @@ async function timeoutMiddleware(req, res, next) {
     `;
 
     const pageOptions = {
-      title: `Server timeout - Matrix Public Archive`,
+      title: `Server timeout - Matrix Viewer`,
       description: `Unable to respond in time (${requestTimeoutMs / 1000}s)`,
       entryPoint: 'client/js/entry-client-timeout.js',
       locationUrl: urlJoin(basePath, req.originalUrl),
@@ -104,7 +104,7 @@ async function timeoutMiddleware(req, res, next) {
     });
 
     // The most semantic HTTP status code to return here is a 504 Gateway timeout but if
-    // you use Cloudflare in front of the archive, it will serve its own
+    // you use Cloudflare in front of the viewer, it will serve its own
     // Cloudflare-branded 504 page if your own origin server responds with a 504. And
     // the only way to disable this functionality is to have an Enterprise Cloudflare
     // plan. So to workaround this, we return a 500 instead. Relevant Cloudflare docs:

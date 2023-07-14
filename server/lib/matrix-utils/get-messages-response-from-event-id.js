@@ -3,7 +3,7 @@
 const assert = require('assert');
 const urlJoin = require('url-join');
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
+const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
 
 const config = require('../config');
