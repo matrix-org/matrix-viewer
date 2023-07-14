@@ -6,14 +6,14 @@
 const BASIC_ROOM_ALIAS_REGEX = /^(#(?:[^/:]+):(?:[^/]+))/;
 
 // Returns `true` if redirecting, otherwise `false`
-function redirectIfRoomAliasInHash(matrixPublicArchiveURLCreator, redirectCallback) {
+function redirectIfRoomAliasInHash(matrixViewerURLCreator, redirectCallback) {
   function handleHashChange() {
     const pageHash = window.location.hash;
 
     const match = pageHash.match(BASIC_ROOM_ALIAS_REGEX);
     if (match) {
       const roomAlias = match[0];
-      const newLocation = matrixPublicArchiveURLCreator.archiveUrlForRoom(roomAlias);
+      const newLocation = matrixViewerURLCreator.roomUrl(roomAlias);
       console.log(`Saw room alias in hash, redirecting to newLocation=${newLocation}`);
       window.location = newLocation;
       if (redirectCallback) {

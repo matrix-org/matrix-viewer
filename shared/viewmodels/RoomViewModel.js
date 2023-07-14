@@ -11,23 +11,19 @@ const {
   encodeEventIdKey,
 } = require('hydrogen-view-sdk');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+const assert = require('matrix-viewer-shared/lib/assert');
 
-const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
-const CalendarViewModel = require('matrix-public-archive-shared/viewmodels/CalendarViewModel');
-const TimeSelectorViewModel = require('matrix-public-archive-shared/viewmodels/TimeSelectorViewModel');
-const DeveloperOptionsContentViewModel = require('matrix-public-archive-shared/viewmodels/DeveloperOptionsContentViewModel');
-const RightPanelContentView = require('matrix-public-archive-shared/views/RightPanelContentView');
-const AvatarViewModel = require('matrix-public-archive-shared/viewmodels/AvatarViewModel');
-const {
-  customTileClassForEntry,
-} = require('matrix-public-archive-shared/lib/custom-tile-utilities');
-const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
-const {
-  areTimestampsFromSameUtcDay,
-} = require('matrix-public-archive-shared/lib/timestamp-utilities');
+const ModalViewModel = require('matrix-viewer-shared/viewmodels/ModalViewModel');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
+const CalendarViewModel = require('matrix-viewer-shared/viewmodels/CalendarViewModel');
+const TimeSelectorViewModel = require('matrix-viewer-shared/viewmodels/TimeSelectorViewModel');
+const DeveloperOptionsContentViewModel = require('matrix-viewer-shared/viewmodels/DeveloperOptionsContentViewModel');
+const RightPanelContentView = require('matrix-viewer-shared/views/RightPanelContentView');
+const AvatarViewModel = require('matrix-viewer-shared/viewmodels/AvatarViewModel');
+const { customTileClassForEntry } = require('matrix-viewer-shared/lib/custom-tile-utilities');
+const stubPowerLevelsObservable = require('matrix-viewer-shared/lib/stub-powerlevels-observable');
+const { TIME_PRECISION_VALUES } = require('matrix-viewer-shared/lib/reference-values');
+const { areTimestampsFromSameUtcDay } = require('matrix-viewer-shared/lib/timestamp-utilities');
 
 let txnCount = 0;
 function getFakeEventId() {
@@ -61,13 +57,13 @@ function makeEventEntryFromEventJson(eventJson, memberEvent) {
   return eventEntry;
 }
 
-class ArchiveRoomViewModel extends ViewModel {
+class RoomViewModel extends ViewModel {
   // eslint-disable-next-line max-statements, complexity
   constructor(options) {
     super(options);
     const {
       homeserverUrl,
-      archiveMessageLimit,
+      messageLimit,
       room,
       dayTimestampTo,
       precisionFromUrl,
@@ -79,7 +75,7 @@ class ArchiveRoomViewModel extends ViewModel {
       basePath,
     } = options;
     assert(homeserverUrl);
-    assert(archiveMessageLimit);
+    assert(messageLimit);
     assert(room);
     assert(dayTimestampTo);
     assert(Object.values(TIME_PRECISION_VALUES).includes(precisionFromUrl));
@@ -94,7 +90,7 @@ class ArchiveRoomViewModel extends ViewModel {
     this._room = room;
     this._dayTimestampTo = dayTimestampTo;
     this._currentTopPositionEventEntry = null;
-    this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+    this._matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
     this._basePath = basePath;
 
     const navigation = this.navigation;
@@ -139,12 +135,12 @@ class ArchiveRoomViewModel extends ViewModel {
     const initialActiveDate = bottomMostEventDate || initialDate;
 
     this._calendarViewModel = new CalendarViewModel({
-      // The day being shown in the archive
+      // The day being shown
       activeDate: initialActiveDate,
       // The month displayed in the calendar
       calendarDate: initialActiveDate,
       room,
-      matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
+      matrixViewerURLCreator: this._matrixViewerURLCreator,
     });
 
     const shouldShowTimeSelector =
@@ -154,7 +150,7 @@ class ArchiveRoomViewModel extends ViewModel {
       (precisionFromUrl !== TIME_PRECISION_VALUES.none && !events.length) ||
       // Only show the time selector when we're showing events all from the same day and
       // there are more events than the limit
-      (events.length > archiveMessageLimit &&
+      (events.length > messageLimit &&
         areTimestampsFromSameUtcDay(timelineRangeStartTimestamp, timelineRangeEndTimestamp));
 
     this._timeSelectorViewModel = new TimeSelectorViewModel({
@@ -162,7 +158,7 @@ class ArchiveRoomViewModel extends ViewModel {
       // The time (within the given date) being displayed in the time scrubber.
       activeDate: initialActiveDate,
       // Prevent extra precision if it's not needed. We only need to show seconds if
-      // the page-loaded archive URL is worried about seconds.
+      // the page-loaded URL is worried about seconds.
       preferredPrecision:
         // Default to minutes for the time selector otherwise use whatever more fine
         // grained precision that the URL is using
@@ -171,7 +167,7 @@ class ArchiveRoomViewModel extends ViewModel {
           : precisionFromUrl,
       timelineRangeStartTimestamp,
       timelineRangeEndTimestamp,
-      matrixPublicArchiveURLCreator: this._matrixPublicArchiveURLCreator,
+      matrixViewerURLCreator: this._matrixViewerURLCreator,
     });
 
     this._developerOptionsContentViewModel = new DeveloperOptionsContentViewModel(
@@ -334,11 +330,11 @@ class ArchiveRoomViewModel extends ViewModel {
   }
 
   get roomDirectoryUrl() {
-    return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
+    return this._matrixViewerURLCreator.roomDirectoryUrl();
   }
 
   get roomPermalink() {
-    return this._matrixPublicArchiveURLCreator.permalinkForRoom(this._room.id);
+    return this._matrixViewerURLCreator.permalinkForRoom(this._room.id);
   }
 
   get roomName() {
@@ -396,7 +392,7 @@ class ArchiveRoomViewModel extends ViewModel {
     if (daySummaryKind !== 'no-events-at-all') {
       events.unshift({
         event_id: getFakeEventId(),
-        type: 'org.matrix.archive.jump_to_previous_activity_summary',
+        type: 'org.matrix.viewer.jump_to_previous_activity_summary',
         room_id: this._room.id,
         // Even though this isn't used for sort, just using the time where the event
         // would logically be (before any of the other events in the timeline)
@@ -418,7 +414,7 @@ class ArchiveRoomViewModel extends ViewModel {
     // on the day requested. Also allow the user to jump to the next activity in the room.
     events.push({
       event_id: getFakeEventId(),
-      type: 'org.matrix.archive.jump_to_next_activity_summary',
+      type: 'org.matrix.viewer.jump_to_next_activity_summary',
       room_id: this._room.id,
       // Even though this isn't used for sort, just using the time where the event
       // would logically be (at the end of the day)
@@ -514,4 +510,4 @@ class ArchiveRoomViewModel extends ViewModel {
   }
 }
 
-module.exports = ArchiveRoomViewModel;
+module.exports = RoomViewModel;

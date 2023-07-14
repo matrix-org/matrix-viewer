@@ -12,7 +12,7 @@ const preventClickjackingMiddleware = require('../middleware/prevent-clickjackin
 const contentSecurityPolicyMiddleware = require('../middleware/content-security-policy-middleware');
 const identifyRoute = require('../middleware/identify-route-middleware');
 const clientSideRoomAliasHashRedirectRoute = require('./client-side-room-alias-hash-redirect-route');
-const redirectToCorrectArchiveUrlIfBadSigil = require('../middleware/redirect-to-correct-archive-url-if-bad-sigil-middleware');
+const redirectToCorrectRoomUrlIfBadSigil = require('../middleware/redirect-to-correct-room-url-if-bad-sigil-middleware');
 
 function installRoutes(app) {
   app.use(handleTracingMiddleware);
@@ -43,11 +43,11 @@ function installRoutes(app) {
     '/faq',
     identifyRoute('faq'),
     asyncHandler(async function (req, res) {
-      res.redirect('https://github.com/matrix-org/matrix-public-archive/blob/main/docs/faq.md');
+      res.redirect('https://github.com/matrix-org/matrix-viewer/blob/main/docs/faq.md');
     })
   );
 
-  // Our own archive app styles and scripts
+  // Our own viewer app styles and scripts
   app.use('/assets', express.static(path.join(__dirname, '../../dist/assets')));
 
   app.use('/', timeoutMiddleware, require('./room-directory-routes'));
@@ -72,8 +72,8 @@ function installRoutes(app) {
   // redirect them to the correct URL without the sigil to the correct path above.
   app.get(
     '/:roomIdOrAliasDirty',
-    identifyRoute('redirect-to-correct-archive-url-if-bad-sigil'),
-    redirectToCorrectArchiveUrlIfBadSigil
+    identifyRoute('redirect-to-correct-room-url-if-bad-sigil'),
+    redirectToCorrectRoomUrlIfBadSigil
   );
 }
 

@@ -3,35 +3,35 @@
 // Isomorphic script that runs in the browser and on the server for SSR (needs
 // browser context) that renders Hydrogen to the `document.body`.
 //
-// Data is passed in via `window.matrixPublicArchiveContext`
+// Data is passed in via `window.matrixViewerContext`
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+const assert = require('matrix-viewer-shared/lib/assert');
 const { Platform, MediaRepository, createNavigation, createRouter } = require('hydrogen-view-sdk');
 
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
-const ArchiveRoomView = require('matrix-public-archive-shared/views/ArchiveRoomView');
-const ArchiveHistory = require('matrix-public-archive-shared/lib/archive-history');
-const supressBlankAnchorsReloadingThePage = require('matrix-public-archive-shared/lib/supress-blank-anchors-reloading-the-page');
-const ArchiveRoomViewModel = require('matrix-public-archive-shared/viewmodels/ArchiveRoomViewModel');
-const stubPowerLevelsObservable = require('matrix-public-archive-shared/lib/stub-powerlevels-observable');
+const { TIME_PRECISION_VALUES } = require('matrix-viewer-shared/lib/reference-values');
+const RoomView = require('matrix-viewer-shared/views/RoomView');
+const MatrixViewerHistory = require('matrix-viewer-shared/lib/matrix-viewer-history');
+const supressBlankAnchorsReloadingThePage = require('matrix-viewer-shared/lib/supress-blank-anchors-reloading-the-page');
+const RoomViewModel = require('matrix-viewer-shared/viewmodels/RoomViewModel');
+const stubPowerLevelsObservable = require('matrix-viewer-shared/lib/stub-powerlevels-observable');
 
-const toTimestamp = window.matrixPublicArchiveContext.toTimestamp;
+const toTimestamp = window.matrixViewerContext.toTimestamp;
 assert(toTimestamp);
-const precisionFromUrl = window.matrixPublicArchiveContext.precisionFromUrl;
+const precisionFromUrl = window.matrixViewerContext.precisionFromUrl;
 assert(Object.values(TIME_PRECISION_VALUES).includes(precisionFromUrl));
-const roomData = window.matrixPublicArchiveContext.roomData;
+const roomData = window.matrixViewerContext.roomData;
 assert(roomData);
-const events = window.matrixPublicArchiveContext.events;
+const events = window.matrixViewerContext.events;
 assert(events);
-const stateEventMap = window.matrixPublicArchiveContext.stateEventMap;
+const stateEventMap = window.matrixViewerContext.stateEventMap;
 assert(stateEventMap);
-const shouldIndex = window.matrixPublicArchiveContext.shouldIndex;
+const shouldIndex = window.matrixViewerContext.shouldIndex;
 assert(shouldIndex !== undefined);
-const config = window.matrixPublicArchiveContext.config;
+const config = window.matrixViewerContext.config;
 assert(config);
 assert(config.matrixServerUrl);
 assert(config.basePath);
-assert(config.archiveMessageLimit);
+assert(config.messageLimit);
 
 function addSupportClasses() {
   const input = document.createElement('input');
@@ -65,7 +65,7 @@ async function mountHydrogen() {
   const navigation = createNavigation();
   platform.setNavigation(navigation);
 
-  const archiveHistory = new ArchiveHistory(
+  const matrixViewerHistory = new MatrixViewerHistory(
     // We just have to match what Hydrogen is doing here.
     `#/session/123/room/${encodeURIComponent(roomData.id)}`
   );
@@ -75,7 +75,7 @@ async function mountHydrogen() {
     // room and not include the session/room.
     //
     // Normally, people use `history: platform.history,`
-    history: archiveHistory,
+    history: matrixViewerHistory,
   });
   // Make it listen to changes from the history instance. And populate the
   // `Navigation` with path segments to work from so `href`'s rendered on the
@@ -101,15 +101,15 @@ async function mountHydrogen() {
     },
   };
 
-  const archiveRoomViewModel = new ArchiveRoomViewModel({
+  const roomViewModel = new RoomViewModel({
     // Hydrogen options
     platform: platform,
     navigation: navigation,
     urlRouter: urlRouter,
-    history: archiveHistory,
+    history: matrixViewerHistory,
     // Our options
     homeserverUrl: config.matrixServerUrl,
-    archiveMessageLimit: config.archiveMessageLimit,
+    messageLimit: config.messageLimit,
     room,
     // The timestamp from the URL that was originally visited
     dayTimestampTo: toTimestamp,
@@ -126,7 +126,7 @@ async function mountHydrogen() {
   // ---------------------------------------------------------------------
 
   // Render what we actually care about
-  const view = new ArchiveRoomView(archiveRoomViewModel);
+  const view = new RoomView(roomViewModel);
   appElement.replaceChildren(view.mount());
 
   addSupportClasses();

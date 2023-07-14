@@ -1,10 +1,10 @@
-id: 6527ecdd6b8fe61c645d9d412222d75b
-hs_token: hs_token_1f5d7675517072f0c0b5b684ca23f9ffad5a0cfc32e1ca824c0600ee74e105d7
+id: matrix_viewer_foobarbaz
+hs_token: hs_token_as_token_matrix_viewer_foobarbaz
 # We use this as a consistent acccess token to use in our tests
-as_token: as_token_8664700429a911bbbecf7d91b9e1a74716d669f40cf32259630e38439726e29d
+as_token: as_token_matrix_viewer_foobarbaz
 # This doesn't relate to anything else
 url: 'http://localhost:0000'
-sender_localpart: archiver
+sender_localpart: view
 namespaces:
   users:
     - exclusive: false

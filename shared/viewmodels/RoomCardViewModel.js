@@ -2,8 +2,8 @@
 
 const { ViewModel } = require('hydrogen-view-sdk');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const assert = require('matrix-viewer-shared/lib/assert');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
 
 class RoomCardViewModel extends ViewModel {
   constructor(options) {
@@ -14,7 +14,7 @@ class RoomCardViewModel extends ViewModel {
     assert(homeserverUrlToPullMediaFrom);
     assert(viaServers);
 
-    this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+    this._matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
 
     this._roomId = room.room_id;
     this._canonicalAlias = room.canonical_alias;
@@ -57,14 +57,11 @@ class RoomCardViewModel extends ViewModel {
     return this._topic;
   }
 
-  get archiveRoomUrl() {
-    return this._matrixPublicArchiveURLCreator.archiveUrlForRoom(
-      this._canonicalAlias || this._roomId,
-      {
-        // Only include via servers when we have to fallback to the room ID
-        viaServers: this._canonicalAlias ? undefined : this._viaServers,
-      }
-    );
+  get roomUrl() {
+    return this._matrixViewerURLCreator.roomUrl(this._canonicalAlias || this._roomId, {
+      // Only include via servers when we have to fallback to the room ID
+      viaServers: this._canonicalAlias ? undefined : this._viaServers,
+    });
   }
 
   get blockedBySafeSearch() {

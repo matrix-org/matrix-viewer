@@ -6,7 +6,7 @@ const assert = require('./assert');
 // Mock a full hash whenever someone asks via `history.get()` but when
 // constructing URL's for use `href` etc, they should relative to the room
 // (remove session and room from the hash).
-class ArchiveHistory extends History {
+class MatrixViewerHistory extends History {
   constructor(baseHash) {
     assert(baseHash);
     super();
@@ -34,7 +34,7 @@ class ArchiveHistory extends History {
         replacingUrl = url;
       }
       // Hydrogen hash routing: This is the sign that Hydrogen is navigating back to the
-      // root. Because of our custom archive logic, the `#` is removed before it gets
+      // root. Because of our custom Matrix Viewer logic, the `#` is removed before it gets
       // here. But we just want to make sure the hash gets cleared out while maintaining
       // our path and query parameters.
       //
@@ -60,7 +60,7 @@ class ArchiveHistory extends History {
       replacingUrl = url;
     }
     // Hydrogen hash routing: This is the sign that Hydrogen is navigating back to the
-    // root. Because of our custom archive logic, the `#` is removed before it gets
+    // root. Because of our custom Matrix Viewer logic, the `#` is removed before it gets
     // here. But we just want to make sure the hash gets cleared out while maintaining
     // our path and query parameters.
     //
@@ -94,4 +94,4 @@ class ArchiveHistory extends History {
   }
 }
 
-module.exports = ArchiveHistory;
+module.exports = MatrixViewerHistory;

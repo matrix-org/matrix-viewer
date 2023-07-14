@@ -2,7 +2,7 @@
 
 const { ViewModel } = require('hydrogen-view-sdk');
 
-const LOCAL_STORAGE_KEYS = require('matrix-public-archive-shared/lib/local-storage-keys');
+const LOCAL_STORAGE_KEYS = require('matrix-viewer-shared/lib/local-storage-keys');
 
 class DeveloperOptionsContentViewModel extends ViewModel {
   constructor(options) {

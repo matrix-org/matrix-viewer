@@ -3,7 +3,7 @@
 const assert = require('assert');
 const { traceFunction } = require('../../tracing/trace-utilities');
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
+const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
 const timestampToEvent = require('./timestamp-to-event');
 const getMessagesResponseFromEventId = require('./get-messages-response-from-event-id');
 

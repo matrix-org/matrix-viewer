@@ -3,7 +3,7 @@
 const assert = require('assert');
 
 const urlJoin = require('url-join');
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
+const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
 const { traceFunction } = require('../../tracing/trace-utilities');
 
@@ -110,7 +110,7 @@ async function fetchAccessibleRooms(
     const fetchedRoomsInDirection =
       direction === DIRECTION.forward ? fetchedRooms : fetchedRooms.reverse();
 
-    // We only want to see world_readable rooms in the archive
+    // We only want to see world_readable rooms
     let index = 0;
     for (let room of fetchedRoomsInDirection) {
       if (room.world_readable) {

@@ -6,7 +6,7 @@ const urlJoin = require('url-join');
 const express = require('express');
 const asyncHandler = require('../lib/express-async-handler');
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
+const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
 const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const identifyRoute = require('../middleware/identify-route-middleware');
@@ -86,7 +86,7 @@ router.get(
     const shouldIndex = !stopSearchEngineIndexingFromConfig;
 
     const pageOptions = {
-      title: `Matrix Public Archive`,
+      title: `Matrix Viewer`,
       description:
         'Browse thousands of rooms using Matrix. The new portal into the Matrix ecosystem.',
       entryPoint: 'client/js/entry-client-room-directory.js',

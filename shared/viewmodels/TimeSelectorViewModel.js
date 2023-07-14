@@ -1,8 +1,8 @@
 'use strict';
 
 const { ViewModel } = require('hydrogen-view-sdk');
-const assert = require('matrix-public-archive-shared/lib/assert');
-const { TIME_PRECISION_VALUES } = require('matrix-public-archive-shared/lib/reference-values');
+const assert = require('matrix-viewer-shared/lib/assert');
+const { TIME_PRECISION_VALUES } = require('matrix-viewer-shared/lib/reference-values');
 
 class TimeSelectorViewModel extends ViewModel {
   constructor(options) {
@@ -13,11 +13,11 @@ class TimeSelectorViewModel extends ViewModel {
       preferredPrecision = TIME_PRECISION_VALUES.minutes,
       timelineRangeStartTimestamp,
       timelineRangeEndTimestamp,
-      matrixPublicArchiveURLCreator,
+      matrixViewerURLCreator,
     } = options;
     assert(room);
     assert(activeDate);
-    assert(matrixPublicArchiveURLCreator);
+    assert(matrixViewerURLCreator);
     assert(
       Object.values(TIME_PRECISION_VALUES).includes(preferredPrecision),
       `TimeSelectorViewModel: options.preferredPrecision must be one of ${JSON.stringify(
@@ -33,7 +33,7 @@ class TimeSelectorViewModel extends ViewModel {
 
     this._timelineRangeStartTimestamp = timelineRangeStartTimestamp;
     this._timelineRangeEndTimestamp = timelineRangeEndTimestamp;
-    this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
+    this._matrixViewerURLCreator = matrixViewerURLCreator;
 
     this._isDragging = false;
   }
@@ -49,7 +49,7 @@ class TimeSelectorViewModel extends ViewModel {
   }
 
   get goToActiveDateUrl() {
-    return this._matrixPublicArchiveURLCreator.archiveUrlForDate(
+    return this._matrixViewerURLCreator.roomUrlForDate(
       this._room.canonicalAlias || this._room.id,
       this.activeDate,
       { preferredPrecision: this.preferredPrecision }

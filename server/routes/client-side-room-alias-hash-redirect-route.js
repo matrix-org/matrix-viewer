@@ -14,7 +14,7 @@ assert(basePath);
 // `/r/#room-alias:server/date/2022/10/27` -> `/r/room-alias:server/date/2022/10/27`
 function clientSideRoomAliasHashRedirectRoute(req, res) {
   const pageOptions = {
-    title: `Page not found - Matrix Public Archive`,
+    title: `Page not found - Matrix Viewer`,
     description: `This page does not exist but we may be able to redirect you to the right place.`,
     entryPoint: 'client/js/entry-client-room-alias-hash-redirect.js',
     locationUrl: urlJoin(basePath, req.originalUrl),

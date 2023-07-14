@@ -2,13 +2,13 @@
 
 const { ViewModel, ObservableMap, ApplyMap } = require('hydrogen-view-sdk');
 
-const assert = require('matrix-public-archive-shared/lib/assert');
+const assert = require('matrix-viewer-shared/lib/assert');
 
-const LOCAL_STORAGE_KEYS = require('matrix-public-archive-shared/lib/local-storage-keys');
-const ModalViewModel = require('matrix-public-archive-shared/viewmodels/ModalViewModel');
-const HomeserverSelectionModalContentViewModel = require('matrix-public-archive-shared/viewmodels/HomeserverSelectionModalContentViewModel');
-const RoomCardViewModel = require('matrix-public-archive-shared/viewmodels/RoomCardViewModel');
-const checkTextForNsfw = require('matrix-public-archive-shared/lib/check-text-for-nsfw');
+const LOCAL_STORAGE_KEYS = require('matrix-viewer-shared/lib/local-storage-keys');
+const ModalViewModel = require('matrix-viewer-shared/viewmodels/ModalViewModel');
+const HomeserverSelectionModalContentViewModel = require('matrix-viewer-shared/viewmodels/HomeserverSelectionModalContentViewModel');
+const RoomCardViewModel = require('matrix-viewer-shared/viewmodels/RoomCardViewModel');
+const checkTextForNsfw = require('matrix-viewer-shared/lib/check-text-for-nsfw');
 const { DIRECTION } = require('../lib/reference-values');
 
 const DEFAULT_SERVER_LIST = ['matrix.org', 'gitter.im'];
@@ -20,7 +20,7 @@ class RoomDirectoryViewModel extends ViewModel {
       basePath,
       homeserverUrl,
       homeserverName,
-      matrixPublicArchiveURLCreator,
+      matrixViewerURLCreator,
       rooms,
       roomFetchError,
       pageSearchParameters,
@@ -30,14 +30,14 @@ class RoomDirectoryViewModel extends ViewModel {
     assert(basePath);
     assert(homeserverUrl);
     assert(homeserverName);
-    assert(matrixPublicArchiveURLCreator);
+    assert(matrixViewerURLCreator);
     assert(rooms);
 
     this._roomFetchError = roomFetchError;
 
     this._homeserverUrl = homeserverUrl;
     this._homeserverName = homeserverName;
-    this._matrixPublicArchiveURLCreator = matrixPublicArchiveURLCreator;
+    this._matrixViewerURLCreator = matrixViewerURLCreator;
 
     this._isPageRedirectingFromUrlHash = false;
 
@@ -142,7 +142,7 @@ class RoomDirectoryViewModel extends ViewModel {
   }
 
   get roomDirectoryUrl() {
-    return this._matrixPublicArchiveURLCreator.roomDirectoryUrl();
+    return this._matrixViewerURLCreator.roomDirectoryUrl();
   }
 
   get pageSearchParameters() {
@@ -301,7 +301,7 @@ class RoomDirectoryViewModel extends ViewModel {
 
   get nextPageUrl() {
     if (this._nextPaginationToken) {
-      return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+      return this._matrixViewerURLCreator.roomDirectoryUrl({
         homeserver: this.homeserverSelection,
         searchTerm: this.searchTerm,
         paginationToken: this._nextPaginationToken,
@@ -314,7 +314,7 @@ class RoomDirectoryViewModel extends ViewModel {
 
   get prevPageUrl() {
     if (this._prevPaginationToken) {
-      return this._matrixPublicArchiveURLCreator.roomDirectoryUrl({
+      return this._matrixViewerURLCreator.roomDirectoryUrl({
         homeserver: this.homeserverSelection,
         searchTerm: this.searchTerm,
         paginationToken: this._prevPaginationToken,

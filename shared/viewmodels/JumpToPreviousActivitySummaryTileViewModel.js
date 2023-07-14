@@ -2,8 +2,8 @@
 
 const { SimpleTile } = require('hydrogen-view-sdk');
 
-const { DIRECTION } = require('matrix-public-archive-shared/lib/reference-values');
-const MatrixPublicArchiveURLCreator = require('matrix-public-archive-shared/lib/url-creator');
+const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
 const assert = require('../lib/assert');
 
 class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
@@ -13,11 +13,11 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
 
     const basePath = this._entry?.content?.['basePath'];
     assert(basePath);
-    this._matrixPublicArchiveURLCreator = new MatrixPublicArchiveURLCreator(basePath);
+    this._matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
   }
 
   get shape() {
-    return 'org.matrix.archive.jump_to_previous_activity_summary:shape';
+    return 'org.matrix.viewer.jump_to_previous_activity_summary:shape';
   }
 
   // The start of the range to use as a jumping off point to the previous activity
@@ -41,7 +41,7 @@ class JumpToPreviousActivitySummaryTileViewModel extends SimpleTile {
   }
 
   get jumpToPreviousActivityUrl() {
-    return this._matrixPublicArchiveURLCreator.archiveJumpUrlForRoom(
+    return this._matrixViewerURLCreator.jumpUrlForRoom(
       this._entry?.content?.['canonicalAlias'] || this._entry.roomId,
       {
         dir: DIRECTION.backward,

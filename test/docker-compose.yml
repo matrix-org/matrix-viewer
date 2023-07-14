@@ -2,14 +2,14 @@ version: '3'
 
 services:
   hs1:
-    image: matrix-public-archive-test-homeserver:latest
+    image: matrix-viewer-test-homeserver:latest
     ports:
       - '11008:8008'
     environment:
       - SERVER_NAME=hs1
 
   hs2:
-    image: matrix-public-archive-test-homeserver:latest
+    image: matrix-viewer-test-homeserver:latest
     ports:
       - '12008:8008'
     environment:
