@@ -16,6 +16,16 @@ assert(matrixServerUrl);
 
 const matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
 
+const defaultJoinMessage = `Joining room to check history visibility. ` +
+  `If your room is public with shared or world readable history visibility, ` +
+  `it will be accessible on ${matrixViewerURLCreator.roomDirectoryUrl()}. ` +
+  `See the FAQ for more details: ` +
+  `https://github.com/matrix-org/matrix-viewer/blob/main/docs/faq.md#why-did-the-bot-join-my-room`;
+
+config.defaults({
+  botJoinMessage: defaultJoinMessage,
+});
+
 async function ensureRoomJoined(
   accessToken,
   roomIdOrAlias,
@@ -49,12 +59,7 @@ async function ensureRoomJoined(
       accessToken,
       abortSignal,
       body: {
-        reason:
-          `Joining room to check history visibility. ` +
-          `If your room is public with shared or world readable history visibility, ` +
-          `it will be accessible on ${matrixViewerURLCreator.roomDirectoryUrl()}. ` +
-          `See the FAQ for more details: ` +
-          `https://github.com/matrix-org/matrix-viewer/blob/main/docs/faq.md#why-did-the-bot-join-my-room`,
+        reason: config.get("botJoinMessage"),
       },
     });
     assert(
