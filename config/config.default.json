@@ -26,4 +26,6 @@
   //"enableAllowList": true,
   // use room ids starting with a `!`, not aliases
   //"roomAllowList": ["!ypQyNeReyEPUCKYjPU:matrix.org"],  // e.g. room about Matrix Reputation
+  // Hide room directory (will enable auto redirect to first entry of allow list)
+  //"hideRoomDirectory": true,
 }
