@@ -5,6 +5,7 @@
   // (see readme for more details)
   "matrixServerUrl": "http://localhost:8008/",
   "matrixServerName": "localhost",
+  // "botJoinMessage": "Joining room … See FAQ _" (full default in code)
   // Set this to 100 since that is the max that Synapse will backfill even if you do a
   // `/messages?limit=1000` and we don't want to miss messages in between.
   "messageLimit": 100,
