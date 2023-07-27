@@ -5,6 +5,7 @@ const urlJoin = require('url-join');
 
 const StatusError = require('../errors/status-error');
 const { fetchEndpointAsJson } = require('../fetch-endpoint');
+const checkIfAllowed = require('./check-room-allowed');
 const getServerNameFromMatrixRoomIdOrAlias = require('./get-server-name-from-matrix-room-id-or-alias');
 const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
 
@@ -21,6 +22,11 @@ async function ensureRoomJoined(
   roomIdOrAlias,
   { viaServers = new Set(), abortSignal } = {}
 ) {
+  const result = await checkIfAllowed(roomIdOrAlias);
+  if (!result) {
+    throw new StatusError(403, `Bot is not allowed to view room, room is not listed in explicit allow list.`);
+  }
+
   // We use a `Set` to ensure that we don't have duplicate servers in the list
   assert(viaServers instanceof Set);
 

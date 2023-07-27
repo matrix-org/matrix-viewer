@@ -21,4 +21,9 @@
 
   // Secrets
   //"matrixAccessToken": "xxx"
+
+  // Restrict to rooms listed below
+  //"enableAllowList": true,
+  // use room ids starting with a `!`, not aliases
+  //"roomAllowList": ["!ypQyNeReyEPUCKYjPU:matrix.org"],  // e.g. room about Matrix Reputation
 }

@@ -10,6 +10,7 @@ const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
 const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const identifyRoute = require('../middleware/identify-route-middleware');
+const checkIfAllowed = require('../lib/matrix-utils/check-room-allowed');
 const fetchAccessibleRooms = require('../lib/matrix-utils/fetch-accessible-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
@@ -79,6 +80,13 @@ router.get(
         // explain why we failed to fetch the rooms they wanted.
         roomFetchError = err;
       }
+    }
+
+    // limit to allow list
+    // Because filtering happens after checking the directory this may lead into a bad UX.
+    if (config.get("enableAllowList")) {
+      const checkResults = await Promise.all(rooms.map((r) => r.room_id).map(checkIfAllowed));
+      rooms = rooms.filter((_v, index) => checkResults[index]);
     }
 
     // We index the room directory unless the config says we shouldn't index anything
