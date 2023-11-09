@@ -12,8 +12,6 @@ Gitter](https://github.com/vector-im/roadmap/issues/26), the goal is to make an
 accessible public site for `world_readable` Matrix rooms like Gitter's archives
 which search engines can index and keep all of the content accessible/available.
 
-#### Try it out: [view.matrix.org](https://view.matrix.org/) 🌌
-
 <!-- prettier-ignore -->
 Room directory homepage | Room view
 --- | ---
