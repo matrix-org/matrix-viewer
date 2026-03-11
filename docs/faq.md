@@ -30,7 +30,7 @@ But the bot (`@view:matrix.org`) will join any public room because it doesn't
 know the history visibility without first joining. Any room that doesn't have
 `world_readable` history visibility will lead a `403 Forbidden`.
 
-The Matrix Viewer hold onto any data (it's
+The Matrix Viewer doesn't hold onto any data (it's
 stateless) and requests the messages from the homeserver every time. The
 [view.matrix.org](https://view.matrix.org/) instance has some caching in place, 5
 minutes for the current day, and 2 days for past content.
