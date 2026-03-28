@@ -10,9 +10,11 @@ const { DIRECTION } = require('matrix-viewer-shared/lib/reference-values');
 const RouteTimeoutAbortError = require('../lib/errors/route-timeout-abort-error');
 const UserClosedConnectionAbortError = require('../lib/errors/user-closed-connection-abort-error');
 const identifyRoute = require('../middleware/identify-route-middleware');
+const checkIfAllowed = require('../lib/matrix-utils/check-room-allowed');
 const fetchAccessibleRooms = require('../lib/matrix-utils/fetch-accessible-rooms');
 const renderHydrogenVmRenderScriptToPageHtml = require('../hydrogen-render/render-hydrogen-vm-render-script-to-page-html');
 const setHeadersToPreloadAssets = require('../lib/set-headers-to-preload-assets');
+const MatrixViewerURLCreator = require('matrix-viewer-shared/lib/url-creator');
 
 const config = require('../lib/config');
 const basePath = config.get('basePath');
@@ -24,6 +26,8 @@ assert(matrixServerName);
 const matrixAccessToken = config.get('matrixAccessToken');
 assert(matrixAccessToken);
 
+const matrixViewerURLCreator = new MatrixViewerURLCreator(basePath);
+
 const router = express.Router({
   caseSensitive: true,
   // Preserve the req.params values from the parent router.
@@ -34,6 +38,11 @@ router.get(
   '/',
   identifyRoute('app-room-directory-index'),
   asyncHandler(async function (req, res) {
+    if (config.get("hideRoomDirectory")) {
+      res.redirect(matrixViewerURLCreator.roomUrl(config.get("roomAllowList")[0]));
+      return;
+    }
+
     const searchTerm = req.query.search;
     const homeserver = req.query.homeserver;
     const paginationToken = req.query.page;
@@ -79,6 +88,14 @@ router.get(
         // explain why we failed to fetch the rooms they wanted.
         roomFetchError = err;
       }
+    }
+
+    // limit to allow list
+    // Because filtering happens after checking the directory this may lead into a bad UX.
+    // Consider setting hideDirectory
+    if (config.get("enableAllowList")) {
+      const checkResults = await Promise.all(rooms.map((r) => r.room_id).map(checkIfAllowed));
+      rooms = rooms.filter((_v, index) => checkResults[index]);
     }
 
     // We index the room directory unless the config says we shouldn't index anything
